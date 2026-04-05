@@ -1,0 +1,141 @@
+@import "tailwindcss";
+
+@theme {
+  /* Cores da marca Moradda */
+  --color-moradda-blue-50: #EEF3F9;
+  --color-moradda-blue-100: #D4E1F0;
+  --color-moradda-blue-200: #A9C3E1;
+  --color-moradda-blue-300: #7EA5D2;
+  --color-moradda-blue-400: #5387C3;
+  --color-moradda-blue-500: #1B4F8A;
+  --color-moradda-blue-600: #16417A;
+  --color-moradda-blue-700: #1B3A5C;
+  --color-moradda-blue-800: #0E2A4A;
+  --color-moradda-blue-900: #091C33;
+  --color-moradda-blue-950: #050E1A;
+
+  --color-moradda-gold-50: #FBF6EC;
+  --color-moradda-gold-100: #F5EACD;
+  --color-moradda-gold-200: #EBD59B;
+  --color-moradda-gold-300: #E0C069;
+  --color-moradda-gold-400: #D4A94A;
+  --color-moradda-gold-500: #C5A55A;
+  --color-moradda-gold-600: #A8883A;
+  --color-moradda-gold-700: #8B6E2E;
+  --color-moradda-gold-800: #6E5523;
+  --color-moradda-gold-900: #513D19;
+
+  /* Fontes */
+  --font-heading: 'Playfair Display', Georgia, serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+
+  /* Animações */
+  --animate-fade-in: fade-in 0.6s ease-out forwards;
+  --animate-slide-up: slide-up 0.6s ease-out forwards;
+  --animate-slide-down: slide-down 0.4s ease-out forwards;
+  --animate-scale-in: scale-in 0.3s ease-out forwards;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Scrollbar customizada */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-moradda-blue-400);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-moradda-blue-600);
+}
+
+/* Reset e base */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: #1a1a1a;
+  background: #ffffff;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+}
+
+/* Utilitários premium */
+.text-gradient {
+  background: linear-gradient(135deg, var(--color-moradda-blue-500), var(--color-moradda-gold-500));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.bg-gradient-moradda {
+  background: linear-gradient(135deg, var(--color-moradda-blue-700), var(--color-moradda-blue-900));
+}
+
+.bg-gradient-gold {
+  background: linear-gradient(135deg, var(--color-moradda-gold-400), var(--color-moradda-gold-600));
+}
+
+.hero-overlay {
+  background: linear-gradient(
+    to bottom,
+    rgba(9, 28, 51, 0.7) 0%,
+    rgba(9, 28, 51, 0.4) 50%,
+    rgba(9, 28, 51, 0.8) 100%
+  );
+}
+
+.card-premium {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.card-premium:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 25px 60px rgba(27, 79, 138, 0.15);
+}
+
+.line-gold::after {
+  content: '';
+  display: block;
+  width: 60px;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-moradda-gold-400), var(--color-moradda-gold-600));
+  margin-top: 1rem;
+}
+
+.line-gold-center::after {
+  content: '';
+  display: block;
+  width: 60px;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-moradda-gold-400), var(--color-moradda-gold-600));
+  margin: 1rem auto 0;
+}
