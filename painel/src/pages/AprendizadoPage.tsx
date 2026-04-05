@@ -262,8 +262,7 @@ export default function AprendizadoPage() {
       try {
         const { data: profiles, error: profErr } = await supabase
           .from('users_profiles')
-          .select('id, nome, email, avatar_url')
-          .eq('role', 'corretor')
+          .select('id, nome, email, avatar_url, roles(nome)')
           .eq('ativo', true)
 
         if (profErr) throw profErr

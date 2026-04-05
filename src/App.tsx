@@ -21,6 +21,7 @@ const VenderPage = lazy(() => import('@/pages/Vender'))
 const FinanciamentoPage = lazy(() => import('@/pages/Financiamento'))
 const FavoritosPage = lazy(() => import('@/pages/Favoritos'))
 const PoliticaPage = lazy(() => import('@/pages/Politica'))
+const ConfirmacaoPage = lazy(() => import('@/pages/Confirmacao'))
 const NotFoundPage = lazy(() => import('@/pages/NotFound'))
 
 function App() {
@@ -53,6 +54,7 @@ function App() {
               <Route path="/financiamento" element={<FinanciamentoPage />} />
               <Route path="/favoritos" element={<FavoritosPage />} />
               <Route path="/politica-de-privacidade" element={<PoliticaPage />} />
+              <Route path="/confirmacao" element={<ConfirmacaoPage />} />
               <Route path="*" element={<NotFoundPage />} />
             </Route>
           </Routes>
