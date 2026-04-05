@@ -471,9 +471,13 @@ export default function NovoImovelPage() {
                           if (data.complemento) setValue('complemento', data.complemento)
                           if (data.localidade) setValue('cidade', data.localidade)
                           if (data.uf) setValue('estado', data.uf)
-                          // Tentar encontrar o bairro na lista
+                          // Tentar encontrar o bairro na lista (normaliza acentos para comparação)
                           if (data.bairro) {
-                            const found = bairros.find(b => b.nome.toLowerCase() === data.bairro.toLowerCase())
+                            const normalize = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()
+                            const bairroNorm = normalize(data.bairro)
+                            const found = bairros.find(b => normalize(b.nome) === bairroNorm)
+                              || bairros.find(b => normalize(b.nome).includes(bairroNorm))
+                              || bairros.find(b => bairroNorm.includes(normalize(b.nome)))
                             if (found) setValue('bairro', found.id)
                           }
                         }
