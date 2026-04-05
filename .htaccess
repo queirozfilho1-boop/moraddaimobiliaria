@@ -1,0 +1,12 @@
+RewriteEngine On
+RewriteBase /
+
+# Se o arquivo existe dentro de dist/, servir de lá
+RewriteCond %{DOCUMENT_ROOT}/dist%{REQUEST_URI} -f
+RewriteRule ^(.*)$ dist/$1 [L]
+
+# Se é uma rota do painel, servir painel/index.html
+RewriteRule ^painel(/.*)?$ dist/painel/index.html [L]
+
+# Tudo mais vai para dist/index.html (SPA)
+RewriteRule ^ dist/index.html [L]
