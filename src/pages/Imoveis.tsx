@@ -123,6 +123,7 @@ export default function ImoveisPage() {
           ativo: true,
           created_at: '',
           creci: row.users_profiles.creci,
+          avatar_url: row.users_profiles.avatar_url,
         } : undefined,
         fotos: (row.imoveis_fotos || []).sort((a: any, b: any) => a.ordem - b.ordem).map((f: any) => ({
           id: f.id, imovel_id: row.id, url: f.url_watermark, url_watermark: f.url_watermark,
