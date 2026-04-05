@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+
 import SEO from '@/components/common/SEO'
 
 export default function ConfirmacaoPage() {
