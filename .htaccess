@@ -1,20 +1,21 @@
 RewriteEngine On
 
-# Servir arquivos estáticos de dist/assets/
+# Arquivos estáticos do site: /assets/* → dist/assets/*
 RewriteRule ^assets/(.*)$ dist/assets/$1 [L]
 
-# Servir arquivos estáticos de dist/painel/
+# Arquivos estáticos do painel: /painel/assets/* → dist/painel/assets/*
 RewriteRule ^painel/assets/(.*)$ dist/painel/assets/$1 [L]
 
-# Servir arquivos diretos do dist (favicon, robots, sitemap, og-image, logo)
-RewriteCond %{REQUEST_URI} \.(png|jpg|ico|svg|xml|txt|css|js)$
-RewriteCond %{DOCUMENT_ROOT}/dist%{REQUEST_URI} -f
-RewriteRule ^(.*)$ dist/$1 [L]
+# Arquivos estáticos na raiz (favicon, robots, sitemap, logo, og-image)
+RewriteCond %{DOCUMENT_ROOT}/dist/%{REQUEST_URI} -f
+RewriteRule ^(.+\..+)$ dist/$1 [L]
 
 # Rotas do painel → dist/painel/index.html
 RewriteRule ^painel(/.*)?$ dist/painel/index.html [L]
 
-# Todas as outras rotas → dist/index.html (SPA)
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^ dist/index.html [L]
+# Se arquivo real existe na raiz, servir
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
+# Todas as outras rotas → index.html (SPA compilado)
+RewriteRule ^ index.html [L]
