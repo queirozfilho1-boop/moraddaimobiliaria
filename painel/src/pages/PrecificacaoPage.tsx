@@ -43,9 +43,12 @@ interface PrecoReferencia {
   }
 }
 
+type Padrao = 'baixo' | 'medio' | 'alto'
+
 interface FormData {
   bairro_id: string
   tipo: string
+  padrao: Padrao
   area: number
   quartos: number
   suites: number
@@ -260,6 +263,7 @@ export default function PrecificacaoPage() {
   const [form, setForm] = useState<FormData>({
     bairro_id: '',
     tipo: '',
+    padrao: 'medio',
     area: 0,
     quartos: 0,
     suites: 0,
@@ -386,7 +390,19 @@ export default function PrecificacaoPage() {
       return
     }
 
-    const precoM2 = matchingRef.preco_m2_medio
+    // Ajustar preço/m² base pelo padrão do imóvel
+    const refMedio = matchingRef.preco_m2_medio
+    const refMin = matchingRef.preco_m2_minimo ?? refMedio * 0.7
+    const refMax = matchingRef.preco_m2_maximo ?? refMedio * 1.3
+
+    let precoM2: number
+    if (form.padrao === 'baixo') {
+      precoM2 = Math.round((refMin + refMedio) / 2) // entre mín e médio
+    } else if (form.padrao === 'alto') {
+      precoM2 = Math.round((refMedio + refMax) / 2) // entre médio e máx
+    } else {
+      precoM2 = refMedio // padrão médio
+    }
     const baseValue = form.area * precoM2
 
     const adjustQuartos =
@@ -749,6 +765,33 @@ export default function PrecificacaoPage() {
                 Dados nao disponiveis para este bairro/tipo.
               </div>
             )}
+
+            {/* Padrão */}
+            <div className="sm:col-span-2">
+              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Padrão do Imóvel
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {([['baixo', 'Baixo Padrão'], ['medio', 'Médio Padrão'], ['alto', 'Alto Padrão']] as const).map(([val, label]) => (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => updateForm('padrao', val)}
+                    className={`rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors ${
+                      form.padrao === val
+                        ? val === 'baixo'
+                          ? 'border-orange-400 bg-orange-50 text-orange-700 dark:border-orange-500 dark:bg-orange-900/30 dark:text-orange-300'
+                          : val === 'alto'
+                            ? 'border-emerald-400 bg-emerald-50 text-emerald-700 dark:border-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-300'
+                            : 'border-blue-400 bg-blue-50 text-blue-700 dark:border-blue-500 dark:bg-blue-900/30 dark:text-blue-300'
+                        : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             {/* Area */}
             <div>
