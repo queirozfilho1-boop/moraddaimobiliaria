@@ -208,7 +208,7 @@ export default function ModuloAulaPage() {
   const [currentAulaId, setCurrentAulaId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [_sidebarOpen, setSidebarOpen] = useState(false)
 
   // Avaliacao state
   const [respostas, setRespostas] = useState<Map<string, number | boolean>>(new Map())
