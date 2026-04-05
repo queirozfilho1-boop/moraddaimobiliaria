@@ -146,11 +146,49 @@ export default function PrecificacaoPage() {
 
   /* ---- Supabase data ---- */
   const [precosRef, setPrecosRef] = useState<PrecoReferencia[]>([])
+  const [todosBairros, setTodosBairros] = useState<{ id: string; nome: string }[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Nova referência
+  const [showNovaRef, setShowNovaRef] = useState(false)
+  const [novaRef, setNovaRef] = useState({ bairro_id: '', tipo: '', medio: 0, minimo: 0, maximo: 0 })
+  const [salvandoRef, setSalvandoRef] = useState(false)
 
   useEffect(() => {
     fetchPrecos()
+    fetchTodosBairros()
   }, [])
+
+  async function fetchTodosBairros() {
+    const { data } = await supabase.from('bairros').select('id, nome').order('nome')
+    setTodosBairros(data || [])
+  }
+
+  async function salvarNovaReferencia() {
+    if (!novaRef.bairro_id || !novaRef.tipo || !novaRef.medio) {
+      toast.error('Preencha bairro, tipo e preço/m² médio')
+      return
+    }
+    setSalvandoRef(true)
+    const { error } = await supabase.from('precos_referencia').insert({
+      bairro_id: novaRef.bairro_id,
+      tipo_imovel: novaRef.tipo,
+      preco_m2_medio: novaRef.medio,
+      preco_m2_minimo: novaRef.minimo || null,
+      preco_m2_maximo: novaRef.maximo || null,
+      fonte: 'manual',
+      observacoes: 'Cadastrado manualmente pelo corretor',
+    })
+    setSalvandoRef(false)
+    if (error) {
+      toast.error('Erro ao salvar: ' + error.message)
+      return
+    }
+    toast.success('Referência cadastrada!')
+    setNovaRef({ bairro_id: '', tipo: '', medio: 0, minimo: 0, maximo: 0 })
+    setShowNovaRef(false)
+    await fetchPrecos()
+  }
 
   async function fetchPrecos() {
     setLoading(true)
@@ -528,6 +566,75 @@ export default function PrecificacaoPage() {
         </div>
       </div>
 
+      {/* Nova Referência */}
+      <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-gray-600 dark:text-gray-300">
+            Faltam dados de um bairro? Cadastre a referência de preço/m².
+          </p>
+          <button
+            onClick={() => setShowNovaRef(!showNovaRef)}
+            className="rounded-lg bg-moradda-gold-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-moradda-gold-600"
+          >
+            {showNovaRef ? 'Fechar' : '+ Nova Referência'}
+          </button>
+        </div>
+        {showNovaRef && (
+          <div className="mt-4 grid gap-3 border-t border-gray-100 pt-4 dark:border-gray-700 sm:grid-cols-6">
+            <div className="sm:col-span-2">
+              <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Bairro</label>
+              <select
+                value={novaRef.bairro_id}
+                onChange={(e) => setNovaRef(p => ({ ...p, bairro_id: e.target.value }))}
+                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+              >
+                <option value="">Selecione o bairro...</option>
+                {todosBairros.map(b => (
+                  <option key={b.id} value={b.id}>{b.nome}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Tipo</label>
+              <select
+                value={novaRef.tipo}
+                onChange={(e) => setNovaRef(p => ({ ...p, tipo: e.target.value }))}
+                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+              >
+                <option value="">Tipo...</option>
+                {Object.entries(tipoLabels).map(([v, l]) => (
+                  <option key={v} value={v}>{l}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">R$/m² Médio</label>
+              <input type="number" value={novaRef.medio || ''} onChange={(e) => setNovaRef(p => ({ ...p, medio: Number(e.target.value) }))}
+                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100" placeholder="4000" />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">R$/m² Mín</label>
+              <input type="number" value={novaRef.minimo || ''} onChange={(e) => setNovaRef(p => ({ ...p, minimo: Number(e.target.value) }))}
+                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100" placeholder="3000" />
+            </div>
+            <div className="flex items-end gap-2">
+              <div className="flex-1">
+                <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">R$/m² Máx</label>
+                <input type="number" value={novaRef.maximo || ''} onChange={(e) => setNovaRef(p => ({ ...p, maximo: Number(e.target.value) }))}
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100" placeholder="5000" />
+              </div>
+              <button
+                onClick={salvarNovaReferencia}
+                disabled={salvandoRef}
+                className="rounded-lg bg-moradda-blue-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-moradda-blue-600 disabled:opacity-50"
+              >
+                {salvandoRef ? '...' : 'Salvar'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Two-column layout */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* LEFT: Form */}
@@ -549,11 +656,14 @@ export default function PrecificacaoPage() {
                 className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 outline-none transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
               >
                 <option value="">Selecione...</option>
-                {bairroOptions.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.nome}
-                  </option>
-                ))}
+                {todosBairros.map((b) => {
+                  const temDados = bairroOptions.some(bo => bo.id === b.id)
+                  return (
+                    <option key={b.id} value={b.id}>
+                      {b.nome}{temDados ? '' : ' (sem dados)'}
+                    </option>
+                  )
+                })}
               </select>
             </div>
 
