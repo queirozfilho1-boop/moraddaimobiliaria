@@ -151,7 +151,7 @@ export default function PrecificacaoPage() {
 
   // Nova referência
   const [showNovaRef, setShowNovaRef] = useState(false)
-  const [novaRef, setNovaRef] = useState({ bairro_id: '', tipo: '', medio: 0, minimo: 0, maximo: 0 })
+  const [novaRef, setNovaRef] = useState({ bairro_id: '', tipo: '', area_construida: 0, area_total: 0, valor: 0 })
   const [salvandoRef, setSalvandoRef] = useState(false)
 
   useEffect(() => {
@@ -165,27 +165,61 @@ export default function PrecificacaoPage() {
   }
 
   async function salvarNovaReferencia() {
-    if (!novaRef.bairro_id || !novaRef.tipo || !novaRef.medio) {
-      toast.error('Preencha bairro, tipo e preço/m² médio')
+    if (!novaRef.bairro_id || !novaRef.tipo || !novaRef.valor || !novaRef.area_construida) {
+      toast.error('Preencha bairro, tipo, área construída e valor')
       return
     }
+    const precoM2 = Math.round(novaRef.valor / novaRef.area_construida)
+    if (precoM2 <= 0) {
+      toast.error('Valor ou área inválidos')
+      return
+    }
+
     setSalvandoRef(true)
-    const { error } = await supabase.from('precos_referencia').insert({
-      bairro_id: novaRef.bairro_id,
-      tipo_imovel: novaRef.tipo,
-      preco_m2_medio: novaRef.medio,
-      preco_m2_minimo: novaRef.minimo || null,
-      preco_m2_maximo: novaRef.maximo || null,
-      fonte: 'manual',
-      observacoes: 'Cadastrado manualmente pelo corretor',
-    })
+
+    // Verificar se já existe referência para esse bairro+tipo
+    const { data: existing } = await supabase
+      .from('precos_referencia')
+      .select('id, preco_m2_medio, preco_m2_minimo, preco_m2_maximo')
+      .eq('bairro_id', novaRef.bairro_id)
+      .eq('tipo_imovel', novaRef.tipo)
+      .limit(1)
+
+    let error
+    if (existing && existing.length > 0) {
+      // Atualizar média com o novo dado
+      const old = existing[0]
+      const novoMedio = Math.round((old.preco_m2_medio + precoM2) / 2)
+      const novoMin = Math.min(old.preco_m2_minimo || precoM2, precoM2)
+      const novoMax = Math.max(old.preco_m2_maximo || precoM2, precoM2)
+      const res = await supabase.from('precos_referencia').update({
+        preco_m2_medio: novoMedio,
+        preco_m2_minimo: novoMin,
+        preco_m2_maximo: novoMax,
+        observacoes: `Atualizado com novo dado: ${novaRef.area_construida}m² por ${formatCurrency(novaRef.valor)} (R$${precoM2}/m²)`,
+      }).eq('id', old.id)
+      error = res.error
+    } else {
+      // Criar novo registro
+      const res = await supabase.from('precos_referencia').insert({
+        bairro_id: novaRef.bairro_id,
+        tipo_imovel: novaRef.tipo,
+        preco_m2_medio: precoM2,
+        preco_m2_minimo: precoM2,
+        preco_m2_maximo: precoM2,
+        fonte: 'manual',
+        observacoes: `Imóvel: ${novaRef.area_construida}m² por ${formatCurrency(novaRef.valor)} (R$${precoM2}/m²)`,
+      })
+      error = res.error
+    }
+
     setSalvandoRef(false)
     if (error) {
       toast.error('Erro ao salvar: ' + error.message)
       return
     }
-    toast.success('Referência cadastrada!')
-    setNovaRef({ bairro_id: '', tipo: '', medio: 0, minimo: 0, maximo: 0 })
+    toast.success(`Referência salva! Preço/m² calculado: R$ ${precoM2.toLocaleString('pt-BR')}`)
+    setNovaRef({ bairro_id: '', tipo: '', area_construida: 0, area_total: 0, valor: 0 })
     setShowNovaRef(false)
     await fetchPrecos()
   }
@@ -580,56 +614,73 @@ export default function PrecificacaoPage() {
           </button>
         </div>
         {showNovaRef && (
-          <div className="mt-4 grid gap-3 border-t border-gray-100 pt-4 dark:border-gray-700 sm:grid-cols-6">
-            <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Bairro</label>
-              <select
-                value={novaRef.bairro_id}
-                onChange={(e) => setNovaRef(p => ({ ...p, bairro_id: e.target.value }))}
-                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
-              >
-                <option value="">Selecione o bairro...</option>
-                {todosBairros.map(b => (
-                  <option key={b.id} value={b.id}>{b.nome}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Tipo</label>
-              <select
-                value={novaRef.tipo}
-                onChange={(e) => setNovaRef(p => ({ ...p, tipo: e.target.value }))}
-                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
-              >
-                <option value="">Tipo...</option>
-                {Object.entries(tipoLabels).map(([v, l]) => (
-                  <option key={v} value={v}>{l}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">R$/m² Médio</label>
-              <input type="number" value={novaRef.medio || ''} onChange={(e) => setNovaRef(p => ({ ...p, medio: Number(e.target.value) }))}
-                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100" placeholder="4000" />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">R$/m² Mín</label>
-              <input type="number" value={novaRef.minimo || ''} onChange={(e) => setNovaRef(p => ({ ...p, minimo: Number(e.target.value) }))}
-                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100" placeholder="3000" />
-            </div>
-            <div className="flex items-end gap-2">
-              <div className="flex-1">
-                <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">R$/m² Máx</label>
-                <input type="number" value={novaRef.maximo || ''} onChange={(e) => setNovaRef(p => ({ ...p, maximo: Number(e.target.value) }))}
-                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100" placeholder="5000" />
+          <div className="mt-4 border-t border-gray-100 pt-4 dark:border-gray-700">
+            <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">
+              Encontrou um imóvel anunciado? Preencha os dados abaixo e o sistema calcula o preço/m² automaticamente.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-5">
+              <div className="sm:col-span-2">
+                <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Bairro</label>
+                <select
+                  value={novaRef.bairro_id}
+                  onChange={(e) => setNovaRef(p => ({ ...p, bairro_id: e.target.value }))}
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                >
+                  <option value="">Selecione o bairro...</option>
+                  {todosBairros.map(b => (
+                    <option key={b.id} value={b.id}>{b.nome}</option>
+                  ))}
+                </select>
               </div>
-              <button
-                onClick={salvarNovaReferencia}
-                disabled={salvandoRef}
-                className="rounded-lg bg-moradda-blue-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-moradda-blue-600 disabled:opacity-50"
-              >
-                {salvandoRef ? '...' : 'Salvar'}
-              </button>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Tipo</label>
+                <select
+                  value={novaRef.tipo}
+                  onChange={(e) => setNovaRef(p => ({ ...p, tipo: e.target.value }))}
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                >
+                  <option value="">Tipo...</option>
+                  {Object.entries(tipoLabels).map(([v, l]) => (
+                    <option key={v} value={v}>{l}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Área Construída (m²)</label>
+                <input type="number" value={novaRef.area_construida || ''} onChange={(e) => setNovaRef(p => ({ ...p, area_construida: Number(e.target.value) }))}
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100" placeholder="120" />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Área Total (m²)</label>
+                <input type="number" value={novaRef.area_total || ''} onChange={(e) => setNovaRef(p => ({ ...p, area_total: Number(e.target.value) }))}
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100" placeholder="250" />
+              </div>
+            </div>
+            <div className="mt-3 grid gap-3 sm:grid-cols-3">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Valor do Imóvel (R$)</label>
+                <input type="number" value={novaRef.valor || ''} onChange={(e) => setNovaRef(p => ({ ...p, valor: Number(e.target.value) }))}
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100" placeholder="450000" />
+              </div>
+              <div className="flex items-end">
+                <div className="w-full rounded-lg bg-moradda-blue-50 px-3 py-2 text-center dark:bg-moradda-blue-900/30">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Preço/m² calculado</p>
+                  <p className="text-lg font-bold text-moradda-blue-600 dark:text-moradda-blue-300">
+                    {novaRef.area_construida > 0 && novaRef.valor > 0
+                      ? `R$ ${Math.round(novaRef.valor / novaRef.area_construida).toLocaleString('pt-BR')}/m²`
+                      : '—'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-end">
+                <button
+                  onClick={salvarNovaReferencia}
+                  disabled={salvandoRef}
+                  className="w-full rounded-lg bg-moradda-blue-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-moradda-blue-600 disabled:opacity-50"
+                >
+                  {salvandoRef ? 'Salvando...' : 'Salvar Referência'}
+                </button>
+              </div>
             </div>
           </div>
         )}
