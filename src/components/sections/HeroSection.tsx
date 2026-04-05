@@ -27,8 +27,6 @@ export default function HeroSection() {
         .select('tipo, finalidade, bairro_id, bairros(id, nome)')
         .eq('status', 'publicado')
 
-      const tipoSet = new Set<string>()
-      const finalidadeSet = new Set<string>()
       const bairroMap = new Map<string, string>()
       const tipoSet = new Set<string>()
       const finalidadeSet = new Set<string>()
