@@ -460,27 +460,48 @@ export default function NovoImovelPage() {
                   placeholder="00000-000"
                   className={inputClass}
                   {...register('cep')}
+                  onBlur={async (e) => {
+                    const cep = e.target.value.replace(/\D/g, '')
+                    if (cep.length === 8) {
+                      try {
+                        const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`)
+                        const data = await res.json()
+                        if (!data.erro) {
+                          setValue('endereco', data.logradouro || '')
+                          setValue('complemento', data.complemento || '')
+                          setValue('cidade', data.localidade || 'Resende')
+                          setValue('estado', data.uf || 'RJ')
+                        }
+                      } catch {}
+                    }
+                  }}
                 />
               </div>
               <div className="sm:col-span-2">
-                <label className={labelClass}>Endereço</label>
+                <label className={labelClass}>
+                  Endereço <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
                   placeholder="Rua, Avenida..."
                   className={inputClass}
                   {...register('endereco')}
                 />
+                <FieldError message={errors.endereco?.message} />
               </div>
             </div>
             <div className="grid gap-4 sm:grid-cols-3">
               <div>
-                <label className={labelClass}>Número</label>
+                <label className={labelClass}>
+                  Número <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
                   placeholder="123"
                   className={inputClass}
                   {...register('numero')}
                 />
+                <FieldError message={errors.numero?.message} />
               </div>
               <div className="sm:col-span-2">
                 <label className={labelClass}>Complemento</label>
