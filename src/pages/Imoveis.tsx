@@ -53,7 +53,7 @@ export default function ImoveisPage() {
       const page = filtros.pagina || 1
       let query = supabase
         .from('imoveis')
-        .select('id, codigo, slug, titulo, descricao, tipo, finalidade, status, preco, quartos, suites, banheiros, vagas_garagem, area_construida, area_total, destaque, corretor_id, bairro_id, bairros(id, nome), users_profiles!corretor_id(id, nome, creci, slug), imoveis_fotos(id, url_watermark, url_thumb, principal, ordem)', { count: 'exact' })
+        .select('id, codigo, slug, titulo, descricao, tipo, finalidade, status, preco, quartos, suites, banheiros, vagas_garagem, area_construida, area_total, destaque, corretor_id, bairro_id, bairros(id, nome), users_profiles!corretor_id(id, nome, creci, slug, avatar_url), imoveis_fotos(id, url_watermark, url_thumb, principal, ordem)', { count: 'exact' })
         .eq('status', 'publicado')
 
       if (filtros.tipo) query = query.eq('tipo', filtros.tipo)

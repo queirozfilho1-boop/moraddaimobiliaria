@@ -42,7 +42,7 @@ export default function ImoveisDestaqueSection() {
         // First fetch featured properties
         const { data: destaques, error: errDestaques } = await supabase
           .from('imoveis')
-          .select('id, codigo, slug, titulo, tipo, finalidade, preco, quartos, suites, banheiros, vagas_garagem, area_construida, destaque, bairros(nome), users_profiles!corretor_id(nome, creci), imoveis_fotos(url_watermark, principal, ordem)')
+          .select('id, codigo, slug, titulo, tipo, finalidade, preco, quartos, suites, banheiros, vagas_garagem, area_construida, destaque, bairros(nome), users_profiles!corretor_id(nome, creci, avatar_url), imoveis_fotos(url_watermark, principal, ordem)')
           .eq('status', 'publicado')
           .eq('destaque', true)
           .order('created_at', { ascending: false })
@@ -57,7 +57,7 @@ export default function ImoveisDestaqueSection() {
           const existingIds = result.map(i => i.id)
           let fillQuery = supabase
             .from('imoveis')
-            .select('id, codigo, slug, titulo, tipo, finalidade, preco, quartos, suites, banheiros, vagas_garagem, area_construida, destaque, bairros(nome), users_profiles!corretor_id(nome, creci), imoveis_fotos(url_watermark, principal, ordem)')
+            .select('id, codigo, slug, titulo, tipo, finalidade, preco, quartos, suites, banheiros, vagas_garagem, area_construida, destaque, bairros(nome), users_profiles!corretor_id(nome, creci, avatar_url), imoveis_fotos(url_watermark, principal, ordem)')
             .eq('status', 'publicado')
           if (existingIds.length > 0) {
             fillQuery = fillQuery.not('id', 'in', `(${existingIds.join(',')})`)

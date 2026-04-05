@@ -28,7 +28,7 @@ export default function FavoritosPage() {
     try {
       const { data, error } = await supabase
         .from('imoveis')
-        .select('id, codigo, slug, titulo, tipo, finalidade, preco, quartos, banheiros, vagas_garagem, area_construida, bairros(nome), users_profiles!corretor_id(nome, creci), imoveis_fotos(url_watermark, principal, ordem)')
+        .select('id, codigo, slug, titulo, tipo, finalidade, preco, quartos, banheiros, vagas_garagem, area_construida, bairros(nome), users_profiles!corretor_id(nome, creci, avatar_url), imoveis_fotos(url_watermark, principal, ordem)')
         .in('id', favoritos)
         .eq('status', 'publicado')
 

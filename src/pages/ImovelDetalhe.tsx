@@ -32,7 +32,7 @@ export default function ImovelDetalhePage() {
       try {
         const { data, error } = await supabase
           .from('imoveis')
-          .select('*, bairros(id, nome, slug), users_profiles!corretor_id(id, nome, email, telefone, whatsapp, creci, slug, bio), imoveis_fotos(id, url, url_watermark, url_thumb, legenda, principal, ordem)')
+          .select('*, bairros(id, nome, slug), users_profiles!corretor_id(id, nome, email, telefone, whatsapp, creci, slug, bio, avatar_url), imoveis_fotos(id, url, url_watermark, url_thumb, legenda, principal, ordem)')
           .eq('slug', slug)
           .eq('status', 'publicado')
           .single()
@@ -417,8 +417,12 @@ export default function ImovelDetalhePage() {
                     Corretor Responsável
                   </h3>
                   <div className="mt-4 flex items-center gap-4">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-moradda-blue-100 font-heading text-xl font-bold text-moradda-blue-600">
-                      {imovel.corretor.nome.charAt(0)}
+                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-moradda-blue-100 font-heading text-xl font-bold text-moradda-blue-600 overflow-hidden">
+                      {(imovel.corretor as any).avatar_url ? (
+                        <img src={(imovel.corretor as any).avatar_url} alt={imovel.corretor.nome} className="h-14 w-14 object-cover" />
+                      ) : (
+                        imovel.corretor.nome.charAt(0)
+                      )}
                     </div>
                     <div>
                       <p className="font-body text-base font-semibold text-moradda-blue-800">

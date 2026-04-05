@@ -46,7 +46,7 @@ export default function BairroPage() {
         // Fetch properties in this bairro
         const { data: imoveisData } = await supabase
           .from('imoveis')
-          .select('id, codigo, slug, titulo, tipo, finalidade, preco, quartos, banheiros, vagas_garagem, area_construida, bairros(nome), users_profiles!corretor_id(nome, creci), imoveis_fotos(url_watermark, principal, ordem)')
+          .select('id, codigo, slug, titulo, tipo, finalidade, preco, quartos, banheiros, vagas_garagem, area_construida, bairros(nome), users_profiles!corretor_id(nome, creci, avatar_url), imoveis_fotos(url_watermark, principal, ordem)')
           .eq('bairro_id', data.id)
           .eq('status', 'publicado')
 
