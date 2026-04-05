@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   GraduationCap,
   BookOpen,
@@ -206,6 +207,7 @@ function StatusIcon({ status }: { status: 'completed' | 'in_progress' | 'availab
 
 export default function AprendizadoPage() {
   const { profile } = useAuth()
+  const navigate = useNavigate()
   const isAdmin = profile?.role === 'superadmin' || profile?.role === 'gestor'
 
   const [view, setView] = useState<'corretor' | 'admin'>('corretor')
@@ -546,7 +548,7 @@ export default function AprendizadoPage() {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation()
-                                  toast.info('Conteúdo em desenvolvimento')
+                                  navigate('/painel/aprendizado/modulo/' + modulo.id)
                                 }}
                                 className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm transition hover:bg-primary-700"
                               >

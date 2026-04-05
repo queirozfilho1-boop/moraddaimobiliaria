@@ -10,6 +10,7 @@ import EditarImovelPage from '@/pages/EditarImovelPage'
 import LeadsPage from '@/pages/LeadsPage'
 import PrecificacaoPage from '@/pages/PrecificacaoPage'
 import AprendizadoPage from '@/pages/AprendizadoPage'
+import ModuloAulaPage from '@/pages/ModuloAulaPage'
 import AcessosPage from '@/pages/AcessosPage'
 
 export default function App() {
@@ -27,6 +28,7 @@ export default function App() {
               <Route path="leads" element={<LeadsPage />} />
               <Route path="precificacao" element={<PrecificacaoPage />} />
               <Route path="aprendizado" element={<AprendizadoPage />} />
+              <Route path="aprendizado/modulo/:moduloId" element={<ModuloAulaPage />} />
               <Route path="acessos" element={<AcessosPage />} />
             </Route>
           </Routes>
