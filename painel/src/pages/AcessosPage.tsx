@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react'
-import { UserCog, UserPlus, Shield, Users, Loader2, Trash2, Check, X } from 'lucide-react'
+import { UserCog, UserPlus, Shield, Users, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
-import { useAuth } from '@/contexts/AuthContext'
 
 interface Usuario {
   id: string
@@ -21,7 +20,6 @@ interface Usuario {
 type Tab = 'corretores' | 'administrativo'
 
 export default function AcessosPage() {
-  const { profile } = useAuth()
   const [tab, setTab] = useState<Tab>('corretores')
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
   const [loading, setLoading] = useState(true)
