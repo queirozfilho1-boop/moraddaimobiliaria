@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef, Fragment } from 'react'
+import { useState, useEffect, useMemo, useCallback, Fragment } from 'react'
 import {
   Search,
   Filter,
@@ -19,15 +19,10 @@ import {
   Send,
   AlertTriangle,
   CheckCircle2,
-  XCircle,
-  Plus,
   X,
   UserPlus,
   Users,
-  UserCheck,
-  UserX,
   PhoneCall,
-  Video,
   RefreshCw,
   ArrowRightLeft,
   CircleDot,
@@ -1085,7 +1080,7 @@ export default function LeadsPage() {
                                   {/* Vertical line */}
                                   <div className="absolute left-[11px] top-0 h-full w-px bg-gray-200 dark:bg-gray-700" />
 
-                                  {historico.map((entry, idx) => (
+                                  {historico.map((entry) => (
                                     <div key={entry.id} className="relative pb-4">
                                       {/* Dot */}
                                       <div className={`absolute -left-6 top-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white dark:border-gray-900 ${

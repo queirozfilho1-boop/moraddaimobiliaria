@@ -58,7 +58,7 @@ interface ImovelRevisao {
 }
 
 interface LeadsPorCorretor {
-  corretor_nome: string
+  nome: string
   total: number
 }
 
@@ -600,7 +600,7 @@ export default function Dashboard() {
                     {leadsPorCorretor.map((c, i) => (
                       <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-700/30">
                         <td className="px-4 py-2.5 text-gray-700 dark:text-gray-300">
-                          {c.corretor_nome}
+                          {c.nome}
                         </td>
                         <td className="px-4 py-2.5 text-right font-semibold text-gray-800 dark:text-gray-200">
                           {c.total}
