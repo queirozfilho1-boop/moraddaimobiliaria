@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Search, ChevronDown } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { TIPOS_IMOVEL, FINALIDADES } from '@/lib/constants'
+import { supabase } from '@/lib/supabase'
 
 const stats = [
   { value: '150+', label: 'Imóveis' },
@@ -13,8 +14,30 @@ const stats = [
 
 export default function HeroSection() {
   const [tipo, setTipo] = useState('')
-  const [localizacao, setLocalizacao] = useState('')
+  const [bairro, setBairro] = useState('')
   const [finalidade, setFinalidade] = useState('')
+  const [bairrosDisponiveis, setBairrosDisponiveis] = useState<{ id: string; nome: string }[]>([])
+
+  useEffect(() => {
+    async function fetchBairros() {
+      const { data } = await supabase
+        .from('imoveis')
+        .select('bairro_id, bairros(id, nome)')
+        .eq('status', 'publicado')
+      if (data) {
+        const map = new Map<string, string>()
+        data.forEach((d: any) => {
+          if (d.bairros && !map.has(d.bairros.id)) {
+            map.set(d.bairros.id, d.bairros.nome)
+          }
+        })
+        setBairrosDisponiveis(
+          Array.from(map, ([id, nome]) => ({ id, nome })).sort((a, b) => a.nome.localeCompare(b.nome))
+        )
+      }
+    }
+    fetchBairros()
+  }, [])
 
   return (
     <section className="relative min-h-screen flex flex-col justify-center overflow-hidden">
@@ -99,16 +122,35 @@ export default function HeroSection() {
                 <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50 pointer-events-none" />
               </div>
 
-              {/* Localização */}
-              <div className="flex-1">
-                <input
-                  type="text"
-                  placeholder="Localização"
-                  value={localizacao}
-                  onChange={(e) => setLocalizacao(e.target.value)}
-                  className="w-full bg-white/10 text-white placeholder-white/50 rounded-xl px-5 py-4 font-body text-sm border border-white/5 focus:outline-none focus:border-moradda-gold-400/50 transition-colors"
-                />
+              {/* Cidade */}
+              <div className="relative flex-1">
+                <select
+                  disabled
+                  className="w-full appearance-none bg-white/10 text-white rounded-xl px-5 py-4 pr-10 font-body text-sm border border-white/5 cursor-default opacity-80"
+                >
+                  <option>Resende - RJ</option>
+                </select>
+                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50 pointer-events-none" />
               </div>
+
+              {/* Bairro */}
+              {bairrosDisponiveis.length > 0 && (
+                <div className="relative flex-1">
+                  <select
+                    value={bairro}
+                    onChange={(e) => setBairro(e.target.value)}
+                    className="w-full appearance-none bg-white/10 text-white rounded-xl px-5 py-4 pr-10 font-body text-sm border border-white/5 focus:outline-none focus:border-moradda-gold-400/50 transition-colors cursor-pointer"
+                  >
+                    <option value="" className="text-gray-900">Bairro</option>
+                    {bairrosDisponiveis.map((b) => (
+                      <option key={b.id} value={b.id} className="text-gray-900">
+                        {b.nome}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50 pointer-events-none" />
+                </div>
+              )}
 
               {/* Finalidade */}
               <div className="relative flex-1">
@@ -131,7 +173,7 @@ export default function HeroSection() {
 
               {/* Search button */}
               <Link
-                to="/imoveis"
+                to={`/imoveis?${tipo ? 'tipo=' + tipo + '&' : ''}${bairro ? 'bairro=' + bairro + '&' : ''}${finalidade ? 'finalidade=' + finalidade : ''}`}
                 className="flex items-center justify-center gap-2 bg-gradient-to-r from-moradda-gold-400 to-moradda-gold-600 text-white font-body font-semibold text-sm px-8 py-4 rounded-xl hover:from-moradda-gold-500 hover:to-moradda-gold-700 transition-all duration-300 shadow-lg shadow-moradda-gold-400/20"
               >
                 <Search className="w-4 h-4" />
