@@ -4,9 +4,6 @@ const LOGO_URL = 'https://mvzjqktgnwjwuinnxxcc.supabase.co/storage/v1/object/pub
 const WATERMARK_OPACITY = 0.20
 const WATERMARK_RATIO = 0.30
 
-/**
- * Converte qualquer imagem (Blob/File) para WebP via Canvas
- */
 function convertToWebP(blob: Blob, quality = 0.85): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const img = new Image()
@@ -19,20 +16,16 @@ function convertToWebP(blob: Blob, quality = 0.85): Promise<Blob> {
       ctx.imageSmoothingEnabled = true
       ctx.imageSmoothingQuality = 'high'
       ctx.drawImage(img, 0, 0)
-      canvas.toBlob(
-        (webpBlob) => resolve(webpBlob!),
-        'image/webp',
-        quality
-      )
+      canvas.toBlob((webpBlob) => {
+        if (webpBlob) resolve(webpBlob)
+        else reject(new Error('WebP conversion failed'))
+      }, 'image/webp', quality)
     }
     img.onerror = reject
     img.src = URL.createObjectURL(blob)
   })
 }
 
-/**
- * Gera thumbnail local via Canvas em WebP
- */
 function generateThumb(img: HTMLImageElement): Promise<Blob> {
   const THUMB_W = 600
   const THUMB_H = 450
@@ -70,9 +63,6 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   })
 }
 
-/**
- * Upload foto + marca d'água via QuickChart + conversão WebP + thumbnail
- */
 export async function uploadFotoComWatermark(
   file: File,
   imovelId: string,
@@ -86,58 +76,85 @@ export async function uploadFotoComWatermark(
   const ext = file.name.split('.').pop() || 'jpg'
 
   try {
-    // 1. Upload original (mantém formato original)
+    // 1. Upload original
     const origPath = `${imovelId}/original/${ts}-${index}.${ext}`
     const { error: uploadError } = await supabase.storage
       .from('imoveis')
       .upload(origPath, file, { contentType: file.type, upsert: true })
-    if (uploadError) throw uploadError
+    if (uploadError) {
+      console.error('Erro upload original:', uploadError)
+      throw uploadError
+    }
 
     const { data: origData } = supabase.storage.from('imoveis').getPublicUrl(origPath)
     const originalUrl = origData.publicUrl
 
-    // 2. Marca d'água via QuickChart
-    const wmApiUrl = `https://quickchart.io/watermark?` +
-      `mainImageUrl=${encodeURIComponent(originalUrl)}` +
-      `&markImageUrl=${encodeURIComponent(LOGO_URL)}` +
-      `&opacity=${WATERMARK_OPACITY}` +
-      `&position=center` +
-      `&markRatio=${WATERMARK_RATIO}`
+    let wmPublicUrl = originalUrl // fallback: usar original se marca d'água falhar
+    let thumbPublicUrl = originalUrl
 
-    const wmResponse = await fetch(wmApiUrl)
-    if (!wmResponse.ok) throw new Error('Erro ao gerar marca d\'água')
-    const wmJpegBlob = await wmResponse.blob()
+    // 2. Tentar marca d'água via QuickChart
+    try {
+      const wmApiUrl = `https://quickchart.io/watermark?` +
+        `mainImageUrl=${encodeURIComponent(originalUrl)}` +
+        `&markImageUrl=${encodeURIComponent(LOGO_URL)}` +
+        `&opacity=${WATERMARK_OPACITY}` +
+        `&position=center` +
+        `&markRatio=${WATERMARK_RATIO}`
 
-    // 3. Converter marca d'água para WebP
-    const wmWebpBlob = await convertToWebP(wmJpegBlob, 0.88)
+      const wmResponse = await fetch(wmApiUrl)
+      if (wmResponse.ok) {
+        const wmJpegBlob = await wmResponse.blob()
+        // Converter para WebP
+        let wmBlob: Blob
+        try {
+          wmBlob = await convertToWebP(wmJpegBlob, 0.88)
+        } catch {
+          wmBlob = wmJpegBlob // fallback: usar JPEG se WebP falhar
+        }
 
-    const wmPath = `${imovelId}/watermark/${ts}-${index}.webp`
-    const { error: wmErr } = await supabase.storage
-      .from('imoveis')
-      .upload(wmPath, wmWebpBlob, { contentType: 'image/webp', upsert: true })
-    if (wmErr) throw wmErr
+        const wmPath = `${imovelId}/watermark/${ts}-${index}.webp`
+        const { error: wmErr } = await supabase.storage
+          .from('imoveis')
+          .upload(wmPath, wmBlob, { contentType: wmBlob.type === 'image/webp' ? 'image/webp' : 'image/jpeg', upsert: true })
 
-    const { data: wmData } = supabase.storage.from('imoveis').getPublicUrl(wmPath)
+        if (!wmErr) {
+          const { data: wmData } = supabase.storage.from('imoveis').getPublicUrl(wmPath)
+          wmPublicUrl = wmData.publicUrl
+        } else {
+          console.warn('Erro upload marca d\'água, usando original:', wmErr)
+        }
+      } else {
+        console.warn('QuickChart falhou, usando foto original sem marca d\'água')
+      }
+    } catch (wmError) {
+      console.warn('Marca d\'água indisponível, usando foto original:', wmError)
+    }
 
-    // 4. Thumbnail em WebP (local, instantâneo)
-    const imgEl = await loadImage(originalUrl)
-    const thumbBlob = await generateThumb(imgEl)
+    // 3. Gerar thumbnail
+    try {
+      const imgEl = await loadImage(originalUrl)
+      const thumbBlob = await generateThumb(imgEl)
 
-    const thumbPath = `${imovelId}/thumb/${ts}-${index}.webp`
-    const { error: thErr } = await supabase.storage
-      .from('imoveis')
-      .upload(thumbPath, thumbBlob, { contentType: 'image/webp', upsert: true })
-    if (thErr) throw thErr
+      const thumbPath = `${imovelId}/thumb/${ts}-${index}.webp`
+      const { error: thErr } = await supabase.storage
+        .from('imoveis')
+        .upload(thumbPath, thumbBlob, { contentType: 'image/webp', upsert: true })
 
-    const { data: thumbData } = supabase.storage.from('imoveis').getPublicUrl(thumbPath)
+      if (!thErr) {
+        const { data: thumbData } = supabase.storage.from('imoveis').getPublicUrl(thumbPath)
+        thumbPublicUrl = thumbData.publicUrl
+      }
+    } catch (thumbError) {
+      console.warn('Erro gerando thumbnail, usando original:', thumbError)
+    }
 
     return {
       url: originalUrl,
-      url_watermark: wmData.publicUrl,
-      url_thumb: thumbData.publicUrl,
+      url_watermark: wmPublicUrl,
+      url_thumb: thumbPublicUrl,
     }
   } catch (err) {
-    console.error(`Erro foto ${index + 1}:`, err)
+    console.error(`Erro fatal foto ${index + 1}:`, err)
     return null
   }
 }
