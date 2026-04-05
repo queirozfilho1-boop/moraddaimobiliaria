@@ -1,4 +1,5 @@
 import { jsPDF } from 'jspdf'
+import assinaturaUrl from '@/assets/assinatura.png'
 
 interface PtamData {
   bairroNome: string
@@ -380,13 +381,22 @@ export function gerarPTAM(data: PtamData) {
   y = 30
   y = sectionHeader(doc, `${data.fotos.length > 0 ? '5' : '4'}. RESPONSABILIDADE TÉCNICA`, y)
 
-  y += 30
+  y += 10
 
-  doc.setDrawColor(DARK)
-  doc.setLineWidth(0.3)
-  doc.line(PAGE_W / 2 - 40, y, PAGE_W / 2 + 40, y)
+  // Assinatura como imagem
+  try {
+    const sigW = 50
+    const sigH = 50
+    doc.addImage(assinaturaUrl, 'PNG', PAGE_W / 2 - sigW / 2, y, sigW, sigH)
+    y += sigH + 2
+  } catch {
+    y += 20
+    doc.setDrawColor(DARK)
+    doc.setLineWidth(0.3)
+    doc.line(PAGE_W / 2 - 40, y, PAGE_W / 2 + 40, y)
+    y += 6
+  }
 
-  y += 6
   doc.setFontSize(10)
   doc.setTextColor(DARK)
   doc.setFont('Helvetica', 'bold')
