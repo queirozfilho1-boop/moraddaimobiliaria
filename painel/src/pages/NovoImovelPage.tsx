@@ -467,10 +467,15 @@ export default function NovoImovelPage() {
                         const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`)
                         const data = await res.json()
                         if (!data.erro) {
-                          setValue('endereco', data.logradouro || '')
-                          setValue('complemento', data.complemento || '')
-                          setValue('cidade', data.localidade || 'Resende')
-                          setValue('estado', data.uf || 'RJ')
+                          if (data.logradouro) setValue('endereco', data.logradouro)
+                          if (data.complemento) setValue('complemento', data.complemento)
+                          if (data.localidade) setValue('cidade', data.localidade)
+                          if (data.uf) setValue('estado', data.uf)
+                          // Tentar encontrar o bairro na lista
+                          if (data.bairro) {
+                            const found = bairros.find(b => b.nome.toLowerCase() === data.bairro.toLowerCase())
+                            if (found) setValue('bairro', found.id)
+                          }
                         }
                       } catch {}
                     }
