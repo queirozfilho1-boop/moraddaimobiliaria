@@ -131,8 +131,8 @@ export default function ImovelCard({ imovel, onFavorite, isFavorito = false }: I
         {imovel.corretor && (
           <div className="mt-4 flex items-center gap-2 border-t border-gray-100 pt-3">
             <div className="flex h-7 w-7 items-center justify-center rounded-full bg-moradda-blue-100 text-xs font-semibold text-moradda-blue-600 overflow-hidden">
-              {(imovel.corretor as any).avatar_url ? (
-                <img src={(imovel.corretor as any).avatar_url} alt="" className="h-7 w-7 object-cover" />
+              {imovel.corretor.avatar_url ? (
+                <img src={imovel.corretor.avatar_url} alt="" className="h-7 w-7 rounded-full object-cover" />
               ) : (
                 imovel.corretor.nome.charAt(0)
               )}

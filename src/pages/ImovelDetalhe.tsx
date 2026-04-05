@@ -116,6 +116,7 @@ export default function ImovelDetalhePage() {
             whatsapp: data.users_profiles.whatsapp,
             creci: data.users_profiles.creci,
             bio: data.users_profiles.bio,
+            avatar_url: data.users_profiles.avatar_url,
             slug: data.users_profiles.slug || '',
             role_id: '',
             ativo: true,
@@ -418,8 +419,8 @@ export default function ImovelDetalhePage() {
                   </h3>
                   <div className="mt-4 flex items-center gap-4">
                     <div className="flex h-14 w-14 items-center justify-center rounded-full bg-moradda-blue-100 font-heading text-xl font-bold text-moradda-blue-600 overflow-hidden">
-                      {(imovel.corretor as any).avatar_url ? (
-                        <img src={(imovel.corretor as any).avatar_url} alt={imovel.corretor.nome} className="h-14 w-14 object-cover" />
+                      {imovel.corretor.avatar_url ? (
+                        <img src={imovel.corretor.avatar_url} alt={imovel.corretor.nome} className="h-14 w-14 rounded-full object-cover" />
                       ) : (
                         imovel.corretor.nome.charAt(0)
                       )}
