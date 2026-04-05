@@ -27,7 +27,7 @@ const navItems: NavItem[] = [
   { label: 'Imoveis', path: '/painel/imoveis', icon: <Building2 size={20} /> },
   { label: 'Leads', path: '/painel/leads', icon: <Users size={20} /> },
   { label: 'Precificacao', path: '/painel/precificacao', icon: <Calculator size={20} /> },
-  { label: 'Corretores', path: '/painel/corretores', icon: <UserCog size={20} />, superadminOnly: true },
+  { label: 'Acessos', path: '/painel/acessos', icon: <UserCog size={20} />, superadminOnly: true },
 ]
 
 const SIDEBAR_KEY = 'moradda_painel_sidebar'

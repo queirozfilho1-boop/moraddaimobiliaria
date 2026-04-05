@@ -9,13 +9,7 @@ import NovoImovelPage from '@/pages/NovoImovelPage'
 import EditarImovelPage from '@/pages/EditarImovelPage'
 import LeadsPage from '@/pages/LeadsPage'
 import PrecificacaoPage from '@/pages/PrecificacaoPage'
-import BlogPage from '@/pages/BlogPage'
-import BairrosPage from '@/pages/BairrosPage'
-import DepoimentosPage from '@/pages/DepoimentosPage'
-import BannersPage from '@/pages/BannersPage'
-import CorretoresPage from '@/pages/CorretoresPage'
-import RelatoriosPage from '@/pages/RelatoriosPage'
-import ConfiguracoesPage from '@/pages/ConfiguracoesPage'
+import AcessosPage from '@/pages/AcessosPage'
 
 export default function App() {
   return (
@@ -31,13 +25,7 @@ export default function App() {
               <Route path="imoveis/:id" element={<EditarImovelPage />} />
               <Route path="leads" element={<LeadsPage />} />
               <Route path="precificacao" element={<PrecificacaoPage />} />
-              <Route path="blog" element={<BlogPage />} />
-              <Route path="bairros" element={<BairrosPage />} />
-              <Route path="depoimentos" element={<DepoimentosPage />} />
-              <Route path="banners" element={<BannersPage />} />
-              <Route path="corretores" element={<CorretoresPage />} />
-              <Route path="relatorios" element={<RelatoriosPage />} />
-              <Route path="configuracoes" element={<ConfiguracoesPage />} />
+              <Route path="acessos" element={<AcessosPage />} />
             </Route>
           </Routes>
         </ThemeProvider>
