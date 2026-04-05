@@ -6,6 +6,7 @@ import {
   Users,
   Calculator,
   UserCog,
+  GraduationCap,
   LogOut,
   ChevronLeft,
   ChevronRight,
@@ -27,6 +28,7 @@ const navItems: NavItem[] = [
   { label: 'Imoveis', path: '/painel/imoveis', icon: <Building2 size={20} /> },
   { label: 'Leads', path: '/painel/leads', icon: <Users size={20} /> },
   { label: 'Precificacao', path: '/painel/precificacao', icon: <Calculator size={20} /> },
+  { label: 'Aprendizado', path: '/painel/aprendizado', icon: <GraduationCap size={20} /> },
   { label: 'Acessos', path: '/painel/acessos', icon: <UserCog size={20} />, superadminOnly: true },
 ]
 
