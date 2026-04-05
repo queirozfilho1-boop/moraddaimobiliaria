@@ -17,44 +17,55 @@ export default function HeroSection() {
   const [bairro, setBairro] = useState('')
   const [finalidade, setFinalidade] = useState('')
   const [bairrosDisponiveis, setBairrosDisponiveis] = useState<{ id: string; nome: string }[]>([])
+  const [tiposDisponiveis, setTiposDisponiveis] = useState<{ value: string; label: string }[]>([])
+  const [finalidadesDisponiveis, setFinalidadesDisponiveis] = useState<{ value: string; label: string }[]>([])
 
   useEffect(() => {
-    async function fetchBairros() {
+    async function fetchFiltros() {
       const { data } = await supabase
         .from('imoveis')
-        .select('bairro_id, bairros(id, nome)')
+        .select('tipo, finalidade, bairro_id, bairros(id, nome)')
         .eq('status', 'publicado')
-      if (data) {
-        const map = new Map<string, string>()
-        data.forEach((d: any) => {
-          if (d.bairros && !map.has(d.bairros.id)) {
-            map.set(d.bairros.id, d.bairros.nome)
-          }
-        })
-        setBairrosDisponiveis(
-          Array.from(map, ([id, nome]) => ({ id, nome })).sort((a, b) => a.nome.localeCompare(b.nome))
-        )
-      }
+      if (!data) return
+
+      // Bairros únicos
+      const bairroMap = new Map<string, string>()
+      const tipoSet = new Set<string>()
+      const finalidadeSet = new Set<string>()
+
+      data.forEach((d: any) => {
+        if (d.bairros && !bairroMap.has(d.bairros.id)) bairroMap.set(d.bairros.id, d.bairros.nome)
+        if (d.tipo) tipoSet.add(d.tipo)
+        if (d.finalidade) finalidadeSet.add(d.finalidade)
+      })
+
+      setBairrosDisponiveis(Array.from(bairroMap, ([id, nome]) => ({ id, nome })).sort((a, b) => a.nome.localeCompare(b.nome)))
+
+      const tipoLabels: Record<string, string> = { casa:'Casa', apartamento:'Apartamento', terreno:'Terreno', comercial:'Comercial', rural:'Rural', cobertura:'Cobertura', kitnet:'Kitnet', sobrado:'Sobrado' }
+      setTiposDisponiveis(Array.from(tipoSet).map(t => ({ value: t, label: tipoLabels[t] || t })).sort((a, b) => a.label.localeCompare(b.label)))
+
+      const finLabels: Record<string, string> = { venda:'Comprar', aluguel:'Alugar', venda_aluguel:'Comprar ou Alugar' }
+      setFinalidadesDisponiveis(Array.from(finalidadeSet).map(f => ({ value: f, label: finLabels[f] || f })))
     }
-    fetchBairros()
+    fetchFiltros()
   }, [])
 
   return (
     <section className="relative min-h-screen flex flex-col justify-center overflow-hidden">
-      {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-moradda-blue-900 via-moradda-blue-800 to-moradda-blue-950" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(27,79,138,0.4),transparent_60%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(212,169,74,0.08),transparent_50%)]" />
+      {/* Video background */}
+      <video
+        autoPlay
+        muted
+        loop
+        playsInline
+        className="absolute inset-0 h-full w-full object-cover"
+        poster=""
+      >
+        <source src="/hero-video.mp4" type="video/mp4" />
+      </video>
 
-      {/* Subtle pattern overlay */}
-      <div
-        className="absolute inset-0 opacity-[0.03]"
-        style={{
-          backgroundImage:
-            'radial-gradient(circle at 1px 1px, white 1px, transparent 0)',
-          backgroundSize: '40px 40px',
-        }}
-      />
+      {/* Dark overlay over video */}
+      <div className="absolute inset-0 bg-gradient-to-b from-moradda-blue-900/80 via-moradda-blue-900/60 to-moradda-blue-900/90" />
 
       {/* Content */}
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-24 flex-1 flex flex-col justify-center">
@@ -113,7 +124,7 @@ export default function HeroSection() {
                   <option value="" className="text-gray-900">
                     Tipo de Imóvel
                   </option>
-                  {TIPOS_IMOVEL.map((t) => (
+                  {tiposDisponiveis.map((t) => (
                     <option key={t.value} value={t.value} className="text-gray-900">
                       {t.label}
                     </option>
@@ -162,7 +173,7 @@ export default function HeroSection() {
                   <option value="" className="text-gray-900">
                     Finalidade
                   </option>
-                  {FINALIDADES.map((f) => (
+                  {finalidadesDisponiveis.map((f) => (
                     <option key={f.value} value={f.value} className="text-gray-900">
                       {f.label}
                     </option>

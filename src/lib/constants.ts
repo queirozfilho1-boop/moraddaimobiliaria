@@ -31,9 +31,9 @@ export const TIPOS_IMOVEL = [
 
 // ── Listing Purpose ─────────────────────────────────────────────────────────
 export const FINALIDADES = [
-  { value: 'venda', label: 'Venda' },
-  { value: 'aluguel', label: 'Aluguel' },
-  { value: 'venda_aluguel', label: 'Venda e Aluguel' },
+  { value: 'venda', label: 'Comprar' },
+  { value: 'aluguel', label: 'Alugar' },
+  { value: 'venda_aluguel', label: 'Comprar ou Alugar' },
 ] as const
 
 // ── Property Status ─────────────────────────────────────────────────────────
