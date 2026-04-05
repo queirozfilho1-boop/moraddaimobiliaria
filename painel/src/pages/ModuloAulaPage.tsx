@@ -123,7 +123,7 @@ function parseMarkdown(text: string): string {
     if (line.startsWith('> ')) {
       const content = escapeHtml(line.slice(2))
       if (!inBlockquote) {
-        html += '<blockquote class="border-l-4 border-primary-500 bg-primary-50 dark:bg-primary-900/20 pl-4 py-3 my-4 text-gray-700 dark:text-gray-300 rounded-r-lg">'
+        html += '<blockquote class="border-l-4 border-moradda-blue-500 bg-moradda-blue-50 dark:bg-moradda-blue-900/20 pl-4 py-3 my-4 text-gray-700 dark:text-gray-300 rounded-r-lg">'
         inBlockquote = true
       }
       html += `<p>${applyInline(content)}</p>`
@@ -531,7 +531,7 @@ export default function ModuloAulaPage() {
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-moradda-blue-600" />
       </div>
     )
   }
@@ -543,7 +543,7 @@ export default function ModuloAulaPage() {
         <p className="text-gray-500 dark:text-gray-400">Modulo nao encontrado ou sem aulas.</p>
         <button
           onClick={() => navigate('/painel/aprendizado')}
-          className="text-primary-600 hover:underline"
+          className="text-moradda-blue-600 hover:underline"
         >
           Voltar ao Aprendizado
         </button>
@@ -575,7 +575,7 @@ export default function ModuloAulaPage() {
               <div className="flex-1">
                 <div className="h-2.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
                   <div
-                    className="h-full rounded-full bg-primary-600 transition-all duration-500"
+                    className="h-full rounded-full bg-moradda-blue-600 transition-all duration-500"
                     style={{ width: `${progressPercent}%` }}
                   />
                 </div>
@@ -601,7 +601,7 @@ export default function ModuloAulaPage() {
               onClick={() => { setCurrentAulaId(aula.id); setSidebarOpen(false) }}
               className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-xs font-medium transition ${
                 aula.id === currentAulaId
-                  ? 'bg-primary-600 text-white shadow-md'
+                  ? 'bg-moradda-blue-600 text-white shadow-md'
                   : status === 'done'
                     ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                     : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
@@ -630,7 +630,7 @@ export default function ModuloAulaPage() {
                   onClick={() => setCurrentAulaId(aula.id)}
                   className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition ${
                     isCurrent
-                      ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
+                      ? 'bg-moradda-blue-50 text-moradda-blue-700 dark:bg-moradda-blue-900/30 dark:text-moradda-blue-300'
                       : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700/50'
                   }`}
                 >
@@ -639,7 +639,7 @@ export default function ModuloAulaPage() {
                       status === 'done'
                         ? 'bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400'
                         : isCurrent
-                          ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-400'
+                          ? 'bg-moradda-blue-100 text-moradda-blue-600 dark:bg-moradda-blue-900/40 dark:text-moradda-blue-400'
                           : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
                     }`}
                   >
@@ -672,7 +672,7 @@ export default function ModuloAulaPage() {
             <div className="rounded-2xl bg-white p-6 shadow-sm dark:bg-gray-800 sm:p-8">
               {/* Aula header */}
               <div className="mb-6 flex items-center gap-3 border-b border-gray-100 pb-4 dark:border-gray-700">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-moradda-blue-100 text-moradda-blue-600 dark:bg-moradda-blue-900/30 dark:text-moradda-blue-400">
                   {getAulaIcon(currentAula.tipo)}
                 </div>
                 <div>
@@ -719,7 +719,7 @@ export default function ModuloAulaPage() {
                   {isCurrentAulaConcluida && hasNextAula && (
                     <button
                       onClick={goToNextAula}
-                      className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-700"
+                      className="inline-flex items-center gap-2 rounded-xl bg-moradda-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-moradda-blue-700"
                     >
                       Proxima aula
                       <ArrowRight className="h-4 w-4" />
@@ -783,7 +783,7 @@ export default function ModuloAulaPage() {
                                             ? 'border-red-400 bg-red-100 dark:border-red-600 dark:bg-red-900/30'
                                             : 'border-gray-200 dark:border-gray-600'
                                         : selected
-                                          ? 'border-primary-400 bg-primary-50 dark:border-primary-600 dark:bg-primary-900/20'
+                                          ? 'border-moradda-blue-400 bg-moradda-blue-50 dark:border-moradda-blue-600 dark:bg-moradda-blue-900/20'
                                           : 'border-gray-200 hover:border-gray-300 dark:border-gray-600 dark:hover:border-gray-500'
                                     }`}
                                   >
@@ -797,7 +797,7 @@ export default function ModuloAulaPage() {
                                         newR.set(q.id, optIdx)
                                         setRespostas(newR)
                                       }}
-                                      className="h-4 w-4 text-primary-600 accent-primary-600"
+                                      className="h-4 w-4 text-moradda-blue-600 accent-moradda-blue-600"
                                     />
                                     <span className="text-sm text-gray-700 dark:text-gray-300">
                                       {opcao}
@@ -839,7 +839,7 @@ export default function ModuloAulaPage() {
                                             ? 'border-red-400 bg-red-100 text-red-700 dark:border-red-600 dark:bg-red-900/30 dark:text-red-400'
                                             : 'border-gray-200 text-gray-600 dark:border-gray-600 dark:text-gray-400'
                                         : selected
-                                          ? 'border-primary-400 bg-primary-50 text-primary-700 dark:border-primary-600 dark:bg-primary-900/20 dark:text-primary-300'
+                                          ? 'border-moradda-blue-400 bg-moradda-blue-50 text-moradda-blue-700 dark:border-moradda-blue-600 dark:bg-moradda-blue-900/20 dark:text-moradda-blue-300'
                                           : 'border-gray-200 text-gray-600 hover:border-gray-300 dark:border-gray-600 dark:text-gray-400 dark:hover:border-gray-500'
                                     }`}
                                   >
@@ -894,7 +894,7 @@ export default function ModuloAulaPage() {
                           {hasNextAula && (
                             <button
                               onClick={goToNextAula}
-                              className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-700"
+                              className="inline-flex items-center gap-2 rounded-xl bg-moradda-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-moradda-blue-700"
                             >
                               Proxima aula
                               <ArrowRight className="h-4 w-4" />
@@ -924,7 +924,7 @@ export default function ModuloAulaPage() {
                       <button
                         onClick={handleSubmitAvaliacao}
                         disabled={saving || respostas.size < currentAula.questoes.length}
-                        className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-700 disabled:opacity-60"
+                        className="inline-flex items-center gap-2 rounded-xl bg-moradda-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-moradda-blue-700 disabled:opacity-60"
                       >
                         {saving ? (
                           <Loader2 className="h-4 w-4 animate-spin" />

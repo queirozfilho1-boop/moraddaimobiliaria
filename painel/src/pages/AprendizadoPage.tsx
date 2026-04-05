@@ -369,7 +369,7 @@ export default function AprendizadoPage() {
   if (loading) {
     return (
       <div className="flex h-96 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-moradda-blue-600" />
       </div>
     )
   }
@@ -384,7 +384,7 @@ export default function AprendizadoPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-800 dark:text-gray-100">
-            <GraduationCap className="h-7 w-7 text-primary-600" />
+            <GraduationCap className="h-7 w-7 text-moradda-blue-600" />
             Aprendizado
           </h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -467,7 +467,7 @@ export default function AprendizadoPage() {
                     onClick={() => setExpandedTrilha(isExpanded ? null : trilha.id)}
                     className="flex w-full items-center gap-4 p-5 text-left transition hover:bg-gray-50 dark:hover:bg-gray-700/50"
                   >
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-400">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-moradda-blue-100 text-moradda-blue-600 dark:bg-moradda-blue-900/40 dark:text-moradda-blue-400">
                       {getIcon(trilha.icone)}
                     </div>
                     <div className="min-w-0 flex-1">
@@ -487,7 +487,7 @@ export default function AprendizadoPage() {
                       <div className="mt-2 flex items-center gap-3">
                         <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
                           <div
-                            className="h-full rounded-full bg-primary-500 transition-all duration-500"
+                            className="h-full rounded-full bg-moradda-blue-500 transition-all duration-500"
                             style={{ width: `${trilhaPct}%` }}
                           />
                         </div>
@@ -550,7 +550,7 @@ export default function AprendizadoPage() {
                                   e.stopPropagation()
                                   navigate('/painel/aprendizado/modulo/' + modulo.id)
                                 }}
-                                className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm transition hover:bg-primary-700"
+                                className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-moradda-blue-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm transition hover:bg-moradda-blue-700"
                               >
                                 {status === 'completed' ? (
                                   <>Revisar <ArrowRight className="h-3 w-3" /></>
@@ -587,7 +587,7 @@ export default function AprendizadoPage() {
         <div className="space-y-6">
           {loadingAdmin ? (
             <div className="flex h-48 items-center justify-center">
-              <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
+              <Loader2 className="h-8 w-8 animate-spin text-moradda-blue-600" />
             </div>
           ) : (
             <>
@@ -691,7 +691,7 @@ export default function AprendizadoPage() {
                           >
                             <td className="px-6 py-3">
                               <div className="flex items-center gap-3">
-                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100 text-xs font-bold text-primary-600 dark:bg-primary-900/40 dark:text-primary-400">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-moradda-blue-100 text-xs font-bold text-moradda-blue-600 dark:bg-moradda-blue-900/40 dark:text-moradda-blue-400">
                                   {corretor.nome.charAt(0).toUpperCase()}
                                 </div>
                                 <div>
@@ -727,7 +727,7 @@ export default function AprendizadoPage() {
                                   e.stopPropagation()
                                   setSelectedCorretor(isSelected ? null : corretor.id)
                                 }}
-                                className="text-xs font-medium text-primary-600 hover:underline dark:text-primary-400"
+                                className="text-xs font-medium text-moradda-blue-600 hover:underline dark:text-moradda-blue-400"
                               >
                                 {isSelected ? 'Fechar' : 'Detalhes'}
                               </button>
@@ -766,7 +766,7 @@ export default function AprendizadoPage() {
 
                           return (
                             <div key={trilha.id} className="flex items-center gap-3">
-                              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-400">
+                              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-moradda-blue-100 text-moradda-blue-600 dark:bg-moradda-blue-900/40 dark:text-moradda-blue-400">
                                 {getIcon(trilha.icone)}
                               </div>
                               <div className="min-w-0 flex-1">
@@ -780,7 +780,7 @@ export default function AprendizadoPage() {
                                 </div>
                                 <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
                                   <div
-                                    className="h-full rounded-full bg-primary-500 transition-all"
+                                    className="h-full rounded-full bg-moradda-blue-500 transition-all"
                                     style={{ width: `${pct}%` }}
                                   />
                                 </div>
