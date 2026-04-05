@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Search, ChevronDown } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { TIPOS_IMOVEL, FINALIDADES } from '@/lib/constants'
 import { supabase } from '@/lib/supabase'
 
 const stats = [
