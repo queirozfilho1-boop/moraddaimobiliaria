@@ -336,10 +336,8 @@ export function gerarPTAM(data: PtamData) {
   doc.setFont('Helvetica', 'normal')
 
   const refs = [
-    'Dados coletados de 127 imóveis anunciados em 8 imobiliárias da região de Resende/RJ:',
-    '',
-    '• Marcelino Imóveis  • Lobão Imóveis  • Meta Imóveis  • Roberta Imóveis',
-    '• Edilena Imóveis  • Fase 4  • Ação Consultoria  • MGF Imóveis',
+    'Dados coletados a partir de pesquisa de mercado na região de Resende/RJ,',
+    'com base em imóveis anunciados em portais imobiliários e análise de mercado local.',
     '',
     'Período de coleta: Abril de 2026',
   ]

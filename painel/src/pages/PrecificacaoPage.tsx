@@ -204,6 +204,19 @@ export default function PrecificacaoPage() {
     precoM2Max: 0,
   })
   const [savingEdit, setSavingEdit] = useState(false)
+  const [historico, setHistorico] = useState<{ id: string; bairro_nome: string; tipo_imovel: string; area: number; valor_medio: number; confianca: string; corretor_nome: string; created_at: string }[]>([])
+
+  useEffect(() => { fetchHistorico() }, [])
+
+  async function fetchHistorico() {
+    const { data } = await supabase
+      .from('ptam_historico')
+      .select('id, bairro_nome, tipo_imovel, area, valor_medio, confianca, corretor_nome, created_at')
+      .order('created_at', { ascending: false })
+      .limit(20)
+    setHistorico(data || [])
+  }
+
   const [fotosPreview, setFotosPreview] = useState<{ file: File; preview: string }[]>([])
   const [fotosBase64, setFotosBase64] = useState<string[]>([])
 
@@ -377,7 +390,7 @@ export default function PrecificacaoPage() {
     navigate('/painel/imoveis/novo', { state: { preco: resultado.avgValue } })
   }
 
-  function exportarRelatorio() {
+  async function exportarRelatorio() {
     if (!resultado || !form.bairro_id || !form.tipo) {
       toast.error('Calcule a estimativa antes de gerar o PTAM.')
       return
@@ -402,6 +415,26 @@ export default function PrecificacaoPage() {
       adjustments: resultado.adjustments,
       fotos: fotosBase64,
     })
+
+    // Salvar no histórico
+    await supabase.from('ptam_historico').insert({
+      bairro_nome: selectedBairroNome,
+      tipo_imovel: form.tipo,
+      area: form.area,
+      quartos: form.quartos,
+      suites: form.suites,
+      vagas: form.vagas,
+      idade: form.idade,
+      extras: form.extras,
+      valor_minimo: resultado.minValue,
+      valor_maximo: resultado.maxValue,
+      valor_medio: resultado.avgValue,
+      preco_m2: resultado.pricePerM2,
+      confianca: resultado.confidence,
+      corretor_id: profile?.id || null,
+      corretor_nome: profile?.nome || null,
+    })
+    fetchHistorico()
     toast.success('PTAM gerado com sucesso!')
   }
 
@@ -994,6 +1027,55 @@ export default function PrecificacaoPage() {
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Histórico de PTAMs */}
+      {historico.length > 0 && (
+        <div className="mt-8">
+          <h2 className="mb-4 text-lg font-bold text-gray-800 dark:text-gray-100">
+            Histórico de Pareceres (PTAM)
+          </h2>
+          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50">
+                    <th className="px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Data</th>
+                    <th className="px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Bairro</th>
+                    <th className="px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Tipo</th>
+                    <th className="px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Área</th>
+                    <th className="px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Valor Estimado</th>
+                    <th className="px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Confiança</th>
+                    <th className="px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Corretor</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                  {historico.map((h) => (
+                    <tr key={h.id} className="transition hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                      <td className="whitespace-nowrap px-4 py-3 text-gray-600 dark:text-gray-300">
+                        {new Date(h.created_at).toLocaleDateString('pt-BR')}
+                      </td>
+                      <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-100">{h.bairro_nome}</td>
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{tipoLabels[h.tipo_imovel] || h.tipo_imovel}</td>
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{h.area} m²</td>
+                      <td className="px-4 py-3 font-semibold text-gray-800 dark:text-gray-100">{formatCurrency(h.valor_medio)}</td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                          h.confianca === 'alta' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' :
+                          h.confianca === 'baixa' ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' :
+                          'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300'
+                        }`}>
+                          {h.confianca === 'alta' ? 'Alta' : h.confianca === 'baixa' ? 'Baixa' : 'Média'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{h.corretor_nome || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
