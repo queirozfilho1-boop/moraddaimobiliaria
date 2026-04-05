@@ -38,8 +38,8 @@ const imovelSchema = z.object({
   finalidade: z.enum(['venda', 'aluguel', 'venda_aluguel']),
 
   cep: z.string().optional(),
-  endereco: z.string().optional(),
-  numero: z.string().optional(),
+  endereco: z.string().min(3, 'Endereço é obrigatório'),
+  numero: z.string().min(1, 'Número é obrigatório'),
   complemento: z.string().optional(),
   bairro: z.string().min(1, 'Bairro é obrigatório'),
   cidade: z.string().default('Resende'),

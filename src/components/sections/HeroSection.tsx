@@ -21,30 +21,42 @@ export default function HeroSection() {
 
   useEffect(() => {
     async function fetchFiltros() {
+      // Buscar todos os bairros da cidade
+      const { data: bairrosData } = await supabase
+        .from('bairros')
+        .select('id, nome')
+        .eq('publicado', true)
+        .order('nome')
+      setBairrosDisponiveis(bairrosData || [])
+
+      // Buscar tipos e finalidades dos imóveis publicados
       const { data } = await supabase
         .from('imoveis')
-        .select('tipo, finalidade, bairro_id, bairros(id, nome)')
+        .select('tipo, finalidade')
         .eq('status', 'publicado')
-      if (!data) return
 
-      // Bairros únicos
-      const bairroMap = new Map<string, string>()
       const tipoSet = new Set<string>()
       const finalidadeSet = new Set<string>()
-
-      data.forEach((d: any) => {
-        if (d.bairros && !bairroMap.has(d.bairros.id)) bairroMap.set(d.bairros.id, d.bairros.nome)
-        if (d.tipo) tipoSet.add(d.tipo)
-        if (d.finalidade) finalidadeSet.add(d.finalidade)
-      })
-
-      setBairrosDisponiveis(Array.from(bairroMap, ([id, nome]) => ({ id, nome })).sort((a, b) => a.nome.localeCompare(b.nome)))
+      if (data) {
+        data.forEach((d: any) => {
+          if (d.tipo) tipoSet.add(d.tipo)
+          if (d.finalidade) finalidadeSet.add(d.finalidade)
+        })
+      }
 
       const tipoLabels: Record<string, string> = { casa:'Casa', apartamento:'Apartamento', terreno:'Terreno', comercial:'Comercial', rural:'Rural', cobertura:'Cobertura', kitnet:'Kitnet', sobrado:'Sobrado' }
-      setTiposDisponiveis(Array.from(tipoSet).map(t => ({ value: t, label: tipoLabels[t] || t })).sort((a, b) => a.label.localeCompare(b.label)))
+      if (tipoSet.size > 0) {
+        setTiposDisponiveis(Array.from(tipoSet).map(t => ({ value: t, label: tipoLabels[t] || t })).sort((a, b) => a.label.localeCompare(b.label)))
+      } else {
+        setTiposDisponiveis(Object.entries(tipoLabels).map(([v, l]) => ({ value: v, label: l })))
+      }
 
       const finLabels: Record<string, string> = { venda:'Comprar', aluguel:'Alugar', venda_aluguel:'Comprar ou Alugar' }
-      setFinalidadesDisponiveis(Array.from(finalidadeSet).map(f => ({ value: f, label: finLabels[f] || f })))
+      if (finalidadeSet.size > 0) {
+        setFinalidadesDisponiveis(Array.from(finalidadeSet).map(f => ({ value: f, label: finLabels[f] || f })))
+      } else {
+        setFinalidadesDisponiveis(Object.entries(finLabels).map(([v, l]) => ({ value: v, label: l })))
+      }
     }
     fetchFiltros()
   }, [])
@@ -58,7 +70,7 @@ export default function HeroSection() {
         loop
         playsInline
         className="absolute inset-0 h-full w-full object-cover"
-        poster=""
+        ref={(el) => { if (el) el.playbackRate = 0.75 }}
       >
         <source src="/hero-video.mp4" type="video/mp4" />
       </video>
@@ -144,7 +156,7 @@ export default function HeroSection() {
               </div>
 
               {/* Bairro */}
-              {bairrosDisponiveis.length > 0 && (
+              {(
                 <div className="relative flex-1">
                   <select
                     value={bairro}

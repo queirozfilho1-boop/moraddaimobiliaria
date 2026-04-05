@@ -326,7 +326,7 @@ export default function ImovelDetalhePage() {
                     <div className="mt-2 flex items-center gap-1.5 text-gray-500">
                       <MapPin className="h-4 w-4" />
                       <span className="font-body text-sm">
-                        {imovel.endereco}{imovel.numero ? `, ${imovel.numero}` : ''} — {imovel.bairro?.nome}, {imovel.cidade}/{imovel.estado}
+                        {imovel.bairro?.nome}, {imovel.cidade}/{imovel.estado}
                       </span>
                     </div>
                   </div>
