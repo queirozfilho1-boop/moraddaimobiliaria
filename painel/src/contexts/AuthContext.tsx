@@ -21,6 +21,7 @@ export interface UserProfile {
   telefone?: string | null
   whatsapp?: string | null
   creci?: string | null
+  bio?: string | null
   slug: string
   ativo: boolean
 }
@@ -32,6 +33,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
   hasAccess: (requiredRole: UserRole) => boolean
+  refreshProfile: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -49,6 +51,7 @@ const DEV_MOCK_PROFILE: UserProfile = {
   telefone: null,
   whatsapp: null,
   creci: null,
+  bio: null,
   slug: 'admin-dev',
   ativo: true,
 }
@@ -65,6 +68,7 @@ async function fetchProfile(userId: string): Promise<UserProfile | null> {
       telefone,
       whatsapp,
       creci,
+      bio,
       slug,
       ativo,
       role_id,
@@ -88,6 +92,7 @@ async function fetchProfile(userId: string): Promise<UserProfile | null> {
     telefone: data.telefone,
     whatsapp: data.whatsapp,
     creci: data.creci,
+    bio: data.bio,
     slug: data.slug,
     ativo: data.ativo,
   }
@@ -162,6 +167,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(null)
   }
 
+  async function refreshProfile() {
+    const currentUser = user
+    if (currentUser) {
+      const p = await fetchProfile(currentUser.id)
+      if (p) setProfile(p)
+    }
+  }
+
   function hasAccess(requiredRole: UserRole): boolean {
     if (!profile) return false
     if (profile.role === 'superadmin') return true
@@ -171,7 +184,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, profile, loading, signIn, signOut, hasAccess }}
+      value={{ user, profile, loading, signIn, signOut, hasAccess, refreshProfile }}
     >
       {children}
     </AuthContext.Provider>

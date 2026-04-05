@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { NavLink, useLocation } from 'react-router-dom'
+import { NavLink, Link, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard,
   Building2,
@@ -11,6 +11,7 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
+  Pencil,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import logoImg from '@/assets/logo.png'
@@ -125,18 +126,30 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
       {/* User profile section */}
       <div className="border-t border-white/10 p-4">
         <div className={`flex items-center gap-3 ${collapsed ? 'justify-center' : ''}`}>
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-moradda-gold-400 text-sm font-bold text-moradda-blue-900">
-            {profile?.nome?.charAt(0)?.toUpperCase() || 'U'}
-          </div>
+          <Link
+            to="/painel/perfil"
+            className="group relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-moradda-gold-400 text-sm font-bold text-moradda-blue-900 transition hover:ring-2 hover:ring-moradda-gold-400/50"
+            title="Editar perfil"
+          >
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} alt="" className="h-9 w-9 rounded-full object-cover" />
+            ) : (
+              profile?.nome?.charAt(0)?.toUpperCase() || 'U'
+            )}
+            <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-white/90 text-moradda-blue-900 opacity-0 shadow transition group-hover:opacity-100">
+              <Pencil size={10} />
+            </span>
+          </Link>
           {!collapsed && (
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-white">
+            <Link to="/painel/perfil" className="min-w-0 flex-1 group" title="Editar perfil">
+              <p className="truncate text-sm font-medium text-white group-hover:text-moradda-gold-400 transition">
                 {profile?.nome || 'Usuario'}
               </p>
-              <span className="inline-block rounded bg-moradda-gold-400/20 px-1.5 py-0.5 text-xs text-moradda-gold-400">
-                {profile?.role === 'superadmin' ? 'Admin' : 'Corretor'}
+              <span className="inline-flex items-center gap-1 text-xs text-white/50 group-hover:text-moradda-gold-400/70 transition">
+                <Pencil size={10} />
+                Editar perfil
               </span>
-            </div>
+            </Link>
           )}
           {!collapsed && (
             <button
