@@ -247,20 +247,26 @@ export default function NovoImovelPage() {
   }
 
   async function uploadFotos(imovelId: string) {
-    // Processa todas as fotos em paralelo para máxima velocidade
-    await Promise.all(fotos.map(async (foto, i) => {
-      const result = await uploadFotoComWatermark(foto.file, imovelId, i)
-      if (result) {
-        await supabase.from('imoveis_fotos').insert({
-          imovel_id: imovelId,
-          url: result.url,
-          url_watermark: result.url_watermark,
-          url_thumb: result.url_thumb,
-          principal: foto.principal,
-          ordem: i,
-        })
+    // Processa fotos uma por uma para evitar perda por erro
+    for (let i = 0; i < fotos.length; i++) {
+      try {
+        const foto = fotos[i]
+        const result = await uploadFotoComWatermark(foto.file, imovelId, i)
+        if (result) {
+          await supabase.from('imoveis_fotos').insert({
+            imovel_id: imovelId,
+            url: result.url,
+            url_watermark: result.url_watermark,
+            url_thumb: result.url_thumb,
+            principal: foto.principal,
+            ordem: i,
+          })
+        }
+      } catch (err) {
+        console.error(`Erro na foto ${i + 1}:`, err)
+        // Continua com as próximas fotos
       }
-    }))
+    }
   }
 
   async function insertImovel(data: ImovelFormData, status: string) {
