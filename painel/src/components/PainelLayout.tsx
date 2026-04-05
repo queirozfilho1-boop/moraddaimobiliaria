@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
-import { Navigate, Outlet, useLocation } from 'react-router-dom'
-import { Menu, Moon, Sun, Bell } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Link, Navigate, Outlet, useLocation } from 'react-router-dom'
+import { Menu, Moon, Sun, Bell, Check, CheckCheck } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useNotificacoes } from '@/hooks/useNotificacoes'
 import Sidebar from '@/components/Sidebar'
 
 const pageTitles: Record<string, string> = {
@@ -20,11 +21,27 @@ const pageTitles: Record<string, string> = {
   '/painel/configuracoes': 'Configuracoes',
 }
 
+function timeAgoShort(dateStr: string): string {
+  const now = new Date()
+  const date = new Date(dateStr)
+  const diffMs = now.getTime() - date.getTime()
+  const diffMin = Math.floor(diffMs / 60000)
+  if (diffMin < 1) return 'agora'
+  if (diffMin < 60) return `${diffMin}min`
+  const diffH = Math.floor(diffMin / 60)
+  if (diffH < 24) return `${diffH}h`
+  const diffD = Math.floor(diffH / 24)
+  return `${diffD}d`
+}
+
 export default function PainelLayout() {
   const { user, loading } = useAuth()
   const { theme, toggleTheme } = useTheme()
+  const { notificacoes, naoLidas, marcarLida, marcarTodasLidas } = useNotificacoes()
   const location = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [notifOpen, setNotifOpen] = useState(false)
+  const notifRef = useRef<HTMLDivElement>(null)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('moradda_painel_sidebar') === 'collapsed'
@@ -53,6 +70,22 @@ export default function PainelLayout() {
       clearInterval(interval)
     }
   }, [])
+
+  // Close notification dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setNotifOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  // Close notification dropdown on route change
+  useEffect(() => {
+    setNotifOpen(false)
+  }, [location.pathname])
 
   if (loading) {
     return (
@@ -109,13 +142,91 @@ export default function PainelLayout() {
             </button>
 
             {/* Notification bell */}
-            <button
-              className="relative rounded-lg p-2 text-gray-500 transition hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
-              aria-label="Notificacoes"
-            >
-              <Bell size={20} />
-              <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500" />
-            </button>
+            <div ref={notifRef} className="relative">
+              <button
+                onClick={() => setNotifOpen((prev) => !prev)}
+                className="relative rounded-lg p-2 text-gray-500 transition hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+                aria-label="Notificacoes"
+              >
+                <Bell size={20} />
+                {naoLidas > 0 && (
+                  <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                    {naoLidas > 9 ? '9+' : naoLidas}
+                  </span>
+                )}
+              </button>
+
+              {/* Notification dropdown */}
+              {notifOpen && (
+                <div className="absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800 sm:w-96">
+                  <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3 dark:border-gray-700">
+                    <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+                      Notificacoes
+                    </h4>
+                    {naoLidas > 0 && (
+                      <button
+                        onClick={() => marcarTodasLidas()}
+                        className="flex items-center gap-1 text-xs text-moradda-blue-500 transition hover:text-moradda-blue-600"
+                      >
+                        <CheckCheck size={14} />
+                        Marcar todas como lidas
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="max-h-80 overflow-y-auto">
+                    {notificacoes.length === 0 ? (
+                      <p className="px-4 py-8 text-center text-sm text-gray-400 dark:text-gray-500">
+                        Nenhuma notificacao.
+                      </p>
+                    ) : (
+                      notificacoes.slice(0, 15).map((n) => (
+                        <div
+                          key={n.id}
+                          className={`flex items-start gap-3 border-b border-gray-50 px-4 py-3 transition last:border-0 hover:bg-gray-50 dark:border-gray-700/50 dark:hover:bg-gray-700/40 ${
+                            !n.lida ? 'bg-moradda-blue-50/50 dark:bg-moradda-blue-900/10' : ''
+                          }`}
+                        >
+                          <div className="min-w-0 flex-1">
+                            {n.link ? (
+                              <Link
+                                to={n.link}
+                                className="text-sm font-medium text-gray-800 hover:text-moradda-blue-500 dark:text-gray-200"
+                                onClick={() => {
+                                  if (!n.lida) marcarLida(n.id)
+                                  setNotifOpen(false)
+                                }}
+                              >
+                                {n.titulo}
+                              </Link>
+                            ) : (
+                              <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                                {n.titulo}
+                              </p>
+                            )}
+                            <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                              {n.mensagem}
+                            </p>
+                            <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
+                              {timeAgoShort(n.created_at)}
+                            </p>
+                          </div>
+                          {!n.lida && (
+                            <button
+                              onClick={() => marcarLida(n.id)}
+                              className="mt-1 shrink-0 rounded p-1 text-gray-400 transition hover:bg-gray-200 hover:text-gray-600 dark:hover:bg-gray-600 dark:hover:text-gray-300"
+                              title="Marcar como lida"
+                            >
+                              <Check size={14} />
+                            </button>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useForm, type SubmitHandler } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { ArrowLeft, Upload, ImageIcon, Loader2 } from 'lucide-react'
+import { ArrowLeft, Upload, ImageIcon, Loader2, Send } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuth } from '@/contexts/AuthContext'
 import { uploadFotoComWatermark } from '@/lib/watermark'
@@ -140,7 +140,7 @@ const labelClass =
 export default function NovoImovelPage() {
   const { profile } = useAuth()
   const navigate = useNavigate()
-  const isSuperadmin = profile?.role === 'superadmin'
+  const isAdmin = profile?.role === 'superadmin' || profile?.role === 'gestor'
 
   const [isDragOver, setIsDragOver] = useState(false)
   const [bairros, setBairros] = useState<{ id: string; nome: string }[]>([])
@@ -169,7 +169,7 @@ export default function NovoImovelPage() {
       vagas: 0,
       caracteristicas: [],
       destaque: false,
-      corretor_id: isSuperadmin ? '' : profile?.id || '',
+      corretor_id: isAdmin ? '' : profile?.id || '',
     },
   })
 
@@ -192,9 +192,9 @@ export default function NovoImovelPage() {
     fetchBairros()
   }, [])
 
-  // Fetch corretores for superadmin
+  // Fetch corretores for admin
   useEffect(() => {
-    if (!isSuperadmin) return
+    if (!isAdmin) return
     async function fetchCorretores() {
       const { data, error } = await supabase
         .from('users_profiles')
@@ -207,7 +207,7 @@ export default function NovoImovelPage() {
       setCorretores(data || [])
     }
     fetchCorretores()
-  }, [isSuperadmin])
+  }, [isAdmin])
 
   function toggleCaracteristica(item: string) {
     const current = caracteristicasWatch || []
@@ -300,11 +300,60 @@ export default function NovoImovelPage() {
     if (inserted && fotos.length > 0) {
       await uploadFotos(inserted.id)
     }
+
+    return inserted
+  }
+
+  async function notifyAdmins(imovelId: string, titulo: string) {
+    try {
+      // Fetch admin role IDs
+      const { data: adminRoles } = await supabase
+        .from('roles')
+        .select('id')
+        .in('nome', ['superadmin', 'gestor'])
+
+      if (!adminRoles || adminRoles.length === 0) return
+
+      // Fetch admin users
+      const { data: admins } = await supabase
+        .from('users_profiles')
+        .select('id')
+        .in('role_id', adminRoles.map(r => r.id))
+
+      if (!admins || admins.length === 0) return
+
+      // Send notifications
+      for (const admin of admins) {
+        await supabase.from('notificacoes').insert({
+          user_id: admin.id,
+          titulo: 'Novo Imóvel para Revisão',
+          mensagem: `O imóvel "${titulo}" foi enviado para revisão.`,
+          tipo: 'revisao',
+          link: `/painel/imoveis/${imovelId}`,
+        })
+      }
+    } catch (err) {
+      console.error('Erro ao enviar notificações:', err)
+    }
   }
 
   const onSubmit: SubmitHandler<ImovelFormData> = async (data) => {
     try {
-      await insertImovel(data, 'em_revisao')
+      const inserted = await insertImovel(data, 'enviado_revisao')
+
+      if (inserted) {
+        // Create imoveis_revisoes record
+        await supabase.from('imoveis_revisoes').insert({
+          imovel_id: inserted.id,
+          revisor_id: profile?.id,
+          acao: 'enviado',
+          observacoes: 'Imóvel enviado para revisão',
+        })
+
+        // Notify admins
+        await notifyAdmins(inserted.id, data.titulo)
+      }
+
       toast.success('Imóvel enviado para revisão!')
       navigate('/painel/imoveis')
     } catch (err: any) {
@@ -729,7 +778,7 @@ export default function NovoImovelPage() {
         </SectionCard>
 
         {/* Section 7: Corretor Responsável */}
-        {isSuperadmin && (
+        {isAdmin && (
           <SectionCard title="Corretor Responsável">
             <div>
               <label className={labelClass}>Corretor</label>
@@ -772,9 +821,19 @@ export default function NovoImovelPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="rounded-lg bg-moradda-gold-500 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-moradda-gold-600 disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-lg bg-moradda-gold-500 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-moradda-gold-600 disabled:opacity-50"
             >
-              {isSubmitting ? 'Enviando...' : 'Enviar para Revisão'}
+              {isSubmitting ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" />
+                  Enviando...
+                </>
+              ) : (
+                <>
+                  <Send size={16} />
+                  Enviar para Revisão
+                </>
+              )}
             </button>
           </div>
         </div>

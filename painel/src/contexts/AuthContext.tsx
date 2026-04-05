@@ -8,7 +8,7 @@ import {
 import type { User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 
-export type UserRole = 'superadmin' | 'corretor'
+export type UserRole = 'superadmin' | 'gestor' | 'corretor'
 
 export interface UserProfile {
   id: string
@@ -165,6 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   function hasAccess(requiredRole: UserRole): boolean {
     if (!profile) return false
     if (profile.role === 'superadmin') return true
+    if (profile.role === 'gestor' && requiredRole !== 'superadmin') return true
     return profile.role === requiredRole
   }
 

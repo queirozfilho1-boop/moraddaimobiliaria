@@ -3,7 +3,23 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useForm, type SubmitHandler } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { ArrowLeft, Upload, ImageIcon, Trash2, AlertTriangle, Loader2 } from 'lucide-react'
+import {
+  ArrowLeft,
+  Upload,
+  ImageIcon,
+  Trash2,
+  AlertTriangle,
+  Loader2,
+  ClipboardCheck,
+  CheckCircle2,
+  RotateCcw,
+  XCircle,
+  Eye,
+  Pause,
+  Play,
+  Send,
+  Clock,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
@@ -19,6 +35,16 @@ function generateSlug(text: string): string {
     .replace(/[^a-z0-9\s-]/g, '')
     .replace(/[\s_]+/g, '-')
     .replace(/-+/g, '-')
+}
+
+function formatDateTime(iso: string): string {
+  return new Date(iso).toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
 }
 
 // ── Schema ─────────────────────────────────────────────────────────────────
@@ -38,10 +64,15 @@ const imovelSchema = z.object({
   finalidade: z.enum(['venda', 'aluguel', 'venda_aluguel']),
   status: z.enum([
     'rascunho',
-    'em_revisao',
+    'enviado_revisao',
+    'em_correcao',
+    'aprovado',
     'publicado',
+    'pausado',
+    'reprovado',
     'vendido',
     'alugado',
+    'arquivado',
     'inativo',
   ]),
 
@@ -76,11 +107,26 @@ type ImovelFormData = z.infer<typeof imovelSchema>
 
 type ImovelStatus =
   | 'rascunho'
-  | 'em_revisao'
+  | 'enviado_revisao'
+  | 'em_correcao'
+  | 'aprovado'
   | 'publicado'
+  | 'pausado'
+  | 'reprovado'
   | 'vendido'
   | 'alugado'
+  | 'arquivado'
   | 'inativo'
+
+interface RevisaoRecord {
+  id: string
+  revisor_id: string
+  acao: string
+  pendencias: string | null
+  observacoes: string | null
+  created_at: string
+  revisor_nome?: string
+}
 
 // ── Constants ──────────────────────────────────────────────────────────────
 const TIPOS = [
@@ -102,10 +148,15 @@ const FINALIDADES = [
 
 const STATUS_OPTIONS: { value: ImovelStatus; label: string }[] = [
   { value: 'rascunho', label: 'Rascunho' },
-  { value: 'em_revisao', label: 'Em Revisão' },
+  { value: 'enviado_revisao', label: 'Enviado p/ Revisão' },
+  { value: 'em_correcao', label: 'Em Correção' },
+  { value: 'aprovado', label: 'Aprovado' },
   { value: 'publicado', label: 'Publicado' },
+  { value: 'pausado', label: 'Pausado' },
+  { value: 'reprovado', label: 'Reprovado' },
   { value: 'vendido', label: 'Vendido' },
   { value: 'alugado', label: 'Alugado' },
+  { value: 'arquivado', label: 'Arquivado' },
   { value: 'inativo', label: 'Inativo' },
 ]
 
@@ -131,6 +182,16 @@ const CARACTERISTICAS = [
   'Brinquedoteca',
   'Pet Place',
 ] as const
+
+const ACAO_CONFIG: Record<string, { label: string; color: string; icon: string }> = {
+  enviado: { label: 'Enviado para Revisão', color: 'text-blue-600 dark:text-blue-400', icon: 'send' },
+  aprovado: { label: 'Aprovado', color: 'text-teal-600 dark:text-teal-400', icon: 'check' },
+  devolvido: { label: 'Devolvido para Correção', color: 'text-orange-600 dark:text-orange-400', icon: 'return' },
+  reprovado: { label: 'Reprovado', color: 'text-red-600 dark:text-red-400', icon: 'x' },
+  pausado: { label: 'Pausado', color: 'text-yellow-600 dark:text-yellow-400', icon: 'pause' },
+  despausado: { label: 'Despausado', color: 'text-green-600 dark:text-green-400', icon: 'play' },
+  corrigido: { label: 'Reenviado após Correção', color: 'text-blue-600 dark:text-blue-400', icon: 'send' },
+}
 
 // ── Reusable form sub-components ───────────────────────────────────────────
 function SectionCard({
@@ -166,19 +227,28 @@ export default function EditarImovelPage() {
   const { id } = useParams()
   const { profile } = useAuth()
   const navigate = useNavigate()
-  const isSuperadmin = profile?.role === 'superadmin'
+  const isAdmin = profile?.role === 'superadmin' || profile?.role === 'gestor'
+  const isCorretor = profile?.role === 'corretor'
 
   const [isDragOver, setIsDragOver] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
   const [codigo, setCodigo] = useState('')
+  const [corretorId, setCorretorId] = useState('')
+  const [currentStatus, setCurrentStatus] = useState<ImovelStatus>('rascunho')
   const [bairros, setBairros] = useState<{ id: string; nome: string }[]>([])
   const [corretores, setCorretores] = useState<{ id: string; nome: string }[]>([])
   const [savingDraft, setSavingDraft] = useState(false)
   const [fotosExistentes, setFotosExistentes] = useState<{ id: string; url_watermark: string; principal: boolean }[]>([])
   const [novasFotos, setNovasFotos] = useState<{ file: File; preview: string; principal: boolean }[]>([])
   const [uploadingFotos, setUploadingFotos] = useState(false)
+
+  // Review workflow state
+  const [revisoes, setRevisoes] = useState<RevisaoRecord[]>([])
+  const [reviewAction, setReviewAction] = useState<'aprovar' | 'devolver' | 'reprovar' | null>(null)
+  const [reviewText, setReviewText] = useState('')
+  const [reviewLoading, setReviewLoading] = useState(false)
 
   const {
     register,
@@ -225,9 +295,9 @@ export default function EditarImovelPage() {
     fetchBairros()
   }, [])
 
-  // Fetch corretores for superadmin
+  // Fetch corretores for admin
   useEffect(() => {
-    if (!isSuperadmin) return
+    if (!isAdmin) return
     async function fetchCorretores() {
       const { data, error } = await supabase
         .from('users_profiles')
@@ -240,7 +310,7 @@ export default function EditarImovelPage() {
       setCorretores(data || [])
     }
     fetchCorretores()
-  }, [isSuperadmin])
+  }, [isAdmin])
 
   // Fetch imovel data
   useEffect(() => {
@@ -258,6 +328,8 @@ export default function EditarImovelPage() {
         if (!data) throw new Error('Imóvel não encontrado')
 
         setCodigo(data.codigo || '')
+        setCorretorId(data.corretor_id || '')
+        setCurrentStatus(data.status as ImovelStatus)
 
         // Buscar fotos existentes
         const { data: fotosData } = await supabase
@@ -266,6 +338,17 @@ export default function EditarImovelPage() {
           .eq('imovel_id', id)
           .order('ordem')
         setFotosExistentes((fotosData || []).map(f => ({ id: f.id, url_watermark: f.url_watermark || '', principal: f.principal })))
+
+        // Buscar histórico de revisões
+        const { data: revisoesData } = await supabase
+          .from('imoveis_revisoes')
+          .select('id, revisor_id, acao, pendencias, observacoes, created_at, users_profiles!revisor_id(nome)')
+          .eq('imovel_id', id)
+          .order('created_at', { ascending: false })
+        setRevisoes((revisoesData || []).map((r: any) => ({
+          ...r,
+          revisor_nome: r.users_profiles?.nome || 'Sistema',
+        })))
 
         reset({
           titulo: data.titulo || '',
@@ -364,6 +447,221 @@ export default function EditarImovelPage() {
     setNovasFotos([])
   }
 
+  // ── Review workflow actions ──
+  async function handleReviewAction() {
+    if (!id || !reviewAction) return
+    if ((reviewAction === 'devolver' || reviewAction === 'reprovar') && !reviewText.trim()) {
+      toast.error(reviewAction === 'devolver' ? 'Informe as pendências' : 'Informe o motivo da reprovação')
+      return
+    }
+
+    setReviewLoading(true)
+    try {
+      const statusMap = {
+        aprovar: 'aprovado' as ImovelStatus,
+        devolver: 'em_correcao' as ImovelStatus,
+        reprovar: 'reprovado' as ImovelStatus,
+      }
+      const acaoMap = { aprovar: 'aprovado', devolver: 'devolvido', reprovar: 'reprovado' }
+
+      // Update imovel status
+      const { error: updateError } = await supabase
+        .from('imoveis')
+        .update({ status: statusMap[reviewAction] })
+        .eq('id', id)
+      if (updateError) throw updateError
+
+      // Create revisao record
+      const { error: revisaoError } = await supabase.from('imoveis_revisoes').insert({
+        imovel_id: id,
+        revisor_id: profile?.id,
+        acao: acaoMap[reviewAction],
+        pendencias: reviewAction === 'devolver' ? reviewText.trim() : null,
+        observacoes: reviewAction === 'reprovar' ? reviewText.trim() : (reviewAction === 'aprovar' ? (reviewText.trim() || 'Imóvel aprovado') : null),
+      })
+      if (revisaoError) throw revisaoError
+
+      // Send notification to corretor
+      if (corretorId) {
+        const mensagemMap = {
+          aprovar: `Seu imóvel ${codigo} foi aprovado!`,
+          devolver: `Seu imóvel ${codigo} foi devolvido para correção. Verifique as pendências.`,
+          reprovar: `Seu imóvel ${codigo} foi reprovado. Verifique o motivo.`,
+        }
+        await supabase.from('notificacoes').insert({
+          user_id: corretorId,
+          titulo: reviewAction === 'aprovar' ? 'Imóvel Aprovado' : reviewAction === 'devolver' ? 'Correção Necessária' : 'Imóvel Reprovado',
+          mensagem: mensagemMap[reviewAction],
+          tipo: 'revisao',
+          link: `/painel/imoveis/${id}`,
+        })
+      }
+
+      const labels = { aprovar: 'aprovado', devolver: 'devolvido para correção', reprovar: 'reprovado' }
+      toast.success(`Imóvel ${labels[reviewAction]} com sucesso!`)
+      setReviewAction(null)
+      setReviewText('')
+      navigate('/painel/imoveis')
+    } catch (err: any) {
+      toast.error('Erro: ' + (err.message || 'Erro desconhecido'))
+    } finally {
+      setReviewLoading(false)
+    }
+  }
+
+  // Corretor: reenviar para revisão
+  async function handleReenviarRevisao() {
+    if (!id) return
+    setReviewLoading(true)
+    try {
+      const { error: updateError } = await supabase
+        .from('imoveis')
+        .update({ status: 'enviado_revisao' })
+        .eq('id', id)
+      if (updateError) throw updateError
+
+      await supabase.from('imoveis_revisoes').insert({
+        imovel_id: id,
+        revisor_id: profile?.id,
+        acao: 'corrigido',
+        observacoes: 'Imóvel reenviado após correção',
+      })
+
+      // Notify admins
+      const { data: admins } = await supabase
+        .from('users_profiles')
+        .select('id')
+        .in('role_id', (await supabase.from('roles').select('id').in('nome', ['superadmin', 'gestor'])).data?.map(r => r.id) || [])
+      for (const admin of admins || []) {
+        await supabase.from('notificacoes').insert({
+          user_id: admin.id,
+          titulo: 'Imóvel Reenviado',
+          mensagem: `O imóvel ${codigo} foi reenviado para revisão após correção.`,
+          tipo: 'revisao',
+          link: `/painel/imoveis/${id}`,
+        })
+      }
+
+      toast.success('Imóvel reenviado para revisão!')
+      navigate('/painel/imoveis')
+    } catch (err: any) {
+      toast.error('Erro: ' + (err.message || 'Erro desconhecido'))
+    } finally {
+      setReviewLoading(false)
+    }
+  }
+
+  // Admin: publicar (only approved)
+  async function handlePublicar() {
+    if (!id) return
+    try {
+      const { error } = await supabase.from('imoveis').update({ status: 'publicado' }).eq('id', id)
+      if (error) throw error
+      toast.success('Imóvel publicado!')
+      navigate('/painel/imoveis')
+    } catch (err: any) {
+      toast.error('Erro: ' + (err.message || 'Erro desconhecido'))
+    }
+  }
+
+  // Admin: pausar / despausar
+  async function handlePausarDespausar(acao: 'pausar' | 'despausar') {
+    if (!id) return
+    const novoStatus = acao === 'pausar' ? 'pausado' : 'publicado'
+    try {
+      const { error } = await supabase.from('imoveis').update({ status: novoStatus }).eq('id', id)
+      if (error) throw error
+      await supabase.from('imoveis_revisoes').insert({
+        imovel_id: id,
+        revisor_id: profile?.id,
+        acao: acao === 'pausar' ? 'pausado' : 'despausado',
+        observacoes: acao === 'pausar' ? 'Imóvel pausado' : 'Imóvel despausado',
+      })
+      toast.success(acao === 'pausar' ? 'Imóvel pausado!' : 'Imóvel despausado!')
+      navigate('/painel/imoveis')
+    } catch (err: any) {
+      toast.error('Erro: ' + (err.message || 'Erro desconhecido'))
+    }
+  }
+
+  // Corretor: enviar para revisão
+  async function handleEnviarRevisao() {
+    if (!id) return
+    setReviewLoading(true)
+    try {
+      // Save form data first
+      const data = getValues()
+      const slug = generateSlug(data.titulo)
+      const { error: updateError } = await supabase
+        .from('imoveis')
+        .update({
+          titulo: data.titulo,
+          descricao: data.descricao,
+          slug,
+          tipo: data.tipo,
+          finalidade: data.finalidade,
+          status: 'enviado_revisao',
+          cep: data.cep || null,
+          endereco: data.endereco || null,
+          numero: data.numero || null,
+          complemento: data.complemento || null,
+          bairro_id: data.bairro,
+          cidade: data.cidade,
+          estado: data.estado,
+          preco: data.preco,
+          preco_condominio: data.condominio || null,
+          preco_iptu: data.iptu_anual || null,
+          area_total: data.area_total || null,
+          area_construida: data.area_construida || null,
+          quartos: data.quartos,
+          suites: data.suites,
+          banheiros: data.banheiros,
+          vagas_garagem: data.vagas,
+          caracteristicas: data.caracteristicas || [],
+          tour_virtual_url: data.tour_virtual_url || null,
+          video_url: data.video_url || null,
+          destaque: data.destaque,
+          corretor_id: data.corretor_id || profile?.id,
+        })
+        .eq('id', id)
+      if (updateError) throw updateError
+
+      if (novasFotos.length > 0) {
+        await uploadNovasFotos()
+      }
+
+      await supabase.from('imoveis_revisoes').insert({
+        imovel_id: id,
+        revisor_id: profile?.id,
+        acao: 'enviado',
+        observacoes: 'Imóvel enviado para revisão',
+      })
+
+      // Notify admins
+      const { data: adminRoles } = await supabase.from('roles').select('id').in('nome', ['superadmin', 'gestor'])
+      const { data: admins } = await supabase
+        .from('users_profiles')
+        .select('id')
+        .in('role_id', adminRoles?.map(r => r.id) || [])
+      for (const admin of admins || []) {
+        await supabase.from('notificacoes').insert({
+          user_id: admin.id,
+          titulo: 'Novo Imóvel para Revisão',
+          mensagem: `O imóvel ${codigo || data.titulo} foi enviado para revisão.`,
+          tipo: 'revisao',
+          link: `/painel/imoveis/${id}`,
+        })
+      }
+
+      toast.success('Imóvel enviado para revisão!')
+      navigate('/painel/imoveis')
+    } catch (err: any) {
+      toast.error('Erro: ' + (err.message || 'Erro desconhecido'))
+    } finally {
+      setReviewLoading(false)
+    }
+  }
+
   const onSubmit: SubmitHandler<ImovelFormData> = async (data) => {
     try {
       const slug = generateSlug(data.titulo)
@@ -375,7 +673,7 @@ export default function EditarImovelPage() {
           slug,
           tipo: data.tipo,
           finalidade: data.finalidade,
-          status: data.status,
+          status: isAdmin ? data.status : currentStatus,
           cep: data.cep || null,
           endereco: data.endereco || null,
           numero: data.numero || null,
@@ -454,6 +752,10 @@ export default function EditarImovelPage() {
 
       if (error) throw error
 
+      if (novasFotos.length > 0) {
+        await uploadNovasFotos()
+      }
+
       toast.success('Rascunho salvo!')
       navigate('/painel/imoveis')
     } catch (err: any) {
@@ -482,6 +784,9 @@ export default function EditarImovelPage() {
       setDeleting(false)
     }
   }
+
+  // Get last pendencias for em_correcao
+  const lastPendencias = revisoes.find(r => r.acao === 'devolvido')
 
   // ── Loading state ──
   if (loading) {
@@ -512,7 +817,7 @@ export default function EditarImovelPage() {
             </p>
           </div>
         </div>
-        {isSuperadmin && (
+        {isAdmin && (
           <button
             type="button"
             onClick={() => setShowDeleteDialog(true)}
@@ -524,9 +829,225 @@ export default function EditarImovelPage() {
         )}
       </div>
 
+      {/* ── Review Panel: Admin reviewing (status = enviado_revisao) ── */}
+      {isAdmin && currentStatus === 'enviado_revisao' && (
+        <div className="rounded-xl border-2 border-blue-300 bg-blue-50 p-6 dark:border-blue-700 dark:bg-blue-900/20">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/40">
+              <ClipboardCheck size={20} className="text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-blue-800 dark:text-blue-200">
+                Este imóvel está aguardando revisão
+              </h2>
+              <p className="text-sm text-blue-600 dark:text-blue-400">
+                Analise as informações e tome uma decisão
+              </p>
+            </div>
+          </div>
+
+          {!reviewAction && (
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => setReviewAction('aprovar')}
+                className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-700"
+              >
+                <CheckCircle2 size={16} />
+                Aprovar
+              </button>
+              <button
+                type="button"
+                onClick={() => setReviewAction('devolver')}
+                className="inline-flex items-center gap-2 rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-orange-600"
+              >
+                <RotateCcw size={16} />
+                Devolver para Correção
+              </button>
+              <button
+                type="button"
+                onClick={() => setReviewAction('reprovar')}
+                className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700"
+              >
+                <XCircle size={16} />
+                Reprovar
+              </button>
+            </div>
+          )}
+
+          {reviewAction && (
+            <div className="mt-4 space-y-3">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-blue-800 dark:text-blue-200">
+                  {reviewAction === 'devolver'
+                    ? 'Pendências (obrigatório)'
+                    : reviewAction === 'reprovar'
+                      ? 'Motivo da reprovação (obrigatório)'
+                      : 'Observações (opcional)'}
+                </label>
+                <textarea
+                  rows={3}
+                  value={reviewText}
+                  onChange={(e) => setReviewText(e.target.value)}
+                  placeholder={
+                    reviewAction === 'devolver'
+                      ? 'Descreva as pendências que precisam ser corrigidas...'
+                      : reviewAction === 'reprovar'
+                        ? 'Informe o motivo da reprovação...'
+                        : 'Adicione observações sobre a aprovação...'
+                  }
+                  className="w-full rounded-lg border border-blue-300 bg-white px-3 py-2 text-sm text-gray-700 placeholder-gray-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-blue-600 dark:bg-gray-800 dark:text-gray-200"
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={handleReviewAction}
+                  disabled={reviewLoading}
+                  className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white transition disabled:opacity-50 ${
+                    reviewAction === 'aprovar'
+                      ? 'bg-teal-600 hover:bg-teal-700'
+                      : reviewAction === 'devolver'
+                        ? 'bg-orange-500 hover:bg-orange-600'
+                        : 'bg-red-600 hover:bg-red-700'
+                  }`}
+                >
+                  {reviewLoading && <Loader2 size={14} className="animate-spin" />}
+                  {reviewAction === 'aprovar' ? 'Confirmar Aprovação' : reviewAction === 'devolver' ? 'Confirmar Devolução' : 'Confirmar Reprovação'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setReviewAction(null); setReviewText('') }}
+                  className="rounded-lg border border-blue-300 px-4 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-100 dark:border-blue-600 dark:text-blue-300 dark:hover:bg-blue-900/30"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Correction Panel: Corretor viewing (status = em_correcao) ── */}
+      {isCorretor && currentStatus === 'em_correcao' && (
+        <div className="rounded-xl border-2 border-orange-300 bg-orange-50 p-6 dark:border-orange-700 dark:bg-orange-900/20">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900/40">
+              <RotateCcw size={20} className="text-orange-600 dark:text-orange-400" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-orange-800 dark:text-orange-200">
+                Este imóvel foi devolvido para correção
+              </h2>
+              <p className="text-sm text-orange-600 dark:text-orange-400">
+                Corrija as pendências abaixo e reenvie para revisão
+              </p>
+            </div>
+          </div>
+
+          {lastPendencias && (
+            <div className="mb-4 rounded-lg border border-orange-200 bg-white p-4 dark:border-orange-700 dark:bg-gray-800">
+              <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-orange-600 dark:text-orange-400">
+                Pendências
+              </p>
+              <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                {lastPendencias.pendencias}
+              </p>
+              {lastPendencias.observacoes && (
+                <>
+                  <p className="mt-2 mb-1 text-xs font-semibold uppercase tracking-wider text-orange-600 dark:text-orange-400">
+                    Observações
+                  </p>
+                  <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                    {lastPendencias.observacoes}
+                  </p>
+                </>
+              )}
+              <p className="mt-2 text-xs text-gray-400">
+                Por {lastPendencias.revisor_nome} em {formatDateTime(lastPendencias.created_at)}
+              </p>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={handleReenviarRevisao}
+            disabled={reviewLoading}
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50"
+          >
+            {reviewLoading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+            Reenviar para Revisão
+          </button>
+        </div>
+      )}
+
+      {/* ── Quick action buttons for admin ── */}
+      {isAdmin && currentStatus === 'aprovado' && (
+        <div className="rounded-xl border border-teal-200 bg-teal-50 p-4 dark:border-teal-800 dark:bg-teal-900/20">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <CheckCircle2 size={20} className="text-teal-600 dark:text-teal-400" />
+              <p className="text-sm font-semibold text-teal-800 dark:text-teal-200">
+                Este imóvel está aprovado e pronto para publicação
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handlePublicar}
+              className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700"
+            >
+              <Eye size={16} />
+              Publicar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {isAdmin && currentStatus === 'publicado' && (
+        <div className="rounded-xl border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-900/20">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Eye size={20} className="text-green-600 dark:text-green-400" />
+              <p className="text-sm font-semibold text-green-800 dark:text-green-200">
+                Este imóvel está publicado
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => handlePausarDespausar('pausar')}
+              className="inline-flex items-center gap-2 rounded-lg bg-yellow-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-yellow-600"
+            >
+              <Pause size={16} />
+              Pausar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {isAdmin && currentStatus === 'pausado' && (
+        <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-800 dark:bg-yellow-900/20">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Pause size={20} className="text-yellow-600 dark:text-yellow-400" />
+              <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-200">
+                Este imóvel está pausado
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => handlePausarDespausar('despausar')}
+              className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700"
+            >
+              <Play size={16} />
+              Despausar
+            </button>
+          </div>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit(onSubmit as any)} className="space-y-6">
-        {/* Status change — superadmin only */}
-        {isSuperadmin && (
+        {/* Status change — admin only */}
+        {isAdmin && (
           <SectionCard title="Status do Imóvel">
             <div className="max-w-xs">
               <label className={labelClass}>Status</label>
@@ -944,7 +1465,7 @@ export default function EditarImovelPage() {
         </SectionCard>
 
         {/* Section 7: Corretor Responsável */}
-        {isSuperadmin && (
+        {isAdmin && (
           <SectionCard title="Corretor Responsável">
             <div>
               <label className={labelClass}>Corretor</label>
@@ -969,31 +1490,126 @@ export default function EditarImovelPage() {
             Cancelar
           </Link>
           <div className="flex flex-col gap-3 sm:flex-row">
-            <button
-              type="button"
-              onClick={handleSaveDraft}
-              disabled={savingDraft}
-              className="rounded-lg border border-gray-300 px-6 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:opacity-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-            >
-              {savingDraft ? (
-                <span className="inline-flex items-center gap-2">
-                  <Loader2 size={14} className="animate-spin" />
-                  Salvando...
-                </span>
-              ) : (
-                'Salvar como Rascunho'
-              )}
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="rounded-lg bg-moradda-gold-500 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-moradda-gold-600 disabled:opacity-50"
-            >
-              {isSubmitting ? 'Atualizando...' : 'Atualizar'}
-            </button>
+            {/* Corretor: Save draft + Send for review */}
+            {isCorretor && (currentStatus === 'rascunho' || currentStatus === 'em_correcao' || currentStatus === 'reprovado') && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleSaveDraft}
+                  disabled={savingDraft}
+                  className="rounded-lg border border-gray-300 px-6 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:opacity-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                >
+                  {savingDraft ? (
+                    <span className="inline-flex items-center gap-2">
+                      <Loader2 size={14} className="animate-spin" />
+                      Salvando...
+                    </span>
+                  ) : (
+                    'Salvar como Rascunho'
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleEnviarRevisao}
+                  disabled={reviewLoading}
+                  className="inline-flex items-center gap-2 rounded-lg bg-moradda-gold-500 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-moradda-gold-600 disabled:opacity-50"
+                >
+                  {reviewLoading ? <Loader2 size={14} className="animate-spin" /> : <Send size={16} />}
+                  Enviar para Revisão
+                </button>
+              </>
+            )}
+
+            {/* Admin: full save + draft */}
+            {isAdmin && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleSaveDraft}
+                  disabled={savingDraft}
+                  className="rounded-lg border border-gray-300 px-6 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:opacity-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                >
+                  {savingDraft ? (
+                    <span className="inline-flex items-center gap-2">
+                      <Loader2 size={14} className="animate-spin" />
+                      Salvando...
+                    </span>
+                  ) : (
+                    'Salvar como Rascunho'
+                  )}
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="rounded-lg bg-moradda-gold-500 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-moradda-gold-600 disabled:opacity-50"
+                >
+                  {isSubmitting ? 'Atualizando...' : 'Atualizar'}
+                </button>
+              </>
+            )}
           </div>
         </div>
       </form>
+
+      {/* ── Review History Timeline ── */}
+      {revisoes.length > 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+          <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-800 dark:text-gray-100">
+            <Clock size={20} />
+            Histórico de Revisões
+          </h2>
+          <div className="relative space-y-0">
+            {/* Timeline line */}
+            <div className="absolute left-[15px] top-2 bottom-2 w-0.5 bg-gray-200 dark:bg-gray-700" />
+            {revisoes.map((revisao, index) => {
+              const cfg = ACAO_CONFIG[revisao.acao] || { label: revisao.acao, color: 'text-gray-600 dark:text-gray-400', icon: 'default' }
+              return (
+                <div key={revisao.id} className="relative flex gap-4 pb-6 last:pb-0">
+                  {/* Timeline dot */}
+                  <div className={`relative z-10 mt-1 flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full border-2 border-white bg-gray-100 dark:border-gray-800 dark:bg-gray-700 ${index === 0 ? 'ring-2 ring-moradda-blue-200 dark:ring-moradda-blue-800' : ''}`}>
+                    {revisao.acao === 'enviado' || revisao.acao === 'corrigido' ? (
+                      <Send size={12} className="text-blue-500" />
+                    ) : revisao.acao === 'aprovado' ? (
+                      <CheckCircle2 size={12} className="text-teal-500" />
+                    ) : revisao.acao === 'devolvido' ? (
+                      <RotateCcw size={12} className="text-orange-500" />
+                    ) : revisao.acao === 'reprovado' ? (
+                      <XCircle size={12} className="text-red-500" />
+                    ) : revisao.acao === 'pausado' ? (
+                      <Pause size={12} className="text-yellow-500" />
+                    ) : revisao.acao === 'despausado' ? (
+                      <Play size={12} className="text-green-500" />
+                    ) : (
+                      <Clock size={12} className="text-gray-400" />
+                    )}
+                  </div>
+                  {/* Content */}
+                  <div className="min-w-0 flex-1">
+                    <p className={`text-sm font-semibold ${cfg.color}`}>
+                      {cfg.label}
+                    </p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">
+                      {revisao.revisor_nome} &middot; {formatDateTime(revisao.created_at)}
+                    </p>
+                    {revisao.pendencias && (
+                      <div className="mt-2 rounded-lg border border-orange-200 bg-orange-50 p-3 dark:border-orange-800 dark:bg-orange-900/20">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-orange-600 dark:text-orange-400">Pendências</p>
+                        <p className="mt-1 text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{revisao.pendencias}</p>
+                      </div>
+                    )}
+                    {revisao.observacoes && (
+                      <div className="mt-2 rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900/30">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Observações</p>
+                        <p className="mt-1 text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{revisao.observacoes}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Delete confirmation dialog */}
       {showDeleteDialog && (

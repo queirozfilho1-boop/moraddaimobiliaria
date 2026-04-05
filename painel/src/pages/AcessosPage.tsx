@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { UserCog, UserPlus, Shield, Users, Loader2 } from 'lucide-react'
+import { UserCog, UserPlus, Shield, Users, Loader2, Briefcase } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 
@@ -17,7 +17,19 @@ interface Usuario {
   created_at: string
 }
 
-type Tab = 'corretores' | 'administrativo'
+type Tab = 'corretores' | 'gestores' | 'administrativo'
+
+const ROLE_LABELS: Record<string, string> = {
+  superadmin: 'Administrativo (acesso total)',
+  gestor: 'Gestor (visão completa, relatórios)',
+  corretor: 'Corretor (acesso limitado)',
+}
+
+const ROLE_DISPLAY: Record<string, string> = {
+  superadmin: 'Administrador',
+  gestor: 'Gestor',
+  corretor: 'Corretor',
+}
 
 export default function AcessosPage() {
   const [tab, setTab] = useState<Tab>('corretores')
@@ -114,8 +126,9 @@ export default function AcessosPage() {
   }
 
   const corretores = usuarios.filter(u => u.role_nome === 'corretor')
+  const gestores = usuarios.filter(u => u.role_nome === 'gestor')
   const admins = usuarios.filter(u => u.role_nome === 'superadmin')
-  const listaAtual = tab === 'corretores' ? corretores : admins
+  const listaAtual = tab === 'corretores' ? corretores : tab === 'gestores' ? gestores : admins
 
   const inputClass = 'w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100'
 
@@ -137,7 +150,7 @@ export default function AcessosPage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Acessos</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Gerencie corretores e administradores</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Gerencie corretores, gestores e administradores</p>
           </div>
         </div>
         <button
@@ -184,7 +197,7 @@ export default function AcessosPage() {
                 <option value="">Selecione...</option>
                 {roles.map(r => (
                   <option key={r.id} value={r.id}>
-                    {r.nome === 'superadmin' ? 'Administrativo (acesso total)' : 'Corretor (acesso limitado)'}
+                    {ROLE_LABELS[r.nome] || r.nome}
                   </option>
                 ))}
               </select>
@@ -215,6 +228,17 @@ export default function AcessosPage() {
         >
           <Users size={16} />
           Corretores ({corretores.length})
+        </button>
+        <button
+          onClick={() => setTab('gestores')}
+          className={`flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition ${
+            tab === 'gestores'
+              ? 'bg-white text-moradda-blue-600 shadow-sm dark:bg-gray-700 dark:text-moradda-blue-400'
+              : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
+          }`}
+        >
+          <Briefcase size={16} />
+          Gestores ({gestores.length})
         </button>
         <button
           onClick={() => setTab('administrativo')}
@@ -253,7 +277,7 @@ export default function AcessosPage() {
                       </div>
                       <div>
                         <p className="font-medium text-gray-800 dark:text-gray-100">{u.nome}</p>
-                        <p className="text-xs text-gray-400">{u.role_nome === 'superadmin' ? 'Administrador' : 'Corretor'}</p>
+                        <p className="text-xs text-gray-400">{ROLE_DISPLAY[u.role_nome] || u.role_nome}</p>
                       </div>
                     </div>
                   </td>
@@ -286,7 +310,7 @@ export default function AcessosPage() {
               {listaAtual.length === 0 && (
                 <tr>
                   <td colSpan={tab === 'corretores' ? 6 : 5} className="px-4 py-12 text-center text-sm text-gray-400">
-                    Nenhum {tab === 'corretores' ? 'corretor' : 'administrador'} cadastrado.
+                    Nenhum {tab === 'corretores' ? 'corretor' : tab === 'gestores' ? 'gestor' : 'administrador'} cadastrado.
                   </td>
                 </tr>
               )}

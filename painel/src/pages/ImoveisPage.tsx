@@ -9,6 +9,11 @@ import {
   ChevronRight,
   Building2,
   Loader2,
+  ClipboardCheck,
+  Eye,
+  Pause,
+  Play,
+  Archive,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuth } from '@/contexts/AuthContext'
@@ -17,10 +22,15 @@ import { supabase } from '@/lib/supabase'
 // ── Types ──────────────────────────────────────────────────────────────────
 type ImovelStatus =
   | 'rascunho'
-  | 'em_revisao'
+  | 'enviado_revisao'
+  | 'em_correcao'
+  | 'aprovado'
   | 'publicado'
+  | 'pausado'
+  | 'reprovado'
   | 'vendido'
   | 'alugado'
+  | 'arquivado'
   | 'inativo'
 
 type ImovelTipo =
@@ -56,30 +66,55 @@ const statusConfig: Record<
     bg: 'bg-gray-100 dark:bg-gray-700',
     text: 'text-gray-600 dark:text-gray-300',
   },
-  em_revisao: {
-    label: 'Em Revisão',
-    bg: 'bg-yellow-100 dark:bg-yellow-900/40',
-    text: 'text-yellow-700 dark:text-yellow-300',
+  enviado_revisao: {
+    label: 'Enviado p/ Revisão',
+    bg: 'bg-blue-100 dark:bg-blue-900/40',
+    text: 'text-blue-700 dark:text-blue-300',
+  },
+  em_correcao: {
+    label: 'Em Correção',
+    bg: 'bg-orange-100 dark:bg-orange-900/40',
+    text: 'text-orange-700 dark:text-orange-300',
+  },
+  aprovado: {
+    label: 'Aprovado',
+    bg: 'bg-teal-100 dark:bg-teal-900/40',
+    text: 'text-teal-700 dark:text-teal-300',
   },
   publicado: {
     label: 'Publicado',
     bg: 'bg-green-100 dark:bg-green-900/40',
     text: 'text-green-700 dark:text-green-300',
   },
+  pausado: {
+    label: 'Pausado',
+    bg: 'bg-yellow-100 dark:bg-yellow-900/40',
+    text: 'text-yellow-700 dark:text-yellow-300',
+  },
+  reprovado: {
+    label: 'Reprovado',
+    bg: 'bg-red-100 dark:bg-red-900/40',
+    text: 'text-red-700 dark:text-red-300',
+  },
   vendido: {
     label: 'Vendido',
-    bg: 'bg-blue-100 dark:bg-blue-900/40',
-    text: 'text-blue-700 dark:text-blue-300',
+    bg: 'bg-indigo-100 dark:bg-indigo-900/40',
+    text: 'text-indigo-700 dark:text-indigo-300',
   },
   alugado: {
     label: 'Alugado',
     bg: 'bg-amber-100 dark:bg-amber-900/40',
     text: 'text-amber-700 dark:text-amber-300',
   },
+  arquivado: {
+    label: 'Arquivado',
+    bg: 'bg-gray-100 dark:bg-gray-700',
+    text: 'text-gray-500 dark:text-gray-400',
+  },
   inativo: {
     label: 'Inativo',
-    bg: 'bg-red-100 dark:bg-red-900/40',
-    text: 'text-red-700 dark:text-red-300',
+    bg: 'bg-gray-100 dark:bg-gray-700',
+    text: 'text-gray-500 dark:text-gray-400',
   },
 }
 
@@ -102,7 +137,7 @@ function formatBRL(value: number): string {
 // ── Component ──────────────────────────────────────────────────────────────
 export default function ImoveisPage() {
   const { profile } = useAuth()
-  const isSuperadmin = profile?.role === 'superadmin'
+  const isAdmin = profile?.role === 'superadmin' || profile?.role === 'gestor'
 
   const [imoveis, setImoveis] = useState<Imovel[]>([])
   const [loading, setLoading] = useState(true)
@@ -152,9 +187,14 @@ export default function ImoveisPage() {
 
   // For corretor role, filter to only their own properties
   const baseList = useMemo(() => {
-    if (isSuperadmin) return imoveis
+    if (isAdmin) return imoveis
     return imoveis.filter((i) => i.corretor_id === profile?.id)
-  }, [isSuperadmin, profile?.id, imoveis])
+  }, [isAdmin, profile?.id, imoveis])
+
+  // Count pending reviews (for admins)
+  const pendentesRevisao = useMemo(() => {
+    return baseList.filter((i) => i.status === 'enviado_revisao').length
+  }, [baseList])
 
   const filtered = useMemo(() => {
     let list = baseList
@@ -196,9 +236,42 @@ export default function ImoveisPage() {
     }
   }
 
+  async function handleQuickAction(imovelId: string, action: 'publicar' | 'pausar' | 'despausar' | 'arquivar') {
+    const statusMap = {
+      publicar: 'publicado',
+      pausar: 'pausado',
+      despausar: 'publicado',
+      arquivar: 'arquivado',
+    }
+    try {
+      const { error } = await supabase
+        .from('imoveis')
+        .update({ status: statusMap[action] })
+        .eq('id', imovelId)
+
+      if (error) throw error
+
+      if (action === 'pausar' || action === 'despausar') {
+        // Create review record for pause/unpause
+        await supabase.from('imoveis_revisoes').insert({
+          imovel_id: imovelId,
+          revisor_id: profile?.id,
+          acao: action === 'pausar' ? 'pausado' : 'despausado',
+          observacoes: action === 'pausar' ? 'Imóvel pausado' : 'Imóvel despausado',
+        })
+      }
+
+      const labels = { publicar: 'publicado', pausar: 'pausado', despausar: 'despausado', arquivar: 'arquivado' }
+      toast.success(`Imóvel ${labels[action]} com sucesso!`)
+      await fetchImoveis()
+    } catch (err: any) {
+      toast.error('Erro: ' + (err.message || 'Erro desconhecido'))
+    }
+  }
+
   // ── Status badge ──
   function StatusBadge({ status }: { status: ImovelStatus }) {
-    const cfg = statusConfig[status]
+    const cfg = statusConfig[status] || statusConfig.rascunho
     return (
       <span
         className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${cfg.bg} ${cfg.text}`}
@@ -246,7 +319,7 @@ export default function ImoveisPage() {
             </p>
           </div>
         </div>
-        <div className="mt-3 flex items-center gap-2 border-t border-gray-100 pt-3 dark:border-gray-700">
+        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-3 dark:border-gray-700">
           <Link
             to={`/painel/imoveis/${imovel.id}`}
             className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-moradda-blue-700 transition hover:bg-moradda-blue-50 dark:text-moradda-blue-300 dark:hover:bg-moradda-blue-900/30"
@@ -254,14 +327,61 @@ export default function ImoveisPage() {
             <Pencil size={14} />
             Editar
           </Link>
-          {isSuperadmin && (
-            <button
-              onClick={() => setDeleteTarget(imovel)}
-              className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+          {isAdmin && imovel.status === 'enviado_revisao' && (
+            <Link
+              to={`/painel/imoveis/${imovel.id}`}
+              className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-teal-700 transition hover:bg-teal-50 dark:text-teal-300 dark:hover:bg-teal-900/30"
             >
-              <Trash2 size={14} />
-              Excluir
+              <ClipboardCheck size={14} />
+              Revisar
+            </Link>
+          )}
+          {isAdmin && imovel.status === 'aprovado' && (
+            <button
+              onClick={() => handleQuickAction(imovel.id, 'publicar')}
+              className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-green-700 transition hover:bg-green-50 dark:text-green-300 dark:hover:bg-green-900/30"
+            >
+              <Eye size={14} />
+              Publicar
             </button>
+          )}
+          {isAdmin && imovel.status === 'publicado' && (
+            <button
+              onClick={() => handleQuickAction(imovel.id, 'pausar')}
+              className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-yellow-700 transition hover:bg-yellow-50 dark:text-yellow-300 dark:hover:bg-yellow-900/30"
+            >
+              <Pause size={14} />
+              Pausar
+            </button>
+          )}
+          {isAdmin && imovel.status === 'pausado' && (
+            <button
+              onClick={() => handleQuickAction(imovel.id, 'despausar')}
+              className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-green-700 transition hover:bg-green-50 dark:text-green-300 dark:hover:bg-green-900/30"
+            >
+              <Play size={14} />
+              Despausar
+            </button>
+          )}
+          {isAdmin && (
+            <>
+              {!['arquivado', 'inativo'].includes(imovel.status) && (
+                <button
+                  onClick={() => handleQuickAction(imovel.id, 'arquivar')}
+                  className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-gray-500 transition hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700"
+                >
+                  <Archive size={14} />
+                  Arquivar
+                </button>
+              )}
+              <button
+                onClick={() => setDeleteTarget(imovel)}
+                className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+              >
+                <Trash2 size={14} />
+                Excluir
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -292,6 +412,32 @@ export default function ImoveisPage() {
           Novo Imóvel
         </Link>
       </div>
+
+      {/* Pending reviews badge (admin only) */}
+      {isAdmin && pendentesRevisao > 0 && (
+        <div className="flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/40">
+            <ClipboardCheck size={20} className="text-blue-600 dark:text-blue-400" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-blue-800 dark:text-blue-200">
+              {pendentesRevisao} {pendentesRevisao === 1 ? 'imóvel pendente' : 'imóveis pendentes'} de revisão
+            </p>
+            <p className="text-xs text-blue-600 dark:text-blue-400">
+              Clique no botão abaixo para filtrar apenas os imóveis aguardando revisão
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              setStatusFilter('enviado_revisao')
+              setPage(1)
+            }}
+            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+          >
+            Ver Pendentes
+          </button>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
@@ -324,10 +470,15 @@ export default function ImoveisPage() {
           >
             <option value="">Todos os status</option>
             <option value="rascunho">Rascunho</option>
-            <option value="em_revisao">Em Revisão</option>
+            <option value="enviado_revisao">Enviado p/ Revisão</option>
+            <option value="em_correcao">Em Correção</option>
+            <option value="aprovado">Aprovado</option>
             <option value="publicado">Publicado</option>
+            <option value="pausado">Pausado</option>
+            <option value="reprovado">Reprovado</option>
             <option value="vendido">Vendido</option>
             <option value="alugado">Alugado</option>
+            <option value="arquivado">Arquivado</option>
             <option value="inativo">Inativo</option>
           </select>
           {/* Tipo filter */}
@@ -450,7 +601,52 @@ export default function ImoveisPage() {
                       >
                         <Pencil size={16} />
                       </Link>
-                      {isSuperadmin && (
+                      {isAdmin && imovel.status === 'enviado_revisao' && (
+                        <Link
+                          to={`/painel/imoveis/${imovel.id}`}
+                          className="rounded-lg p-2 text-teal-500 transition hover:bg-teal-50 hover:text-teal-700 dark:text-teal-400 dark:hover:bg-teal-900/20 dark:hover:text-teal-300"
+                          title="Revisar"
+                        >
+                          <ClipboardCheck size={16} />
+                        </Link>
+                      )}
+                      {isAdmin && imovel.status === 'aprovado' && (
+                        <button
+                          onClick={() => handleQuickAction(imovel.id, 'publicar')}
+                          className="rounded-lg p-2 text-green-500 transition hover:bg-green-50 hover:text-green-700 dark:text-green-400 dark:hover:bg-green-900/20 dark:hover:text-green-300"
+                          title="Publicar"
+                        >
+                          <Eye size={16} />
+                        </button>
+                      )}
+                      {isAdmin && imovel.status === 'publicado' && (
+                        <button
+                          onClick={() => handleQuickAction(imovel.id, 'pausar')}
+                          className="rounded-lg p-2 text-yellow-500 transition hover:bg-yellow-50 hover:text-yellow-700 dark:text-yellow-400 dark:hover:bg-yellow-900/20 dark:hover:text-yellow-300"
+                          title="Pausar"
+                        >
+                          <Pause size={16} />
+                        </button>
+                      )}
+                      {isAdmin && imovel.status === 'pausado' && (
+                        <button
+                          onClick={() => handleQuickAction(imovel.id, 'despausar')}
+                          className="rounded-lg p-2 text-green-500 transition hover:bg-green-50 hover:text-green-700 dark:text-green-400 dark:hover:bg-green-900/20 dark:hover:text-green-300"
+                          title="Despausar"
+                        >
+                          <Play size={16} />
+                        </button>
+                      )}
+                      {isAdmin && !['arquivado', 'inativo'].includes(imovel.status) && (
+                        <button
+                          onClick={() => handleQuickAction(imovel.id, 'arquivar')}
+                          className="rounded-lg p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                          title="Arquivar"
+                        >
+                          <Archive size={16} />
+                        </button>
+                      )}
+                      {isAdmin && (
                         <button
                           onClick={() => setDeleteTarget(imovel)}
                           className="rounded-lg p-2 text-gray-500 transition hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-900/20 dark:hover:text-red-400"
