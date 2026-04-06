@@ -270,7 +270,7 @@ export default function NovoImovelPage() {
   }
 
   async function insertImovel(data: ImovelFormData, status: string) {
-    const slug = generateSlug(data.titulo)
+    const slug = generateSlug(data.titulo) + '-' + Date.now().toString(36)
     const { data: inserted, error } = await supabase.from('imoveis').insert({
       titulo: data.titulo,
       descricao: data.descricao,

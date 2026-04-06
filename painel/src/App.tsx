@@ -9,6 +9,7 @@ import NovoImovelPage from '@/pages/NovoImovelPage'
 import EditarImovelPage from '@/pages/EditarImovelPage'
 import LeadsPage from '@/pages/LeadsPage'
 import PrecificacaoPage from '@/pages/PrecificacaoPage'
+import CRMPage from '@/pages/CRMPage'
 import AprendizadoPage from '@/pages/AprendizadoPage'
 import ModuloAulaPage from '@/pages/ModuloAulaPage'
 import PerfilPage from '@/pages/PerfilPage'
@@ -28,6 +29,7 @@ export default function App() {
               <Route path="imoveis/:id" element={<EditarImovelPage />} />
               <Route path="leads" element={<LeadsPage />} />
               <Route path="precificacao" element={<PrecificacaoPage />} />
+              <Route path="crm" element={<CRMPage />} />
               <Route path="aprendizado" element={<AprendizadoPage />} />
               <Route path="aprendizado/modulo/:moduloId" element={<ModuloAulaPage />} />
               <Route path="perfil" element={<PerfilPage />} />
