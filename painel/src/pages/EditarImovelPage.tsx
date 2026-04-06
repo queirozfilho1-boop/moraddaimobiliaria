@@ -19,6 +19,9 @@ import {
   Play,
   Send,
   Clock,
+  FileText,
+  UserCircle,
+  Download,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuth } from '@/contexts/AuthContext'
@@ -244,6 +247,32 @@ export default function EditarImovelPage() {
   const [novasFotos, setNovasFotos] = useState<{ file: File; preview: string; principal: boolean }[]>([])
   const [uploadingFotos, setUploadingFotos] = useState(false)
 
+  // Proprietário state
+  const [proprietario, setProprietario] = useState({
+    id: '', nome: '', cpf_cnpj: '', telefone: '', email: '', endereco: '', observacoes: ''
+  })
+  const [savingProprietario, setSavingProprietario] = useState(false)
+
+  // Documentos state
+  const [docsExistentes, setDocsExistentes] = useState<{ id: string; tipo: string; nome_arquivo: string; url: string; created_at: string }[]>([])
+  const [novosDocumentos, setNovosDocumentos] = useState<{ file: File; tipo: string; observacoes: string }[]>([])
+  const [uploadingDocs, setUploadingDocs] = useState(false)
+
+  const TIPOS_DOCUMENTO = [
+    { value: 'escritura', label: 'Escritura' },
+    { value: 'matricula', label: 'Matrícula' },
+    { value: 'iptu', label: 'IPTU' },
+    { value: 'contrato', label: 'Contrato' },
+    { value: 'procuracao', label: 'Procuração' },
+    { value: 'certidao_negativa', label: 'Certidão Negativa' },
+    { value: 'habite_se', label: 'Habite-se' },
+    { value: 'planta', label: 'Planta' },
+    { value: 'laudo_avaliacao', label: 'Laudo de Avaliação' },
+    { value: 'comprovante_propriedade', label: 'Comprovante de Propriedade' },
+    { value: 'rgi', label: 'RGI' },
+    { value: 'outro', label: 'Outro' },
+  ] as const
+
   // Review workflow state
   const [revisoes, setRevisoes] = useState<RevisaoRecord[]>([])
   const [reviewAction, setReviewAction] = useState<'aprovar' | 'devolver' | 'reprovar' | null>(null)
@@ -350,6 +379,33 @@ export default function EditarImovelPage() {
           revisor_nome: r.users_profiles?.nome || 'Sistema',
         })))
 
+        // Buscar proprietário
+        const { data: propData } = await supabase
+          .from('imoveis_proprietarios')
+          .select('*')
+          .eq('imovel_id', id)
+          .limit(1)
+          .maybeSingle()
+        if (propData) {
+          setProprietario({
+            id: propData.id,
+            nome: propData.nome || '',
+            cpf_cnpj: propData.cpf_cnpj || '',
+            telefone: propData.telefone || '',
+            email: propData.email || '',
+            endereco: propData.endereco || '',
+            observacoes: propData.observacoes || '',
+          })
+        }
+
+        // Buscar documentos
+        const { data: docsData } = await supabase
+          .from('imoveis_documentos')
+          .select('id, tipo, nome_arquivo, url, created_at')
+          .eq('imovel_id', id)
+          .order('created_at')
+        setDocsExistentes(docsData || [])
+
         reset({
           titulo: data.titulo || '',
           descricao: data.descricao || '',
@@ -445,6 +501,123 @@ export default function EditarImovelPage() {
     }
     setUploadingFotos(false)
     setNovasFotos([])
+  }
+
+  // ── Proprietário save ──
+  async function saveProprietario() {
+    if (!id || !proprietario.nome) return
+    setSavingProprietario(true)
+    try {
+      if (proprietario.id) {
+        await supabase.from('imoveis_proprietarios').update({
+          nome: proprietario.nome,
+          cpf_cnpj: proprietario.cpf_cnpj || null,
+          telefone: proprietario.telefone || null,
+          email: proprietario.email || null,
+          endereco: proprietario.endereco || null,
+          observacoes: proprietario.observacoes || null,
+        }).eq('id', proprietario.id)
+      } else {
+        const { data: inserted } = await supabase.from('imoveis_proprietarios').insert({
+          imovel_id: id,
+          nome: proprietario.nome,
+          cpf_cnpj: proprietario.cpf_cnpj || null,
+          telefone: proprietario.telefone || null,
+          email: proprietario.email || null,
+          endereco: proprietario.endereco || null,
+          observacoes: proprietario.observacoes || null,
+        }).select('id').single()
+        if (inserted) setProprietario(p => ({ ...p, id: inserted.id }))
+      }
+      toast.success('Proprietário salvo!')
+    } catch (err) {
+      console.error('Erro ao salvar proprietário:', err)
+      toast.error('Erro ao salvar proprietário')
+    } finally {
+      setSavingProprietario(false)
+    }
+  }
+
+  // ── Documentos upload ──
+  function handleDocFiles(files: FileList | File[]) {
+    const newDocs = Array.from(files).map(file => ({
+      file,
+      tipo: 'outro',
+      observacoes: '',
+    }))
+    setNovosDocumentos(prev => [...prev, ...newDocs])
+  }
+
+  function removeNovoDoc(index: number) {
+    setNovosDocumentos(prev => prev.filter((_, i) => i !== index))
+  }
+
+  async function uploadNovosDocumentos() {
+    if (!id || novosDocumentos.length === 0) return
+    setUploadingDocs(true)
+    for (const doc of novosDocumentos) {
+      try {
+        const ts = Date.now()
+        const ext = doc.file.name.split('.').pop() || 'pdf'
+        const path = `${id}/${doc.tipo}/${ts}.${ext}`
+        const { error: upErr } = await supabase.storage
+          .from('documentos')
+          .upload(path, doc.file, { contentType: doc.file.type, upsert: true })
+        if (upErr) { console.error('Erro upload doc:', upErr); continue }
+        const fullPath = `documentos/${path}`
+        await supabase.from('imoveis_documentos').insert({
+          imovel_id: id,
+          tipo: doc.tipo,
+          nome_arquivo: doc.file.name,
+          url: fullPath,
+          observacoes: doc.observacoes || null,
+          uploaded_by: profile?.id,
+        })
+      } catch (err) {
+        console.error('Erro doc:', err)
+      }
+    }
+    // Refresh lista
+    const { data: docsData } = await supabase
+      .from('imoveis_documentos')
+      .select('id, tipo, nome_arquivo, url, created_at')
+      .eq('imovel_id', id)
+      .order('created_at')
+    setDocsExistentes(docsData || [])
+    setNovosDocumentos([])
+    setUploadingDocs(false)
+    toast.success('Documentos enviados!')
+  }
+
+  async function removeDocExistente(docId: string, url: string) {
+    try {
+      // Remove do storage (extrair path sem o bucket prefix)
+      const storagePath = url.replace('documentos/', '')
+      await supabase.storage.from('documentos').remove([storagePath])
+      await supabase.from('imoveis_documentos').delete().eq('id', docId)
+      setDocsExistentes(prev => prev.filter(d => d.id !== docId))
+      toast.success('Documento removido')
+    } catch (err) {
+      console.error('Erro ao remover documento:', err)
+      toast.error('Erro ao remover documento')
+    }
+  }
+
+  async function downloadDoc(url: string, nomeArquivo: string) {
+    try {
+      const storagePath = url.replace('documentos/', '')
+      const { data, error } = await supabase.storage.from('documentos').download(storagePath)
+      if (error) throw error
+      const blobUrl = URL.createObjectURL(data)
+      const a = document.createElement('a')
+      a.href = blobUrl
+      a.download = nomeArquivo
+      a.click()
+      URL.revokeObjectURL(blobUrl)
+    } catch (err) {
+      console.error('Erro download:', err)
+      toast.error('Erro ao baixar documento')
+    }
   }
 
   // ── Review workflow actions ──
@@ -1464,7 +1637,203 @@ export default function EditarImovelPage() {
           )}
         </SectionCard>
 
-        {/* Section 7: Corretor Responsável */}
+        {/* Section 7: Proprietário (interno) */}
+        <SectionCard title="Proprietário do Imóvel">
+          <p className="mb-4 text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+            <UserCircle size={14} />
+            Dados internos — não serão exibidos no site
+          </p>
+          <div className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className={labelClass}>Nome do Proprietário</label>
+                <input
+                  type="text"
+                  placeholder="Nome completo"
+                  className={inputClass}
+                  value={proprietario.nome}
+                  onChange={e => setProprietario(p => ({ ...p, nome: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>CPF / CNPJ</label>
+                <input
+                  type="text"
+                  placeholder="000.000.000-00"
+                  className={inputClass}
+                  value={proprietario.cpf_cnpj}
+                  onChange={e => setProprietario(p => ({ ...p, cpf_cnpj: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className={labelClass}>Telefone</label>
+                <input
+                  type="tel"
+                  placeholder="(24) 99999-9999"
+                  className={inputClass}
+                  value={proprietario.telefone}
+                  onChange={e => setProprietario(p => ({ ...p, telefone: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>E-mail</label>
+                <input
+                  type="email"
+                  placeholder="proprietario@email.com"
+                  className={inputClass}
+                  value={proprietario.email}
+                  onChange={e => setProprietario(p => ({ ...p, email: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div>
+              <label className={labelClass}>Endereço do Proprietário</label>
+              <input
+                type="text"
+                placeholder="Endereço completo do proprietário"
+                className={inputClass}
+                value={proprietario.endereco}
+                onChange={e => setProprietario(p => ({ ...p, endereco: e.target.value }))}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Observações</label>
+              <textarea
+                rows={2}
+                placeholder="Notas internas sobre o proprietário..."
+                className={inputClass}
+                value={proprietario.observacoes}
+                onChange={e => setProprietario(p => ({ ...p, observacoes: e.target.value }))}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={saveProprietario}
+              disabled={savingProprietario || !proprietario.nome}
+              className="inline-flex items-center gap-2 rounded-lg bg-moradda-blue-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-moradda-blue-600 disabled:opacity-50"
+            >
+              {savingProprietario ? <Loader2 size={14} className="animate-spin" /> : <UserCircle size={16} />}
+              {proprietario.id ? 'Atualizar Proprietário' : 'Salvar Proprietário'}
+            </button>
+          </div>
+        </SectionCard>
+
+        {/* Section 8: Documentos (interno) */}
+        <SectionCard title="Documentos do Imóvel">
+          <p className="mb-4 text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+            <FileText size={14} />
+            Arquivos internos para cadastro — não serão exibidos no site
+          </p>
+
+          {/* Documentos existentes */}
+          {docsExistentes.length > 0 && (
+            <div className="mb-4 space-y-2">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                Documentos cadastrados ({docsExistentes.length})
+              </p>
+              {docsExistentes.map(doc => (
+                <div key={doc.id} className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800">
+                  <FileText size={20} className="shrink-0 text-moradda-blue-500" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-gray-700 dark:text-gray-200">
+                      {doc.nome_arquivo}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {TIPOS_DOCUMENTO.find(t => t.value === doc.tipo)?.label || doc.tipo}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => downloadDoc(doc.url, doc.nome_arquivo)}
+                    className="rounded-lg p-1.5 text-moradda-blue-500 transition hover:bg-moradda-blue-50 dark:hover:bg-moradda-blue-900/20"
+                    title="Baixar"
+                  >
+                    <Download size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeDocExistente(doc.id, doc.url)}
+                    className="rounded-lg p-1.5 text-gray-400 transition hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
+                    title="Remover"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Upload novos documentos */}
+          <div
+            onClick={() => document.getElementById('doc-input-edit')?.click()}
+            className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 px-6 py-8 transition hover:border-moradda-blue-400 hover:bg-moradda-blue-50/50 dark:border-gray-600 dark:bg-gray-700/50"
+          >
+            <Upload size={28} className="mb-2 text-gray-400 dark:text-gray-500" />
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
+              Clique para adicionar documentos
+            </p>
+            <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+              PDF, DOC, JPG, PNG (máx. 10MB cada)
+            </p>
+            <input
+              id="doc-input-edit"
+              type="file"
+              multiple
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp"
+              className="hidden"
+              onChange={(e) => {
+                if (e.target.files) handleDocFiles(e.target.files)
+                e.target.value = ''
+              }}
+            />
+          </div>
+          {novosDocumentos.length > 0 && (
+            <div className="mt-4 space-y-3">
+              {novosDocumentos.map((doc, i) => (
+                <div key={i} className="flex items-center gap-3 rounded-lg border border-moradda-blue-200 bg-white p-3 dark:border-moradda-blue-700 dark:bg-gray-800">
+                  <FileText size={20} className="shrink-0 text-moradda-blue-500" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-gray-700 dark:text-gray-200">
+                      {doc.file.name}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {(doc.file.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                  </div>
+                  <select
+                    value={doc.tipo}
+                    onChange={e => setNovosDocumentos(prev => prev.map((d, idx) => idx === i ? { ...d, tipo: e.target.value } : d))}
+                    className="rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+                  >
+                    {TIPOS_DOCUMENTO.map(t => (
+                      <option key={t.value} value={t.value}>{t.label}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => removeNovoDoc(i)}
+                    className="rounded-lg p-1.5 text-gray-400 transition hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={uploadNovosDocumentos}
+                disabled={uploadingDocs}
+                className="inline-flex items-center gap-2 rounded-lg bg-moradda-blue-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-moradda-blue-600 disabled:opacity-50"
+              >
+                {uploadingDocs ? <Loader2 size={14} className="animate-spin" /> : <Upload size={16} />}
+                {uploadingDocs ? 'Enviando...' : `Enviar ${novosDocumentos.length} documento${novosDocumentos.length > 1 ? 's' : ''}`}
+              </button>
+            </div>
+          )}
+        </SectionCard>
+
+        {/* Section 9: Corretor Responsável */}
         {isAdmin && (
           <SectionCard title="Corretor Responsável">
             <div>

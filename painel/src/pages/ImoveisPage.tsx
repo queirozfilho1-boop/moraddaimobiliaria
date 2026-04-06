@@ -14,6 +14,10 @@ import {
   Pause,
   Play,
   Archive,
+  AlertCircle,
+  FileText,
+  UserCircle,
+  ImageIcon,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuth } from '@/contexts/AuthContext'
@@ -54,6 +58,9 @@ interface Imovel {
   corretor_nome: string
   corretor_id: string
   foto_url: string | null
+  tem_fotos: boolean
+  tem_proprietario: boolean
+  tem_documentos: boolean
 }
 
 // ── Status badge config ────────────────────────────────────────────────────
@@ -160,6 +167,19 @@ export default function ImoveisPage() {
 
       if (error) throw error
 
+      const imovelIds = (data || []).map((r: any) => r.id)
+
+      // Fetch pendências em paralelo
+      const [fotosRes, propsRes, docsRes] = await Promise.all([
+        supabase.from('imoveis_fotos').select('imovel_id').in('imovel_id', imovelIds),
+        supabase.from('imoveis_proprietarios').select('imovel_id').in('imovel_id', imovelIds),
+        supabase.from('imoveis_documentos').select('imovel_id').in('imovel_id', imovelIds),
+      ])
+
+      const fotosSet = new Set((fotosRes.data || []).map((r: any) => r.imovel_id))
+      const propsSet = new Set((propsRes.data || []).map((r: any) => r.imovel_id))
+      const docsSet = new Set((docsRes.data || []).map((r: any) => r.imovel_id))
+
       const mapped: Imovel[] = (data || []).map((row: any) => ({
         id: row.id,
         codigo: row.codigo || '',
@@ -171,6 +191,9 @@ export default function ImoveisPage() {
         corretor_nome: row.users_profiles?.nome || '',
         corretor_id: row.corretor_id || '',
         foto_url: null,
+        tem_fotos: fotosSet.has(row.id),
+        tem_proprietario: propsSet.has(row.id),
+        tem_documentos: docsSet.has(row.id),
       }))
 
       setImoveis(mapped)
@@ -281,6 +304,29 @@ export default function ImoveisPage() {
     )
   }
 
+  // ── Pending indicators ──
+  function PendingIndicators({ imovel }: { imovel: Imovel }) {
+    const pendentes = []
+    if (!imovel.tem_fotos) pendentes.push({ icon: <ImageIcon size={12} />, label: 'Sem fotos', color: 'text-orange-500' })
+    if (!imovel.tem_proprietario) pendentes.push({ icon: <UserCircle size={12} />, label: 'Sem proprietário', color: 'text-amber-500' })
+    if (!imovel.tem_documentos) pendentes.push({ icon: <FileText size={12} />, label: 'Sem documentos', color: 'text-red-500' })
+    if (pendentes.length === 0) return null
+    return (
+      <div className="flex items-center gap-1.5">
+        {pendentes.map((p, i) => (
+          <span
+            key={i}
+            title={p.label}
+            className={`inline-flex items-center gap-0.5 rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium dark:bg-gray-700 ${p.color}`}
+          >
+            {p.icon}
+            <span className="hidden sm:inline">{p.label.replace('Sem ', '')}</span>
+          </span>
+        ))}
+      </div>
+    )
+  }
+
   // ── Property card (mobile) ──
   function PropertyCard({ imovel }: { imovel: Imovel }) {
     return (
@@ -311,6 +357,7 @@ export default function ImoveisPage() {
             <p className="text-xs text-gray-500 dark:text-gray-400">
               {tipoLabels[imovel.tipo]} &middot; {imovel.bairro}
             </p>
+            <PendingIndicators imovel={imovel} />
             <p className="mt-1 text-sm font-bold text-moradda-blue-700 dark:text-moradda-blue-300">
               {formatBRL(imovel.preco)}
             </p>
@@ -545,6 +592,9 @@ export default function ImoveisPage() {
                   Status
                 </th>
                 <th className="px-4 py-3 font-medium text-gray-500 dark:text-gray-400">
+                  Pendências
+                </th>
+                <th className="px-4 py-3 font-medium text-gray-500 dark:text-gray-400">
                   Corretor
                 </th>
                 <th className="px-4 py-3 font-medium text-gray-500 dark:text-gray-400">
@@ -588,6 +638,9 @@ export default function ImoveisPage() {
                   </td>
                   <td className="px-4 py-3">
                     <StatusBadge status={imovel.status} />
+                  </td>
+                  <td className="px-4 py-3">
+                    <PendingIndicators imovel={imovel} />
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-gray-600 dark:text-gray-300">
                     {imovel.corretor_nome}
@@ -662,7 +715,7 @@ export default function ImoveisPage() {
               {paginated.length === 0 && (
                 <tr>
                   <td
-                    colSpan={9}
+                    colSpan={10}
                     className="py-12 text-center text-sm text-gray-500 dark:text-gray-400"
                   >
                     Nenhum imóvel encontrado.
