@@ -235,8 +235,8 @@ export default function ContatoPage() {
                           <option value="comprar">Quero comprar um imóvel</option>
                           <option value="vender">Quero vender um imóvel</option>
                           <option value="alugar">Quero alugar um imóvel</option>
+                          <option value="locar">Quero colocar para locação</option>
                           <option value="avaliar">Quero avaliar um imóvel</option>
-                          <option value="parceria">Proposta de parceria</option>
                           <option value="outro">Outro assunto</option>
                         </select>
                       </div>

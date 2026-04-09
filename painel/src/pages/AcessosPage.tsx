@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { UserCog, UserPlus, Shield, Users, Loader2, Briefcase } from 'lucide-react'
+import { UserCog, UserPlus, Shield, Users, Loader2, Briefcase, Pencil, Trash2, X, Save } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 
@@ -41,6 +41,15 @@ export default function AcessosPage() {
   const [showNovo, setShowNovo] = useState(false)
   const [novoForm, setNovoForm] = useState({ nome: '', email: '', telefone: '', whatsapp: '', creci: '', senha: '', role_id: '' })
   const [salvando, setSalvando] = useState(false)
+
+  // Editar usuário
+  const [editId, setEditId] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState({ nome: '', email: '', telefone: '', whatsapp: '', creci: '', role_id: '' })
+  const [editSalvando, setEditSalvando] = useState(false)
+
+  // Excluir usuário
+  const [deleteTarget, setDeleteTarget] = useState<Usuario | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     fetchUsuarios()
@@ -122,6 +131,41 @@ export default function AcessosPage() {
     toast.success('Usuário criado com sucesso!')
     setNovoForm({ nome: '', email: '', telefone: '', whatsapp: '', creci: '', senha: '', role_id: '' })
     setShowNovo(false)
+    fetchUsuarios()
+  }
+
+  function startEdit(u: Usuario) {
+    setEditId(u.id)
+    setEditForm({ nome: u.nome, email: u.email, telefone: u.telefone || '', whatsapp: u.whatsapp || '', creci: u.creci || '', role_id: u.role_id })
+  }
+
+  async function salvarEdicao() {
+    if (!editId || !editForm.nome) return
+    setEditSalvando(true)
+    const { error } = await supabase.from('users_profiles').update({
+      nome: editForm.nome,
+      email: editForm.email,
+      telefone: editForm.telefone || null,
+      whatsapp: editForm.whatsapp || null,
+      creci: editForm.creci || null,
+      role_id: editForm.role_id,
+    }).eq('id', editId)
+    setEditSalvando(false)
+    if (error) { toast.error('Erro: ' + error.message); return }
+    toast.success('Usuário atualizado!')
+    setEditId(null)
+    fetchUsuarios()
+  }
+
+  async function excluirUsuario() {
+    if (!deleteTarget) return
+    setDeleting(true)
+    // Deleta perfil (user_id CASCADE vai lidar com o auth se configurado)
+    const { error } = await supabase.from('users_profiles').delete().eq('id', deleteTarget.id)
+    setDeleting(false)
+    if (error) { toast.error('Erro: ' + error.message); return }
+    toast.success('Usuário excluído!')
+    setDeleteTarget(null)
     fetchUsuarios()
   }
 
@@ -270,41 +314,85 @@ export default function AcessosPage() {
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
               {listaAtual.map(u => (
                 <tr key={u.id} className="transition hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-moradda-blue-100 font-semibold text-moradda-blue-600 dark:bg-moradda-blue-900/40 dark:text-moradda-blue-300">
-                        {u.nome.charAt(0)}
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-800 dark:text-gray-100">{u.nome}</p>
-                        <p className="text-xs text-gray-400">{ROLE_DISPLAY[u.role_nome] || u.role_nome}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{u.email}</td>
-                  <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{u.telefone || '—'}</td>
-                  {tab === 'corretores' && <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{u.creci || '—'}</td>}
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                      u.ativo
-                        ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
-                        : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
-                    }`}>
-                      {u.ativo ? 'Ativo' : 'Inativo'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <button
-                      onClick={() => toggleAtivo(u.id, u.ativo)}
-                      className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
-                        u.ativo
-                          ? 'text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20'
-                          : 'text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20'
-                      }`}
-                    >
-                      {u.ativo ? 'Desativar' : 'Ativar'}
-                    </button>
-                  </td>
+                  {editId === u.id ? (
+                    <>
+                      <td className="px-4 py-3">
+                        <input type="text" value={editForm.nome} onChange={e => setEditForm(f => ({ ...f, nome: e.target.value }))} className={inputClass + ' !py-1.5'} />
+                      </td>
+                      <td className="px-4 py-3">
+                        <input type="email" value={editForm.email} onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))} className={inputClass + ' !py-1.5'} />
+                      </td>
+                      <td className="px-4 py-3">
+                        <input type="tel" value={editForm.telefone} onChange={e => setEditForm(f => ({ ...f, telefone: e.target.value }))} className={inputClass + ' !py-1.5'} />
+                      </td>
+                      {tab === 'corretores' && (
+                        <td className="px-4 py-3">
+                          <input type="text" value={editForm.creci} onChange={e => setEditForm(f => ({ ...f, creci: e.target.value }))} className={inputClass + ' !py-1.5'} />
+                        </td>
+                      )}
+                      <td className="px-4 py-3">
+                        <select value={editForm.role_id} onChange={e => setEditForm(f => ({ ...f, role_id: e.target.value }))} className={inputClass + ' !py-1.5'}>
+                          {roles.map(r => <option key={r.id} value={r.id}>{ROLE_DISPLAY[r.nome] || r.nome}</option>)}
+                        </select>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
+                          <button onClick={salvarEdicao} disabled={editSalvando} className="rounded-lg p-1.5 text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20" title="Salvar">
+                            <Save size={16} />
+                          </button>
+                          <button onClick={() => setEditId(null)} className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700" title="Cancelar">
+                            <X size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-moradda-blue-100 font-semibold text-moradda-blue-600 dark:bg-moradda-blue-900/40 dark:text-moradda-blue-300">
+                            {u.nome.charAt(0)}
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-800 dark:text-gray-100">{u.nome}</p>
+                            <p className="text-xs text-gray-400">{ROLE_DISPLAY[u.role_nome] || u.role_nome}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{u.email}</td>
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{u.telefone || '—'}</td>
+                      {tab === 'corretores' && <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{u.creci || '—'}</td>}
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                          u.ativo
+                            ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
+                            : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+                        }`}>
+                          {u.ativo ? 'Ativo' : 'Inativo'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => startEdit(u)} className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-moradda-blue-600 dark:text-gray-400 dark:hover:bg-gray-700" title="Editar">
+                            <Pencil size={15} />
+                          </button>
+                          <button
+                            onClick={() => toggleAtivo(u.id, u.ativo)}
+                            className={`rounded-lg px-2 py-1.5 text-xs font-medium transition ${
+                              u.ativo
+                                ? 'text-amber-600 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/20'
+                                : 'text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20'
+                            }`}
+                          >
+                            {u.ativo ? 'Desativar' : 'Ativar'}
+                          </button>
+                          <button onClick={() => setDeleteTarget(u)} className="rounded-lg p-1.5 text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-900/20" title="Excluir">
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      </td>
+                    </>
+                  )}
                 </tr>
               ))}
               {listaAtual.length === 0 && (
@@ -318,6 +406,36 @@ export default function AcessosPage() {
           </table>
         </div>
       </div>
+
+      {/* Modal confirmação de exclusão */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:bg-gray-800">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
+              Excluir usuário
+            </h3>
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+              Tem certeza que deseja excluir <strong>{deleteTarget.nome}</strong> ({deleteTarget.email})? Esta ação não pode ser desfeita.
+            </p>
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                disabled={deleting}
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={excluirUsuario}
+                disabled={deleting}
+                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-50"
+              >
+                {deleting ? 'Excluindo...' : 'Excluir'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
