@@ -163,7 +163,7 @@ export default function AcessosPage() {
     try {
       const uid = deleteTarget.id
 
-      // Verificar se tem imóveis vinculados (NOT NULL, não pode setar null)
+      // Verificar se tem imóveis vinculados
       const { data: imoveisVinculados } = await supabase.from('imoveis').select('id').eq('corretor_id', uid)
       if (imoveisVinculados && imoveisVinculados.length > 0) {
         toast.error(`Não é possível excluir: este usuário tem ${imoveisVinculados.length} imóvel(is) vinculado(s). Reatribua os imóveis antes de excluir.`)
@@ -172,25 +172,10 @@ export default function AcessosPage() {
         return
       }
 
-      // Limpar referências FK que aceitam NULL
-      await supabase.from('leads').update({ corretor_id: null }).eq('corretor_id', uid)
-      await supabase.from('precos_referencia').update({ atualizado_por: null }).eq('atualizado_por', uid)
-      await supabase.from('imoveis_revisoes').update({ revisor_id: null }).eq('revisor_id', uid)
-      await supabase.from('leads_historico').update({ usuario_id: null }).eq('usuario_id', uid)
-      await supabase.from('followups').update({ corretor_id: null }).eq('corretor_id', uid)
-      await supabase.from('ptam_historico').update({ corretor_id: null }).eq('corretor_id', uid)
-      await supabase.from('imoveis_documentos').update({ uploaded_by: null }).eq('uploaded_by', uid)
-      await supabase.from('blog_posts').update({ autor_id: null }).eq('autor_id', uid)
-      await supabase.from('distribuicao_leads').update({ ultimo_corretor_id: null }).eq('ultimo_corretor_id', uid)
-      // Deletar registros vinculados
-      await supabase.from('notificacoes').delete().eq('usuario_id', uid)
-      await supabase.from('log_atividades').delete().eq('usuario_id', uid)
-      await supabase.from('progresso_corretor').delete().eq('corretor_id', uid)
-      await supabase.from('progresso_modulo').delete().eq('corretor_id', uid)
-      await supabase.from('certificados').delete().eq('corretor_id', uid)
-      // Deletar perfil
-      const { error } = await supabase.from('users_profiles').delete().eq('id', uid)
-      if (error) throw error
+      // Usar RPC pra limpar tudo de uma vez (bypassa RLS)
+      const { error: rpcError } = await supabase.rpc('excluir_usuario_completo', { p_user_profile_id: uid })
+      if (rpcError) throw rpcError
+
       toast.success('Usuário excluído!')
       setDeleteTarget(null)
       fetchUsuarios()
