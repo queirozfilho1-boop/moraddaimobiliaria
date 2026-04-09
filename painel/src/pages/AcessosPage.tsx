@@ -160,13 +160,35 @@ export default function AcessosPage() {
   async function excluirUsuario() {
     if (!deleteTarget) return
     setDeleting(true)
-    // Deleta perfil (user_id CASCADE vai lidar com o auth se configurado)
-    const { error } = await supabase.from('users_profiles').delete().eq('id', deleteTarget.id)
-    setDeleting(false)
-    if (error) { toast.error('Erro: ' + error.message); return }
-    toast.success('Usuário excluído!')
-    setDeleteTarget(null)
-    fetchUsuarios()
+    try {
+      const uid = deleteTarget.id
+      // Limpar referências FK antes de deletar
+      await supabase.from('imoveis').update({ corretor_id: null }).eq('corretor_id', uid)
+      await supabase.from('leads').update({ corretor_id: null }).eq('corretor_id', uid)
+      await supabase.from('precos_referencia').update({ atualizado_por: null }).eq('atualizado_por', uid)
+      await supabase.from('imoveis_revisoes').update({ revisor_id: null }).eq('revisor_id', uid)
+      await supabase.from('leads_historico').update({ usuario_id: null }).eq('usuario_id', uid)
+      await supabase.from('followups').update({ corretor_id: null }).eq('corretor_id', uid)
+      await supabase.from('notificacoes').delete().eq('usuario_id', uid)
+      await supabase.from('log_atividades').delete().eq('usuario_id', uid)
+      await supabase.from('ptam_historico').update({ corretor_id: null }).eq('corretor_id', uid)
+      await supabase.from('imoveis_documentos').update({ uploaded_by: null }).eq('uploaded_by', uid)
+      await supabase.from('progresso_corretor').delete().eq('corretor_id', uid)
+      await supabase.from('progresso_modulo').delete().eq('corretor_id', uid)
+      await supabase.from('certificados').delete().eq('corretor_id', uid)
+      await supabase.from('distribuicao_leads').update({ ultimo_corretor_id: null }).eq('ultimo_corretor_id', uid)
+      await supabase.from('blog_posts').update({ autor_id: null }).eq('autor_id', uid)
+      // Deletar perfil
+      const { error } = await supabase.from('users_profiles').delete().eq('id', uid)
+      if (error) throw error
+      toast.success('Usuário excluído!')
+      setDeleteTarget(null)
+      fetchUsuarios()
+    } catch (err: any) {
+      toast.error('Erro ao excluir: ' + (err.message || 'Erro desconhecido'))
+    } finally {
+      setDeleting(false)
+    }
   }
 
   const corretores = usuarios.filter(u => u.role_nome === 'corretor')
