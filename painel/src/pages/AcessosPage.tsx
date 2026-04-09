@@ -164,10 +164,11 @@ export default function AcessosPage() {
       const uid = deleteTarget.id
 
       // Verificar se tem imóveis vinculados (NOT NULL, não pode setar null)
-      const { count: imoveisCount } = await supabase.from('imoveis').select('id', { count: 'exact', head: true }).eq('corretor_id', uid)
-      if (imoveisCount && imoveisCount > 0) {
-        toast.error(`Não é possível excluir: este usuário tem ${imoveisCount} imóvel(is) vinculado(s). Reatribua os imóveis antes de excluir.`)
+      const { data: imoveisVinculados } = await supabase.from('imoveis').select('id').eq('corretor_id', uid)
+      if (imoveisVinculados && imoveisVinculados.length > 0) {
+        toast.error(`Não é possível excluir: este usuário tem ${imoveisVinculados.length} imóvel(is) vinculado(s). Reatribua os imóveis antes de excluir.`)
         setDeleting(false)
+        setDeleteTarget(null)
         return
       }
 
