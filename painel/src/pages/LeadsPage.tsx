@@ -42,7 +42,9 @@ type LeadStatus =
   | 'aguardando_retorno' | 'followup_agendado' | 'visita_agendada'
   | 'proposta_enviada' | 'em_negociacao' | 'convertido' | 'perdido' | 'sem_resposta'
 
-type LeadOrigem = 'site_contato' | 'imovel' | 'avaliacao' | 'whatsapp' | 'vender'
+type LeadOrigem = 'site_contato' | 'imovel' | 'avaliacao' | 'whatsapp' | 'vender' | 'manual'
+
+type LeadTipo = 'comprar' | 'vender' | 'alugar_imovel' | 'alugar_meu_imovel'
 
 type MotivoPerdaKey =
   | 'sem_resposta' | 'desistiu' | 'comprou_outro' | 'valor_fora'
@@ -62,6 +64,7 @@ interface Lead {
   telefone: string
   email: string
   origem: LeadOrigem
+  tipo: LeadTipo
   imovel_id?: string
   imovel_titulo?: string
   corretor_id: string
@@ -136,7 +139,17 @@ const origemConfig: Record<LeadOrigem, { label: string; color: string; bg: strin
   avaliacao:    { label: 'Avaliacao',         color: 'text-purple-700 dark:text-purple-300', bg: 'bg-purple-100 dark:bg-purple-900/40' },
   whatsapp:     { label: 'WhatsApp',          color: 'text-emerald-700 dark:text-emerald-300', bg: 'bg-emerald-100 dark:bg-emerald-900/40' },
   vender:       { label: 'Quero Vender',      color: 'text-orange-700 dark:text-orange-300', bg: 'bg-orange-100 dark:bg-orange-900/40' },
+  manual:       { label: 'Cadastro Manual',  color: 'text-gray-700 dark:text-gray-300',     bg: 'bg-gray-200 dark:bg-gray-700/40' },
 }
+
+const tipoConfig: Record<LeadTipo, { label: string; short: string; color: string; bg: string; icon: string }> = {
+  comprar:           { label: 'Quero comprar imóvel',   short: 'Comprar',     color: 'text-blue-700 dark:text-blue-300',     bg: 'bg-blue-100 dark:bg-blue-900/40',     icon: '🏠' },
+  vender:            { label: 'Quero vender meu imóvel', short: 'Vender',      color: 'text-orange-700 dark:text-orange-300', bg: 'bg-orange-100 dark:bg-orange-900/40', icon: '💰' },
+  alugar_imovel:     { label: 'Quero alugar um imóvel',  short: 'Alugar',      color: 'text-emerald-700 dark:text-emerald-300', bg: 'bg-emerald-100 dark:bg-emerald-900/40', icon: '🔑' },
+  alugar_meu_imovel: { label: 'Quero alugar meu imóvel', short: 'Anunciar',    color: 'text-purple-700 dark:text-purple-300', bg: 'bg-purple-100 dark:bg-purple-900/40', icon: '📋' },
+}
+
+const allTipos = Object.keys(tipoConfig) as LeadTipo[]
 
 const motivoPerdaLabels: Record<MotivoPerdaKey, string> = {
   sem_resposta:       'Sem resposta',
@@ -246,6 +259,24 @@ export default function LeadsPage() {
   const [resultadoText, setResultadoText] = useState('')
   const [savingStatus, setSavingStatus] = useState(false)
 
+  // Novo Lead Modal (cadastro manual)
+  const [showNewLeadModal, setShowNewLeadModal] = useState(false)
+  const [newLeadForm, setNewLeadForm] = useState({
+    nome: '',
+    telefone: '',
+    email: '',
+    mensagem: '',
+    tipo: 'comprar' as LeadTipo,
+    origem: 'manual' as LeadOrigem,
+    corretor_id: '',
+    imovel_id: '',
+  })
+  const [savingNewLead, setSavingNewLead] = useState(false)
+  const [imoveisOptions, setImoveisOptions] = useState<{ id: string; codigo: string; titulo: string }[]>([])
+
+  // Filtro por tipo
+  const [filterTipo, setFilterTipo] = useState<LeadTipo | ''>('')
+
   // SLA config
   const [slaMinutes, setSlaMinutes] = useState<Record<string, number>>({})
 
@@ -276,6 +307,19 @@ export default function LeadsPage() {
       })
   }, [])
 
+  /* ---- Fetch imóveis (para vincular no novo lead) ---- */
+  useEffect(() => {
+    if (!showNewLeadModal) return
+    if (imoveisOptions.length > 0) return
+    supabase
+      .from('imoveis')
+      .select('id, codigo, titulo')
+      .eq('ativo', true)
+      .order('codigo', { ascending: false })
+      .limit(500)
+      .then(({ data }) => { if (data) setImoveisOptions(data) })
+  }, [showNewLeadModal, imoveisOptions.length])
+
   /* ---- Fetch leads ---- */
   const fetchLeads = useCallback(async () => {
     try {
@@ -296,6 +340,7 @@ export default function LeadsPage() {
         telefone: row.telefone || '',
         email: row.email || '',
         origem: row.origem as LeadOrigem,
+        tipo: (row.tipo as LeadTipo) || 'comprar',
         imovel_id: row.imoveis?.id,
         imovel_titulo: row.imoveis?.titulo,
         corretor_id: row.corretor_id || '',
@@ -322,6 +367,59 @@ export default function LeadsPage() {
   }, [])
 
   useEffect(() => { fetchLeads() }, [fetchLeads])
+
+  /* ---- Criar novo lead manualmente ---- */
+  const handleCreateLead = useCallback(async () => {
+    const f = newLeadForm
+    if (!f.nome.trim() || !f.telefone.trim()) {
+      toast.error('Nome e telefone são obrigatórios')
+      return
+    }
+    setSavingNewLead(true)
+    try {
+      const corretorId = f.corretor_id || profile?.id || null
+      const payload: any = {
+        nome: f.nome.trim(),
+        telefone: f.telefone.trim(),
+        email: f.email.trim() || null,
+        mensagem: f.mensagem.trim() || null,
+        tipo: f.tipo,
+        origem: f.origem,
+        corretor_id: corretorId,
+        imovel_id: f.imovel_id || null,
+        status: 'novo',
+      }
+      const { data, error } = await supabase
+        .from('leads')
+        .insert(payload)
+        .select('id')
+        .single()
+      if (error) throw error
+
+      // Histórico inicial
+      if (data?.id) {
+        await supabase.from('leads_historico').insert({
+          lead_id: data.id,
+          usuario_id: profile?.id || null,
+          usuario_nome: profile?.nome || 'Sistema',
+          tipo: 'sistema',
+          descricao: `Lead criado manualmente · ${tipoConfig[f.tipo].label}`,
+        })
+      }
+
+      toast.success('Lead criado com sucesso')
+      setShowNewLeadModal(false)
+      setNewLeadForm({
+        nome: '', telefone: '', email: '', mensagem: '',
+        tipo: 'comprar', origem: 'manual', corretor_id: '', imovel_id: '',
+      })
+      fetchLeads()
+    } catch (err: any) {
+      toast.error('Erro ao criar lead: ' + (err.message || 'desconhecido'))
+    } finally {
+      setSavingNewLead(false)
+    }
+  }, [newLeadForm, profile, fetchLeads])
 
   /* ---- Fetch detail data when expanding ---- */
   const fetchDetail = useCallback(async (leadId: string) => {
@@ -379,17 +477,18 @@ export default function LeadsPage() {
     }
     if (filterStatus) result = result.filter(l => l.status === filterStatus)
     if (filterOrigem) result = result.filter(l => l.origem === filterOrigem)
+    if (filterTipo) result = result.filter(l => l.tipo === filterTipo)
     if (filterCorretor) result = result.filter(l => l.corretor_id === filterCorretor)
 
     return result
-  }, [leads, search, filterStatus, filterOrigem, filterCorretor, isAdmin, profile?.id])
+  }, [leads, search, filterStatus, filterOrigem, filterTipo, filterCorretor, isAdmin, profile?.id])
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const paginated = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
 
   // Reset page when filters change
-  useEffect(() => { setPage(0) }, [search, filterStatus, filterOrigem, filterCorretor])
+  useEffect(() => { setPage(0) }, [search, filterStatus, filterOrigem, filterTipo, filterCorretor])
 
   /* ---- Stats ---- */
   const visibleLeads = isAdmin ? leads : leads.filter(l => l.corretor_id === profile?.id)
@@ -674,8 +773,58 @@ export default function LeadsPage() {
     <div className="space-y-6">
       {/* ============ Header ============ */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">CRM - Leads</h1>
-        <span className="text-sm text-gray-500 dark:text-gray-400">{filtered.length} lead{filtered.length !== 1 ? 's' : ''} encontrado{filtered.length !== 1 ? 's' : ''}</span>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">CRM - Leads</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{filtered.length} lead{filtered.length !== 1 ? 's' : ''} encontrado{filtered.length !== 1 ? 's' : ''}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <a
+            href="/painel/crm"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-blue-300 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 dark:border-blue-700 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50"
+          >
+            <CircleDot className="h-4 w-4" /> Ver no CRM
+          </a>
+          <button
+            onClick={() => setShowNewLeadModal(true)}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+          >
+            <UserPlus className="h-4 w-4" /> Novo Lead
+          </button>
+        </div>
+      </div>
+
+      {/* ============ Tipo Tabs (compra/venda/aluguel) ============ */}
+      <div className="flex flex-wrap gap-2">
+        <button
+          onClick={() => setFilterTipo('')}
+          className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+            filterTipo === ''
+              ? 'border-gray-700 bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900'
+              : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'
+          }`}
+        >
+          Todos os tipos
+        </button>
+        {allTipos.map(t => {
+          const cfg = tipoConfig[t]
+          const count = leads.filter(l => l.tipo === t).length
+          const active = filterTipo === t
+          return (
+            <button
+              key={t}
+              onClick={() => setFilterTipo(t)}
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+                active
+                  ? `${cfg.bg} ${cfg.color} border-current`
+                  : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'
+              }`}
+            >
+              <span>{cfg.icon}</span>
+              <span>{cfg.short}</span>
+              <span className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] ${active ? 'bg-white/40 dark:bg-black/30' : 'bg-gray-200 dark:bg-gray-700'}`}>{count}</span>
+            </button>
+          )
+        })}
       </div>
 
       {/* ============ Stats Cards ============ */}
@@ -886,7 +1035,11 @@ export default function LeadsPage() {
                                   <span>Entrada: {fmtDateTime(lead.created_at)}</span>
                                 </div>
                                 {lead.origem && (
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${tipoConfig[lead.tipo]?.bg} ${tipoConfig[lead.tipo]?.color}`}>
+                                      <span>{tipoConfig[lead.tipo]?.icon}</span>
+                                      {tipoConfig[lead.tipo]?.label}
+                                    </span>
                                     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${origemConfig[lead.origem]?.bg} ${origemConfig[lead.origem]?.color}`}>
                                       {origemConfig[lead.origem]?.label}
                                     </span>
@@ -1322,6 +1475,147 @@ export default function LeadsPage() {
                 className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:opacity-50"
               >
                 Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============ Modal Novo Lead (cadastro manual) ============ */}
+      {showNewLeadModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-lg rounded-xl bg-white shadow-2xl dark:bg-gray-800">
+            <div className="flex items-center justify-between border-b border-gray-200 p-5 dark:border-gray-700">
+              <div className="flex items-center gap-2">
+                <UserPlus className="h-5 w-5 text-emerald-600" />
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-50">Novo Lead</h2>
+              </div>
+              <button
+                onClick={() => setShowNewLeadModal(false)}
+                className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="space-y-4 p-5">
+              {/* Tipo · 4 cards */}
+              <div>
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Tipo de interesse *</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {allTipos.map(t => {
+                    const cfg = tipoConfig[t]
+                    const sel = newLeadForm.tipo === t
+                    return (
+                      <button
+                        key={t}
+                        onClick={() => setNewLeadForm(f => ({ ...f, tipo: t }))}
+                        className={`rounded-lg border p-3 text-left transition-all ${
+                          sel
+                            ? `${cfg.bg} ${cfg.color} border-current ring-2 ring-current/20`
+                            : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-700'
+                        }`}
+                      >
+                        <div className="text-lg leading-none">{cfg.icon}</div>
+                        <div className="mt-1 text-xs font-semibold leading-tight">{cfg.label}</div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Nome *</label>
+                  <input
+                    type="text"
+                    value={newLeadForm.nome}
+                    onChange={e => setNewLeadForm(f => ({ ...f, nome: e.target.value }))}
+                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                    placeholder="Nome do lead"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Telefone *</label>
+                  <input
+                    type="tel"
+                    value={newLeadForm.telefone}
+                    onChange={e => setNewLeadForm(f => ({ ...f, telefone: e.target.value }))}
+                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                    placeholder="(11) 99999-9999"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">E-mail</label>
+                <input
+                  type="email"
+                  value={newLeadForm.email}
+                  onChange={e => setNewLeadForm(f => ({ ...f, email: e.target.value }))}
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                  placeholder="email@exemplo.com"
+                />
+              </div>
+
+              {/* Imóvel (apenas para Comprar / Alugar imóvel) */}
+              {(newLeadForm.tipo === 'comprar' || newLeadForm.tipo === 'alugar_imovel') && (
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Imóvel de interesse (opcional)</label>
+                  <select
+                    value={newLeadForm.imovel_id}
+                    onChange={e => setNewLeadForm(f => ({ ...f, imovel_id: e.target.value }))}
+                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                  >
+                    <option value="">— sem imóvel específico —</option>
+                    {imoveisOptions.map(im => (
+                      <option key={im.id} value={im.id}>{im.codigo} · {im.titulo}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {isAdmin && corretores.length > 0 && (
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Atribuir a corretor</label>
+                  <select
+                    value={newLeadForm.corretor_id}
+                    onChange={e => setNewLeadForm(f => ({ ...f, corretor_id: e.target.value }))}
+                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-emerald-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                  >
+                    <option value="">— eu mesmo —</option>
+                    {corretores.map(c => (
+                      <option key={c.id} value={c.id}>{c.nome}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Observação / mensagem</label>
+                <textarea
+                  rows={3}
+                  value={newLeadForm.mensagem}
+                  onChange={e => setNewLeadForm(f => ({ ...f, mensagem: e.target.value }))}
+                  className="w-full resize-none rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                  placeholder="Origem do contato, perfil do cliente, observações..."
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 border-t border-gray-200 p-4 dark:border-gray-700">
+              <button
+                onClick={() => setShowNewLeadModal(false)}
+                disabled={savingNewLead}
+                className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleCreateLead}
+                disabled={savingNewLead || !newLeadForm.nome.trim() || !newLeadForm.telefone.trim()}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+              >
+                {savingNewLead ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
+                {savingNewLead ? 'Salvando...' : 'Criar lead'}
               </button>
             </div>
           </div>

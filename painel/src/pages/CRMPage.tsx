@@ -32,6 +32,17 @@ type LeadStatus =
   | 'aguardando_retorno' | 'followup_agendado' | 'visita_agendada'
   | 'proposta_enviada' | 'em_negociacao' | 'convertido' | 'perdido' | 'sem_resposta'
 
+type LeadTipo = 'comprar' | 'vender' | 'alugar_imovel' | 'alugar_meu_imovel'
+
+const tipoConfig: Record<LeadTipo, { label: string; short: string; color: string; bg: string; icon: string }> = {
+  comprar:           { label: 'Quero comprar imóvel',   short: 'Comprar',   color: 'text-blue-700 dark:text-blue-300',     bg: 'bg-blue-100 dark:bg-blue-900/40',     icon: '🏠' },
+  vender:            { label: 'Quero vender meu imóvel', short: 'Vender',    color: 'text-orange-700 dark:text-orange-300', bg: 'bg-orange-100 dark:bg-orange-900/40', icon: '💰' },
+  alugar_imovel:     { label: 'Quero alugar imóvel',     short: 'Alugar',    color: 'text-emerald-700 dark:text-emerald-300', bg: 'bg-emerald-100 dark:bg-emerald-900/40', icon: '🔑' },
+  alugar_meu_imovel: { label: 'Quero alugar meu imóvel', short: 'Anunciar',  color: 'text-purple-700 dark:text-purple-300', bg: 'bg-purple-100 dark:bg-purple-900/40', icon: '📋' },
+}
+
+const allTipos = Object.keys(tipoConfig) as LeadTipo[]
+
 interface Lead {
   id: string
   nome: string
@@ -39,6 +50,7 @@ interface Lead {
   email: string
   mensagem?: string
   origem: string
+  tipo: LeadTipo
   imovel_id?: string | null
   corretor_id: string
   status: LeadStatus
@@ -153,6 +165,7 @@ export default function CRMPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filterCorretor, setFilterCorretor] = useState('')
+  const [filterTipo, setFilterTipo] = useState<LeadTipo | ''>('')
   const [showClosed, setShowClosed] = useState(false)
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
   const [historico, setHistorico] = useState<HistoricoEntry[]>([])
@@ -165,7 +178,7 @@ export default function CRMPage() {
     setLoading(true)
     const { data, error } = await supabase
       .from('leads')
-      .select('id, nome, telefone, email, mensagem, origem, status, notas, proxima_acao, proxima_acao_data, corretor_id, imovel_id, created_at, updated_at, imoveis(id, titulo, codigo), users_profiles!corretor_id(id, nome)')
+      .select('id, nome, telefone, email, mensagem, origem, tipo, status, notas, proxima_acao, proxima_acao_data, corretor_id, imovel_id, created_at, updated_at, imoveis(id, titulo, codigo), users_profiles!corretor_id(id, nome)')
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -261,8 +274,11 @@ export default function CRMPage() {
     if (filterCorretor) {
       result = result.filter(l => l.corretor_id === filterCorretor)
     }
+    if (filterTipo) {
+      result = result.filter(l => l.tipo === filterTipo)
+    }
     return result
-  }, [leads, search, filterCorretor])
+  }, [leads, search, filterCorretor, filterTipo])
 
   /* Group leads by status */
   const leadsByStatus = useMemo(() => {
@@ -359,6 +375,16 @@ export default function CRMPage() {
               className="w-full rounded-lg border border-gray-300 bg-white py-2 pl-10 pr-4 text-sm text-gray-700 placeholder-gray-400 focus:border-[#1B4F8A] focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:placeholder-gray-500"
             />
           </div>
+          <select
+            value={filterTipo}
+            onChange={e => setFilterTipo(e.target.value as LeadTipo | '')}
+            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-[#1B4F8A] focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+          >
+            <option value="">Todos os tipos</option>
+            {allTipos.map(t => (
+              <option key={t} value={t}>{tipoConfig[t].icon} {tipoConfig[t].label}</option>
+            ))}
+          </select>
           <select
             value={filterCorretor}
             onChange={e => setFilterCorretor(e.target.value)}
@@ -486,6 +512,14 @@ function KanbanColumn({
                 : 'Sem acao agendada'
               } />
             </div>
+            {lead.tipo && tipoConfig[lead.tipo] && (
+              <div className="mt-1.5 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium" style={{}}>
+                <span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${tipoConfig[lead.tipo].bg} ${tipoConfig[lead.tipo].color}`}>
+                  <span>{tipoConfig[lead.tipo].icon}</span>
+                  {tipoConfig[lead.tipo].short}
+                </span>
+              </div>
+            )}
             <div className="mt-1.5 flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
               <Phone className="h-3 w-3" />
               <span>{truncatePhone(lead.telefone)}</span>

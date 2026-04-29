@@ -25,3 +25,5 @@ referencia/
 *.njsproj
 *.sln
 *.sw?
+CREDENCIAIS_MORADDA.md
+painel/scripts/apply-leads-tipo.py

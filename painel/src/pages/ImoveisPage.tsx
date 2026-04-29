@@ -14,7 +14,6 @@ import {
   Pause,
   Play,
   Archive,
-  AlertCircle,
   FileText,
   UserCircle,
   ImageIcon,
