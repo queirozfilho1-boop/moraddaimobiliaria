@@ -24,6 +24,7 @@ import {
   Download,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import JSZip from 'jszip'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { uploadFotoComWatermark } from '@/lib/watermark'
@@ -243,7 +244,8 @@ export default function EditarImovelPage() {
   const [bairros, setBairros] = useState<{ id: string; nome: string }[]>([])
   const [corretores, setCorretores] = useState<{ id: string; nome: string }[]>([])
   const [savingDraft, setSavingDraft] = useState(false)
-  const [fotosExistentes, setFotosExistentes] = useState<{ id: string; url_watermark: string; principal: boolean; ordem: number }[]>([])
+  const [fotosExistentes, setFotosExistentes] = useState<{ id: string; url: string; url_watermark: string; principal: boolean; ordem: number }[]>([])
+  const [baixandoZip, setBaixandoZip] = useState(false)
   const [draggingFotoIdx, setDraggingFotoIdx] = useState<number | null>(null)
   const [novasFotos, setNovasFotos] = useState<{ file: File; preview: string; principal: boolean }[]>([])
   const [uploadingFotos, setUploadingFotos] = useState(false)
@@ -364,10 +366,10 @@ export default function EditarImovelPage() {
         // Buscar fotos existentes
         const { data: fotosData } = await supabase
           .from('imoveis_fotos')
-          .select('id, url_watermark, principal, ordem')
+          .select('id, url, url_watermark, principal, ordem')
           .eq('imovel_id', id)
           .order('ordem')
-        setFotosExistentes((fotosData || []).map((f, i) => ({ id: f.id, url_watermark: f.url_watermark || '', principal: f.principal, ordem: f.ordem ?? i })))
+        setFotosExistentes((fotosData || []).map((f: any, i) => ({ id: f.id, url: f.url || '', url_watermark: f.url_watermark || '', principal: f.principal, ordem: f.ordem ?? i })))
 
         // Buscar histórico de revisões
         const { data: revisoesData } = await supabase
@@ -522,6 +524,72 @@ export default function EditarImovelPage() {
       toast.success('Foto principal definida')
     } catch (err: any) {
       toast.error('Erro: ' + (err.message || ''))
+    }
+  }
+
+  function nomeArquivoFoto(idx: number, url: string) {
+    const ext = (url.split('?')[0].match(/\.([a-zA-Z0-9]+)$/)?.[1] || 'jpg').toLowerCase()
+    const base = (codigo || 'imovel').replace(/[^a-zA-Z0-9-_]/g, '')
+    return `${base}-foto-${String(idx + 1).padStart(2, '0')}.${ext}`
+  }
+
+  async function baixarFotoIndividual(idx: number) {
+    const foto = fotosExistentes[idx]
+    if (!foto) return
+    const url = foto.url || foto.url_watermark
+    if (!url) { toast.error('Foto sem URL'); return }
+    try {
+      const res = await fetch(url)
+      const blob = await res.blob()
+      const blobUrl = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = blobUrl
+      a.download = nomeArquivoFoto(idx, url)
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000)
+    } catch (err: any) {
+      toast.error('Erro ao baixar: ' + (err.message || ''))
+    }
+  }
+
+  async function baixarTodasFotos() {
+    if (fotosExistentes.length === 0) return
+    setBaixandoZip(true)
+    try {
+      const zip = new JSZip()
+      let ok = 0
+      let fail = 0
+      await Promise.all(
+        fotosExistentes.map(async (foto, idx) => {
+          const url = foto.url || foto.url_watermark
+          if (!url) { fail++; return }
+          try {
+            const res = await fetch(url)
+            const blob = await res.blob()
+            zip.file(nomeArquivoFoto(idx, url), blob)
+            ok++
+          } catch {
+            fail++
+          }
+        })
+      )
+      if (ok === 0) { toast.error('Nenhuma foto pôde ser baixada'); return }
+      const content = await zip.generateAsync({ type: 'blob' })
+      const blobUrl = URL.createObjectURL(content)
+      const a = document.createElement('a')
+      a.href = blobUrl
+      a.download = `${(codigo || 'imovel').replace(/[^a-zA-Z0-9-_]/g, '')}-fotos.zip`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000)
+      toast.success(`${ok} foto(s) baixada(s)${fail ? ` · ${fail} falha(s)` : ''}`)
+    } catch (err: any) {
+      toast.error('Erro ao gerar zip: ' + (err.message || ''))
+    } finally {
+      setBaixandoZip(false)
     }
   }
 
@@ -1612,13 +1680,24 @@ export default function EditarImovelPage() {
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
                   Fotos atuais · arraste pra reordenar · clique em ★ pra definir como principal
                 </p>
-                <button
-                  type="button"
-                  onClick={persistFotoOrder}
-                  className="rounded-md bg-moradda-blue-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-moradda-blue-600"
-                >
-                  Salvar ordem
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={baixarTodasFotos}
+                    disabled={baixandoZip}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                  >
+                    {baixandoZip ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
+                    {baixandoZip ? 'Compactando...' : `Baixar todas (${fotosExistentes.length})`}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={persistFotoOrder}
+                    className="rounded-md bg-moradda-blue-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-moradda-blue-600"
+                  >
+                    Salvar ordem
+                  </button>
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                 {fotosExistentes.map((foto, idx) => (
@@ -1658,6 +1737,14 @@ export default function EditarImovelPage() {
                           ★
                         </button>
                       )}
+                      <button
+                        type="button"
+                        onClick={() => baixarFotoIndividual(idx)}
+                        className="rounded-md bg-moradda-blue-500 px-2 py-1 text-xs font-medium text-white hover:bg-moradda-blue-600"
+                        title="Baixar foto"
+                      >
+                        <Download size={12} />
+                      </button>
                       <button
                         type="button"
                         onClick={() => removeFotoExistente(foto.id)}
