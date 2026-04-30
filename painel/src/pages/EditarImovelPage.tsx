@@ -492,14 +492,21 @@ export default function EditarImovelPage() {
 
   async function persistFotoOrder() {
     try {
-      // Atualiza ordem de todas as fotos no banco
-      await Promise.all(
+      // Atualiza ordem de todas as fotos no banco e captura erros individuais
+      const results = await Promise.all(
         fotosExistentes.map((f, i) =>
           supabase.from('imoveis_fotos').update({ ordem: i }).eq('id', f.id)
         )
       )
+      const failed = results.filter(r => r.error)
+      if (failed.length > 0) {
+        console.error('Erros ao salvar ordem:', failed.map(r => r.error))
+        toast.error(`${failed.length} foto(s) com erro · ${failed[0].error?.message || 'verifique permissões'}`)
+        return
+      }
       toast.success('Ordem das fotos salva')
     } catch (err: any) {
+      console.error('Erro persistFotoOrder:', err)
       toast.error('Erro ao salvar ordem: ' + (err.message || ''))
     }
   }
@@ -913,6 +920,20 @@ export default function EditarImovelPage() {
         .eq('id', id!)
 
       if (error) throw error
+
+      // Persiste a ordem das fotos existentes (caso o usuário tenha reordenado)
+      if (fotosExistentes.length > 0) {
+        const updates = await Promise.all(
+          fotosExistentes.map((f, i) =>
+            supabase.from('imoveis_fotos').update({ ordem: i }).eq('id', f.id)
+          )
+        )
+        const failed = updates.filter(u => u.error)
+        if (failed.length > 0) {
+          console.error('Erros ao salvar ordem:', failed.map(u => u.error))
+          toast.error(`${failed.length} foto(s) com erro ao salvar ordem · ${failed[0].error?.message || ''}`)
+        }
+      }
 
       // Upload novas fotos se houver
       if (novasFotos.length > 0) {
