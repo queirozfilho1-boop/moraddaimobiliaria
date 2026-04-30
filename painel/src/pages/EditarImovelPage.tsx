@@ -536,7 +536,7 @@ export default function EditarImovelPage() {
   async function baixarFotoIndividual(idx: number) {
     const foto = fotosExistentes[idx]
     if (!foto) return
-    const url = foto.url || foto.url_watermark
+    const url = foto.url_watermark || foto.url
     if (!url) { toast.error('Foto sem URL'); return }
     try {
       const res = await fetch(url)
@@ -563,7 +563,7 @@ export default function EditarImovelPage() {
       let fail = 0
       await Promise.all(
         fotosExistentes.map(async (foto, idx) => {
-          const url = foto.url || foto.url_watermark
+          const url = foto.url_watermark || foto.url
           if (!url) { fail++; return }
           try {
             const res = await fetch(url)
