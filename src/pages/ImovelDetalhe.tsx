@@ -277,7 +277,7 @@ export default function ImovelDetalhePage() {
                 <img
                   src={fotos[fotoAtual]?.url_watermark || fotos[fotoAtual]?.url}
                   alt={fotos[fotoAtual]?.legenda || imovel.titulo}
-                  className="h-full w-full object-cover transition-transform duration-100 ease-out pointer-events-none"
+                  className="h-full w-full object-contain transition-transform duration-100 ease-out pointer-events-none"
                   style={{
                     transform: touchStartX !== null ? `translateX(${dragOffset * 0.6}px)` : undefined,
                     cursor: fotos.length > 1 ? (touchStartX !== null ? 'grabbing' : 'grab') : 'default',
