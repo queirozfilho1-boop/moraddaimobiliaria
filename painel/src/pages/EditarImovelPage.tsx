@@ -243,7 +243,8 @@ export default function EditarImovelPage() {
   const [bairros, setBairros] = useState<{ id: string; nome: string }[]>([])
   const [corretores, setCorretores] = useState<{ id: string; nome: string }[]>([])
   const [savingDraft, setSavingDraft] = useState(false)
-  const [fotosExistentes, setFotosExistentes] = useState<{ id: string; url_watermark: string; principal: boolean }[]>([])
+  const [fotosExistentes, setFotosExistentes] = useState<{ id: string; url_watermark: string; principal: boolean; ordem: number }[]>([])
+  const [draggingFotoIdx, setDraggingFotoIdx] = useState<number | null>(null)
   const [novasFotos, setNovasFotos] = useState<{ file: File; preview: string; principal: boolean }[]>([])
   const [uploadingFotos, setUploadingFotos] = useState(false)
 
@@ -366,7 +367,7 @@ export default function EditarImovelPage() {
           .select('id, url_watermark, principal, ordem')
           .eq('imovel_id', id)
           .order('ordem')
-        setFotosExistentes((fotosData || []).map(f => ({ id: f.id, url_watermark: f.url_watermark || '', principal: f.principal })))
+        setFotosExistentes((fotosData || []).map((f, i) => ({ id: f.id, url_watermark: f.url_watermark || '', principal: f.principal, ordem: f.ordem ?? i })))
 
         // Buscar histórico de revisões
         const { data: revisoesData } = await supabase
@@ -475,6 +476,46 @@ export default function EditarImovelPage() {
     await supabase.from('imoveis_fotos').delete().eq('id', fotoId)
     setFotosExistentes(prev => prev.filter(f => f.id !== fotoId))
     toast.success('Foto removida')
+  }
+
+  // Reordenar fotos existentes (drag and drop)
+  function reorderFotos(fromIdx: number, toIdx: number) {
+    if (fromIdx === toIdx) return
+    setFotosExistentes(prev => {
+      const next = [...prev]
+      const [moved] = next.splice(fromIdx, 1)
+      next.splice(toIdx, 0, moved)
+      // reatribui ordem 0..N-1
+      return next.map((f, i) => ({ ...f, ordem: i }))
+    })
+  }
+
+  async function persistFotoOrder() {
+    try {
+      // Atualiza ordem de todas as fotos no banco
+      await Promise.all(
+        fotosExistentes.map((f, i) =>
+          supabase.from('imoveis_fotos').update({ ordem: i }).eq('id', f.id)
+        )
+      )
+      toast.success('Ordem das fotos salva')
+    } catch (err: any) {
+      toast.error('Erro ao salvar ordem: ' + (err.message || ''))
+    }
+  }
+
+  async function setFotoPrincipal(fotoId: string) {
+    if (!id) return
+    try {
+      // Tira principal de todas
+      await supabase.from('imoveis_fotos').update({ principal: false }).eq('imovel_id', id)
+      // Define a nova principal
+      await supabase.from('imoveis_fotos').update({ principal: true }).eq('id', fotoId)
+      setFotosExistentes(prev => prev.map(f => ({ ...f, principal: f.id === fotoId })))
+      toast.success('Foto principal definida')
+    } catch (err: any) {
+      toast.error('Erro: ' + (err.message || ''))
+    }
   }
 
   async function uploadNovasFotos() {
@@ -1543,16 +1584,59 @@ export default function EditarImovelPage() {
 
         {/* Section 6: Fotos */}
         <SectionCard title="Fotos">
-          {/* Fotos existentes */}
+          {/* Fotos existentes · drag and drop pra reordenar */}
           {fotosExistentes.length > 0 && (
             <div className="mb-4">
-              <p className="mb-2 text-sm font-medium text-gray-600 dark:text-gray-300">Fotos atuais</p>
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                  Fotos atuais · arraste pra reordenar · clique em ★ pra definir como principal
+                </p>
+                <button
+                  type="button"
+                  onClick={persistFotoOrder}
+                  className="rounded-md bg-moradda-blue-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-moradda-blue-600"
+                >
+                  Salvar ordem
+                </button>
+              </div>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                {fotosExistentes.map((foto) => (
-                  <div key={foto.id} className="group relative overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
-                    <img src={foto.url_watermark} alt="" className="aspect-square w-full object-cover" />
+                {fotosExistentes.map((foto, idx) => (
+                  <div
+                    key={foto.id}
+                    draggable
+                    onDragStart={() => setDraggingFotoIdx(idx)}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      e.preventDefault()
+                      if (draggingFotoIdx !== null) reorderFotos(draggingFotoIdx, idx)
+                      setDraggingFotoIdx(null)
+                    }}
+                    onDragEnd={() => setDraggingFotoIdx(null)}
+                    className={`group relative cursor-move overflow-hidden rounded-lg border-2 transition ${
+                      draggingFotoIdx === idx
+                        ? 'border-moradda-blue-500 opacity-50 scale-95'
+                        : 'border-gray-200 dark:border-gray-700 hover:border-moradda-blue-400'
+                    }`}
+                  >
+                    <img src={foto.url_watermark} alt="" className="aspect-square w-full object-cover pointer-events-none" />
+                    {/* Número da posição */}
+                    <div className="absolute top-2 left-2 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-xs font-bold text-white">
+                      {idx + 1}
+                    </div>
+                    {/* Overlay hover */}
                     <div className="absolute inset-0 bg-black/0 transition group-hover:bg-black/40" />
-                    <div className="absolute top-2 right-2 opacity-0 transition group-hover:opacity-100">
+                    {/* Botões topo direito */}
+                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 transition group-hover:opacity-100">
+                      {!foto.principal && (
+                        <button
+                          type="button"
+                          onClick={() => setFotoPrincipal(foto.id)}
+                          className="rounded-md bg-yellow-500 px-2 py-1 text-xs font-medium text-white hover:bg-yellow-600"
+                          title="Definir como principal"
+                        >
+                          ★
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => removeFotoExistente(foto.id)}
@@ -1561,9 +1645,10 @@ export default function EditarImovelPage() {
                         Remover
                       </button>
                     </div>
+                    {/* Badge Principal */}
                     {foto.principal && (
                       <div className="absolute bottom-2 left-2 rounded-md bg-moradda-gold-400 px-2 py-0.5 text-xs font-semibold text-white">
-                        Principal
+                        ★ Principal
                       </div>
                     )}
                   </div>

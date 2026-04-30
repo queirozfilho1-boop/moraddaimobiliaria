@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import {
-  ChevronRight, Home, Bed, Bath, Car, Maximize2, MapPin, Heart, Share2,
+  ChevronLeft, ChevronRight, Home, Bed, Bath, Car, Maximize2, MapPin, Heart, Share2,
   Phone, MessageCircle, ChevronDown, Check, Eye, Calendar
 } from 'lucide-react'
 import SEO from '@/components/common/SEO'
@@ -20,6 +20,45 @@ export default function ImovelDetalhePage() {
   const [showAllCaracteristicas, setShowAllCaracteristicas] = useState(false)
   const [isFavorito, setIsFavorito] = useState(false)
   const [fotoAtual, setFotoAtual] = useState(0)
+  // Swipe / drag state
+  const [touchStartX, setTouchStartX] = useState<number | null>(null)
+  const [dragOffset, setDragOffset] = useState(0)
+  const SWIPE_THRESHOLD = 50
+
+  function nextFoto() {
+    setFotoAtual((prev) => (prev + 1) % Math.max(1, fotos.length))
+  }
+  function prevFoto() {
+    setFotoAtual((prev) => (prev - 1 + Math.max(1, fotos.length)) % Math.max(1, fotos.length))
+  }
+  function handleTouchStart(e: React.TouchEvent | React.MouseEvent) {
+    const x = 'touches' in e ? e.touches[0].clientX : e.clientX
+    setTouchStartX(x)
+    setDragOffset(0)
+  }
+  function handleTouchMove(e: React.TouchEvent | React.MouseEvent) {
+    if (touchStartX === null) return
+    const x = 'touches' in e ? e.touches[0].clientX : e.clientX
+    setDragOffset(x - touchStartX)
+  }
+  function handleTouchEnd() {
+    if (touchStartX === null) return
+    if (dragOffset > SWIPE_THRESHOLD) prevFoto()
+    else if (dragOffset < -SWIPE_THRESHOLD) nextFoto()
+    setTouchStartX(null)
+    setDragOffset(0)
+  }
+
+  // Setas do teclado
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (fotos.length <= 1) return
+      if (e.key === 'ArrowRight') nextFoto()
+      else if (e.key === 'ArrowLeft') prevFoto()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [fotos.length])
 
   useEffect(() => {
     async function fetchImovel() {
@@ -223,24 +262,63 @@ export default function ImovelDetalhePage() {
       {/* Gallery */}
       <section className="bg-moradda-blue-900">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-8">
-          <div className="relative aspect-[16/9] max-h-[500px] overflow-hidden rounded-2xl bg-gradient-to-br from-moradda-blue-700 to-moradda-blue-800">
+          <div
+            className="relative aspect-[16/9] max-h-[500px] overflow-hidden rounded-2xl bg-gradient-to-br from-moradda-blue-700 to-moradda-blue-800 select-none"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onMouseDown={handleTouchStart}
+            onMouseMove={(e) => { if (touchStartX !== null) handleTouchMove(e) }}
+            onMouseUp={handleTouchEnd}
+            onMouseLeave={() => { if (touchStartX !== null) handleTouchEnd() }}
+          >
             {fotos.length > 0 ? (
               <>
                 <img
                   src={fotos[fotoAtual]?.url_watermark || fotos[fotoAtual]?.url}
                   alt={fotos[fotoAtual]?.legenda || imovel.titulo}
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-cover transition-transform duration-100 ease-out pointer-events-none"
+                  style={{
+                    transform: touchStartX !== null ? `translateX(${dragOffset * 0.6}px)` : undefined,
+                    cursor: fotos.length > 1 ? (touchStartX !== null ? 'grabbing' : 'grab') : 'default',
+                  }}
+                  draggable={false}
                 />
                 {fotos.length > 1 && (
-                  <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2">
-                    {fotos.map((_, i) => (
-                      <button
-                        key={i}
-                        onClick={() => setFotoAtual(i)}
-                        className={`h-2.5 w-2.5 rounded-full transition-all ${i === fotoAtual ? 'bg-white scale-125' : 'bg-white/50 hover:bg-white/75'}`}
-                      />
-                    ))}
-                  </div>
+                  <>
+                    {/* Setas de navegação */}
+                    <button
+                      type="button"
+                      onClick={prevFoto}
+                      aria-label="Foto anterior"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm transition hover:bg-black/60 sm:h-12 sm:w-12"
+                    >
+                      <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={nextFoto}
+                      aria-label="Próxima foto"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm transition hover:bg-black/60 sm:h-12 sm:w-12"
+                    >
+                      <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
+                    </button>
+                    {/* Contador de fotos */}
+                    <div className="absolute top-4 right-4 rounded-full bg-black/50 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm">
+                      {fotoAtual + 1} / {fotos.length}
+                    </div>
+                    {/* Dots */}
+                    <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2">
+                      {fotos.map((_, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setFotoAtual(i)}
+                          aria-label={`Foto ${i + 1}`}
+                          className={`h-2.5 w-2.5 rounded-full transition-all ${i === fotoAtual ? 'bg-white scale-125' : 'bg-white/50 hover:bg-white/75'}`}
+                        />
+                      ))}
+                    </div>
+                  </>
                 )}
               </>
             ) : (
