@@ -38,6 +38,7 @@ interface Venda {
 }
 
 export const VendasListPage = () => {
+  const navigate = useNavigate()
   const [rows, setRows] = useState<Venda[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -126,7 +127,9 @@ export const VendasListPage = () => {
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
               {filtered.map((r) => (
-                <tr key={r.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/40">
+                <tr key={r.id}
+                    onClick={() => navigate(`/painel/vendas/${r.id}`)}
+                    className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/40">
                   <td className="px-4 py-3 font-mono text-xs text-moradda-blue-700">{r.numero}</td>
                   <td className="px-4 py-3 text-gray-700 dark:text-gray-200">
                     <p className="font-medium">{r.imoveis?.codigo}</p>
@@ -140,7 +143,7 @@ export const VendasListPage = () => {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <Link to={`/painel/vendas/${r.id}`} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-moradda-blue-600 dark:hover:bg-gray-700">
+                    <Link to={`/painel/vendas/${r.id}`} onClick={(e) => e.stopPropagation()} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-moradda-blue-600 dark:hover:bg-gray-700">
                       <Pencil size={15} />
                     </Link>
                   </td>

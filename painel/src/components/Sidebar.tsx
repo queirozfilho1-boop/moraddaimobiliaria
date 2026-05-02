@@ -53,6 +53,7 @@ const groups: NavGroup[] = [
   {
     label: 'Comercial',
     items: [
+      { label: 'CRM',            path: '/painel/crm',             icon: <Briefcase size={18} />, superadminOnly: true },
       { label: 'Leads',          path: '/painel/leads',           icon: <Users size={18} /> },
       { label: 'Pipeline Leads', path: '/painel/leads/pipeline',  icon: <Kanban size={18} /> },
       { label: 'Visitas',        path: '/painel/visitas',         icon: <Calendar size={18} /> },
@@ -92,7 +93,6 @@ const groups: NavGroup[] = [
     items: [
       { label: 'Precificação', path: '/painel/precificacao', icon: <Calculator size={18} /> },
       { label: 'Aprendizado',  path: '/painel/aprendizado',  icon: <GraduationCap size={18} /> },
-      { label: 'CRM',          path: '/painel/crm',          icon: <Briefcase size={18} />, superadminOnly: true },
       { label: 'Acessos',      path: '/painel/acessos',      icon: <UserCog size={18} />,   superadminOnly: true },
       { label: 'Relatórios',   path: '/painel/relatorios',   icon: <TrendingUp size={18} /> },
       { label: 'Configurações',path: '/painel/configuracoes',icon: <Settings size={18} /> },

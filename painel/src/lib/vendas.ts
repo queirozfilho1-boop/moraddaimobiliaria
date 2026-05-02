@@ -63,7 +63,8 @@ export interface ComissaoCalc {
 
 export function calcularComissaoVenda(input: ComissaoVendaInput): ComissaoCalc[] {
   const total = input.valor_venda * (input.comissao_total_pct / 100)
-  const valorLider = input.valor_venda * (input.comissao_lider_pct / 100)
+  // Só desconta líder quando há líder atribuído
+  const valorLider = input.lider_id ? input.valor_venda * (input.comissao_lider_pct / 100) : 0
   const sobra = total - valorLider
 
   const out: ComissaoCalc[] = []
@@ -126,7 +127,7 @@ export interface ComissaoLocacaoBonusInput {
 
 export function calcularComissaoLocacaoBonus(input: ComissaoLocacaoBonusInput): ComissaoCalc[] {
   const total = input.valor_aluguel
-  const valorLider = total * 0.05
+  const valorLider = input.lider_id ? total * 0.05 : 0
   const sobra = total - valorLider
 
   const out: ComissaoCalc[] = []

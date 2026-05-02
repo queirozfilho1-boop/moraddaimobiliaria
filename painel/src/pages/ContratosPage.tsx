@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Plus, Search, FileSignature, Loader2, Pencil, Trash2, Eye } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
@@ -18,6 +18,7 @@ interface Row extends ContratoLocacao {
 }
 
 const ContratosPage = () => {
+  const navigate = useNavigate()
   const [rows, setRows] = useState<Row[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -160,7 +161,9 @@ const ContratosPage = () => {
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
               {filtered.map((r) => (
-                <tr key={r.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/40">
+                <tr key={r.id}
+                    onClick={() => navigate(`/painel/contratos/${r.id}`)}
+                    className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/40">
                   <td className="px-4 py-3 font-mono text-xs text-moradda-blue-700 dark:text-moradda-blue-300">{r.numero}</td>
                   <td className="px-4 py-3 text-gray-700 dark:text-gray-200">
                     <p className="font-medium">{r.imoveis?.codigo || '—'}</p>
@@ -177,7 +180,7 @@ const ContratosPage = () => {
                       {STATUS_LABEL[r.status]}
                     </span>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-1">
                       <Link
                         to={`/painel/contratos/${r.id}`}
