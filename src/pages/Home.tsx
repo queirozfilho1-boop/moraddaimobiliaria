@@ -1,5 +1,6 @@
 import SEO from '@/components/common/SEO'
 import HeroSection from '@/components/sections/HeroSection'
+import BannersSection from '@/components/sections/BannersSection'
 import ImoveisDestaqueSection from '@/components/sections/ImoveisDestaqueSection'
 import DiferenciaisSection from '@/components/sections/DiferenciaisSection'
 import BairrosSection from '@/components/sections/BairrosSection'
@@ -16,6 +17,7 @@ export default function HomePage() {
         description="Encontre imóveis de alto padrão em Resende e região com a Moradda Imobiliária. Casas, apartamentos e terrenos com atendimento exclusivo e personalizado."
       />
       <HeroSection />
+      <BannersSection />
       <ImoveisDestaqueSection />
       <DiferenciaisSection />
       <BairrosSection />
