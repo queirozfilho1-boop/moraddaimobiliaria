@@ -2,7 +2,6 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { NavLink, Link, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard,
-  Building2,
   Users,
   Calculator,
   UserCog,
@@ -21,6 +20,11 @@ import {
   Calendar,
   Megaphone,
   ClipboardCheck,
+  Home,
+  Briefcase,
+  Palette,
+  MapPin,
+  Settings,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import logoImg from '@/assets/logo.png'
@@ -33,25 +37,67 @@ interface NavItem {
   superadminOnly?: boolean
 }
 
-const navItems: NavItem[] = [
-  { label: 'Dashboard', path: '/painel/', icon: <LayoutDashboard size={20} /> },
-  { label: 'Imoveis', path: '/painel/imoveis', icon: <Building2 size={20} /> },
-  { label: 'Locacoes', path: '/painel/contratos', icon: <FileSignature size={20} /> },
-  { label: 'Vendas', path: '/painel/vendas', icon: <Trophy size={20} /> },
-  { label: 'Pipeline', path: '/painel/vendas/pipeline', icon: <Kanban size={20} /> },
-  { label: 'Propostas', path: '/painel/propostas', icon: <Handshake size={20} /> },
-  { label: 'Financeiro', path: '/painel/financeiro', icon: <TrendingUp size={20} /> },
-  { label: 'Proprietarios', path: '/painel/proprietarios', icon: <Wallet size={20} /> },
-  { label: 'Modelos Contrato', path: '/painel/modelos-contrato', icon: <FileSignature size={20} /> },
-  { label: 'Leads', path: '/painel/leads', icon: <Users size={20} /> },
-  { label: 'Pipeline Leads', path: '/painel/leads/pipeline', icon: <Kanban size={20} /> },
-  { label: 'Visitas', path: '/painel/visitas', icon: <Calendar size={20} /> },
-  { label: 'Vistorias', path: '/painel/vistorias', icon: <ClipboardCheck size={20} /> },
-  { label: 'Marketing', path: '/painel/marketing', icon: <Megaphone size={20} /> },
-  { label: 'Precificacao', path: '/painel/precificacao', icon: <Calculator size={20} /> },
-  { label: 'CRM', path: '/painel/crm', icon: <LayoutDashboard size={20} />, superadminOnly: true },
-  { label: 'Aprendizado', path: '/painel/aprendizado', icon: <GraduationCap size={20} /> },
-  { label: 'Acessos', path: '/painel/acessos', icon: <UserCog size={20} />, superadminOnly: true },
+interface NavGroup {
+  label: string
+  items: NavItem[]
+}
+
+const groups: NavGroup[] = [
+  {
+    label: 'Principal',
+    items: [
+      { label: 'Dashboard',  path: '/painel/',          icon: <LayoutDashboard size={18} /> },
+      { label: 'Financeiro', path: '/painel/financeiro', icon: <TrendingUp size={18} /> },
+    ],
+  },
+  {
+    label: 'Comercial',
+    items: [
+      { label: 'Leads',          path: '/painel/leads',           icon: <Users size={18} /> },
+      { label: 'Pipeline Leads', path: '/painel/leads/pipeline',  icon: <Kanban size={18} /> },
+      { label: 'Visitas',        path: '/painel/visitas',         icon: <Calendar size={18} /> },
+      { label: 'Propostas',      path: '/painel/propostas',       icon: <Handshake size={18} /> },
+      { label: 'Vendas',         path: '/painel/vendas',          icon: <Trophy size={18} /> },
+      { label: 'Pipeline Vendas',path: '/painel/vendas/pipeline', icon: <Kanban size={18} /> },
+    ],
+  },
+  {
+    label: 'Locação',
+    items: [
+      { label: 'Contratos',        path: '/painel/contratos',         icon: <FileSignature size={18} /> },
+      { label: 'Vistorias',        path: '/painel/vistorias',         icon: <ClipboardCheck size={18} /> },
+      { label: 'Modelos Contrato', path: '/painel/modelos-contrato',  icon: <FileSignature size={18} /> },
+    ],
+  },
+  {
+    label: 'Cadastros',
+    items: [
+      { label: 'Imóveis',        path: '/painel/imoveis',        icon: <Home size={18} /> },
+      { label: 'Proprietários',  path: '/painel/proprietarios',  icon: <Wallet size={18} /> },
+      { label: 'Bairros',        path: '/painel/bairros',        icon: <MapPin size={18} /> },
+      { label: 'Corretores',     path: '/painel/corretores',     icon: <Briefcase size={18} /> },
+    ],
+  },
+  {
+    label: 'Marketing',
+    items: [
+      { label: 'Marketing',  path: '/painel/marketing',   icon: <Megaphone size={18} /> },
+      { label: 'Banners',    path: '/painel/banners',     icon: <Palette size={18} /> },
+      { label: 'Blog',       path: '/painel/blog',        icon: <Megaphone size={18} /> },
+      { label: 'Depoimentos',path: '/painel/depoimentos', icon: <Users size={18} /> },
+    ],
+  },
+  {
+    label: 'Sistema',
+    items: [
+      { label: 'Precificação', path: '/painel/precificacao', icon: <Calculator size={18} /> },
+      { label: 'Aprendizado',  path: '/painel/aprendizado',  icon: <GraduationCap size={18} /> },
+      { label: 'CRM',          path: '/painel/crm',          icon: <Briefcase size={18} />, superadminOnly: true },
+      { label: 'Acessos',      path: '/painel/acessos',      icon: <UserCog size={18} />,   superadminOnly: true },
+      { label: 'Relatórios',   path: '/painel/relatorios',   icon: <TrendingUp size={18} /> },
+      { label: 'Configurações',path: '/painel/configuracoes',icon: <Settings size={18} /> },
+    ],
+  },
 ]
 
 const SIDEBAR_KEY = 'moradda_painel_sidebar'
@@ -77,15 +123,14 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
     localStorage.setItem(SIDEBAR_KEY, collapsed ? 'collapsed' : 'expanded')
   }, [collapsed])
 
-  // Close mobile sidebar on route change
   useEffect(() => {
     onMobileClose()
   }, [location.pathname]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const filteredItems = navItems.filter((item) => {
-    if (item.superadminOnly) return hasAccess('superadmin')
-    return true
-  })
+  const filteredGroups = groups.map((g) => ({
+    ...g,
+    items: g.items.filter((item) => !item.superadminOnly || hasAccess('superadmin')),
+  })).filter((g) => g.items.length > 0)
 
   const sidebarWidth = collapsed ? 'w-16' : 'w-64'
 
@@ -102,7 +147,6 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
         ) : (
           <img src={logoImg} alt="Moradda" className="h-8 w-auto brightness-0 invert mx-auto" />
         )}
-        {/* Collapse toggle (desktop only) */}
         <button
           onClick={() => setCollapsed(!collapsed)}
           className="hidden rounded p-1 text-white/60 transition hover:bg-white/10 hover:text-white lg:block"
@@ -110,7 +154,6 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
         >
           {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
         </button>
-        {/* Close button (mobile only) */}
         <button
           onClick={onMobileClose}
           className="rounded p-1 text-white/60 transition hover:bg-white/10 hover:text-white lg:hidden"
@@ -121,27 +164,40 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-4">
-        <ul className="space-y-1 px-2">
-          {filteredItems.map((item) => (
-            <li key={item.path}>
-              <NavLink
-                to={item.path}
-                end={item.path === '/painel/'}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
-                    isActive
-                      ? 'border-l-3 border-moradda-gold-400 bg-white/10 text-moradda-gold-400'
-                      : 'text-white/70 hover:bg-white/5 hover:text-white'
-                  } ${collapsed ? 'justify-center' : ''}`
-                }
-              >
-                {item.icon}
-                {!collapsed && <span>{item.label}</span>}
-              </NavLink>
-            </li>
-          ))}
-        </ul>
+      <nav className="flex-1 overflow-y-auto py-2">
+        {filteredGroups.map((group) => (
+          <div key={group.label} className="mb-1">
+            {!collapsed && (
+              <div className="px-4 pt-3 pb-1">
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-moradda-gold-400/70">
+                  {group.label}
+                </span>
+              </div>
+            )}
+            {collapsed && <div className="my-2 mx-3 border-t border-white/5" />}
+            <ul className="space-y-0.5 px-2">
+              {group.items.map((item) => (
+                <li key={item.path}>
+                  <NavLink
+                    to={item.path}
+                    end={item.path === '/painel/'}
+                    title={collapsed ? item.label : undefined}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
+                        isActive
+                          ? 'bg-white/10 text-moradda-gold-400 border-l-2 border-moradda-gold-400 pl-2.5'
+                          : 'text-white/70 hover:bg-white/5 hover:text-white'
+                      } ${collapsed ? 'justify-center' : ''}`
+                    }
+                  >
+                    {item.icon}
+                    {!collapsed && <span>{item.label}</span>}
+                  </NavLink>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
       </nav>
 
       {/* User profile section */}
@@ -189,14 +245,12 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
 
   return (
     <>
-      {/* Desktop sidebar */}
       <aside
         className={`fixed inset-y-0 left-0 z-30 hidden transition-all duration-300 lg:block ${sidebarWidth}`}
       >
         {sidebarContent}
       </aside>
 
-      {/* Mobile overlay */}
       {mobileOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/50 lg:hidden"
@@ -204,7 +258,6 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
         />
       )}
 
-      {/* Mobile sidebar */}
       <aside
         className={`fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-300 lg:hidden ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'

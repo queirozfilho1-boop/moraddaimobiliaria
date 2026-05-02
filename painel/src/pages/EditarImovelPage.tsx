@@ -31,6 +31,7 @@ import { supabase } from '@/lib/supabase'
 import { uploadFotoComWatermark } from '@/lib/watermark'
 import ShareImovelModal from '@/components/ShareImovelModal'
 import ImovelProprietariosSection from '@/components/ImovelProprietariosSection'
+import ImovelLinksSection from '@/components/ImovelLinksSection'
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function generateSlug(text: string): string {
@@ -1686,6 +1687,9 @@ export default function EditarImovelPage() {
             </div>
           </div>
         </SectionCard>
+
+        {/* Registros vinculados (cross-links) */}
+        {id && <ImovelLinksSection imovelId={id} />}
 
         {/* Proprietários do Imóvel (módulo novo) */}
         {id && <ImovelProprietariosSection imovelId={id} />}

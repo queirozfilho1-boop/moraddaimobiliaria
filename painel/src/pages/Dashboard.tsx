@@ -23,6 +23,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
+import QuickActionsBar from '@/components/QuickActionsBar'
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -406,6 +407,9 @@ export default function Dashboard() {
           Aqui esta o resumo do seu CRM imobiliario.
         </p>
       </div>
+
+      {/* Atalhos rápidos */}
+      <QuickActionsBar />
 
       {/* -------- Quick Stats Row -------- */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
