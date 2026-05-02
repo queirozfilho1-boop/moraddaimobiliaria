@@ -30,6 +30,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { uploadFotoComWatermark } from '@/lib/watermark'
 import ShareImovelModal from '@/components/ShareImovelModal'
+import ImovelProprietariosSection from '@/components/ImovelProprietariosSection'
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function generateSlug(text: string): string {
@@ -1685,6 +1686,9 @@ export default function EditarImovelPage() {
             </div>
           </div>
         </SectionCard>
+
+        {/* Proprietários do Imóvel (módulo novo) */}
+        {id && <ImovelProprietariosSection imovelId={id} />}
 
         {/* Section 6: Fotos */}
         <SectionCard title="Fotos">

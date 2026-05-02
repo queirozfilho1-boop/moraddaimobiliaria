@@ -30,6 +30,21 @@ Deno.serve(async (req) => {
     const body = await req.json()
     const event = body.event as string
     const payment = body.payment
+    const invoice = body.invoice
+
+    // Eventos de NFS-e (INVOICE_*)
+    if (invoice && event && event.startsWith('INVOICE_')) {
+      const paymentId = invoice.payment
+      if (paymentId) {
+        await sb(`/rest/v1/contratos_cobrancas?asaas_payment_id=eq.${paymentId}`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            asaas_invoice_url: invoice.pdfUrl || invoice.xmlUrl || null,
+          }),
+        })
+      }
+      return new Response('OK', { status: 200, headers: corsHeaders })
+    }
 
     if (!payment) return new Response('OK', { status: 200, headers: corsHeaders })
 
@@ -85,6 +100,52 @@ Deno.serve(async (req) => {
         method: 'PATCH',
         body: JSON.stringify({ status: 'ativo' }),
       })
+
+      // Criar registros de repasse pra cada proprietário (se ainda não foram criados via Split)
+      try {
+        const cRes = await sb(`/rest/v1/contratos_locacao?id=eq.${cId}&select=imovel_id,taxa_admin_pct,taxa_admin_minima,valor_aluguel,valor_condominio,valor_iptu,valor_outros`)
+        const c = (await cRes.json())[0]
+        const cobRes = await sb(`/rest/v1/contratos_cobrancas?asaas_payment_id=eq.${paymentId}&select=id`)
+        const cobranca = (await cobRes.json())[0]
+        if (c?.imovel_id && cobranca) {
+          // Evitar duplicar
+          const exRes = await sb(`/rest/v1/contratos_repasses?cobranca_id=eq.${cobranca.id}&select=id`)
+          const ex = await exRes.json()
+          if (!Array.isArray(ex) || ex.length === 0) {
+            const propRes = await sb(`/rest/v1/imoveis_proprietarios?imovel_id=eq.${c.imovel_id}&select=participacao_pct,proprietario_id,proprietarios(repasse_modo)`)
+            const props = await propRes.json()
+            const valorBruto = Number(payment.netValue || payment.value || 0)
+            const taxaPct = Number(c.taxa_admin_pct || 10) / 100
+            const taxaMin = Number(c.taxa_admin_minima || 0)
+            const taxaCalc = Math.max(Number(c.valor_aluguel || 0) * taxaPct, taxaMin)
+            const repassavel = valorBruto - taxaCalc
+            for (const ip of props || []) {
+              if (!ip.proprietario_id) continue
+              const prop = ip.proprietarios as any
+              const partic = Number(ip.participacao_pct || 100) / 100
+              const valorRepasse = Math.round(repassavel * partic * 100) / 100
+              const taxaProp = Math.round(taxaCalc * partic * 100) / 100
+              await sb(`/rest/v1/contratos_repasses`, {
+                method: 'POST',
+                body: JSON.stringify({
+                  contrato_id: cId,
+                  cobranca_id: cobranca.id,
+                  proprietario_id: ip.proprietario_id,
+                  valor_bruto: Math.round(valorBruto * partic * 100) / 100,
+                  taxa_admin: taxaProp,
+                  valor_repasse: valorRepasse,
+                  modo: prop?.repasse_modo || 'transfer',
+                  status: prop?.repasse_modo === 'split' ? 'concluido' : 'pendente',
+                  data_referencia: payment.dueDate || payment.paymentDate || new Date().toISOString().split('T')[0],
+                  data_repasse: prop?.repasse_modo === 'split' ? new Date().toISOString() : null,
+                }),
+              })
+            }
+          }
+        }
+      } catch (e) {
+        console.error('repasse criar:', e)
+      }
     } else if (event === 'PAYMENT_OVERDUE') {
       eventoTipo = 'inadimplencia'
       descricao = 'Cobrança vencida sem pagamento'

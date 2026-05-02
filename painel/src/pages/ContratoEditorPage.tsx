@@ -19,6 +19,7 @@ import { gerarPdfContrato, gerarPdfContratoBase64 } from '@/lib/contratoPdf'
 import { downloadPdfContratoFromMd, gerarPdfContratoBase64FromMd } from '@/lib/contratoPdfRender'
 import { mergeTemplate } from '@/lib/contratoMerge'
 import CobrancasSection from '@/components/CobrancasSection'
+import RepassesSection from '@/components/RepassesSection'
 
 const SUPA_FN = `${import.meta.env.VITE_SUPABASE_URL || 'https://mvzjqktgnwjwuinnxxcc.supabase.co'}/functions/v1`
 
@@ -604,6 +605,9 @@ const ContratoEditorPage = () => {
         <textarea rows={4} className={inputCls} placeholder="Cláusulas adicionais, observações gerais..."
           value={contrato.observacoes || ''} onChange={(e) => setC('observacoes', e.target.value)} />
       </Section>
+
+      {/* Repasses ao proprietário */}
+      {!isNew && id && <RepassesSection contratoId={id} />}
 
       {/* Cobranças (só pra contratos salvos) */}
       {!isNew && id && (
