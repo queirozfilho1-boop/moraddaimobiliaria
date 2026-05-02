@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft, Plus, Save, Loader2, User, Trash2, Pencil, Search,
-  Wallet, Zap, AlertCircle, CheckCircle2, ExternalLink,
+  Wallet, Zap, AlertCircle, CheckCircle2, ExternalLink, FileText,
 } from 'lucide-react'
+import { gerarInformeIR } from '@/lib/informeIR'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
@@ -241,10 +242,32 @@ export const ProprietarioEditorPage = () => {
           </Link>
           <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{isNew ? 'Novo Proprietário' : p.nome}</h1>
         </div>
-        <button onClick={save} disabled={saving} className="inline-flex items-center gap-2 rounded-lg bg-moradda-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-moradda-blue-600 disabled:opacity-50">
-          {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
-          Salvar
-        </button>
+        <div className="flex flex-wrap gap-2">
+          {!isNew && id && (
+            <button
+              onClick={async () => {
+                const ano = new Date().getFullYear() - 1
+                const { data } = await supabase.from('contratos_repasses')
+                  .select(`*, contratos_locacao(numero, imoveis(codigo, titulo))`)
+                  .eq('proprietario_id', id)
+                  .eq('status', 'concluido')
+                  .gte('data_referencia', `${ano}-01-01`).lte('data_referencia', `${ano}-12-31`)
+                if (!data || data.length === 0) {
+                  toast.error(`Sem repasses concluídos em ${ano}`); return
+                }
+                gerarInformeIR(p as any, ano, data as any)
+              }}
+              className="inline-flex items-center gap-2 rounded-lg border border-purple-300 bg-purple-50 px-4 py-2 text-sm font-medium text-purple-700 hover:bg-purple-100 dark:border-purple-700 dark:bg-purple-900/20 dark:text-purple-300"
+            >
+              <FileText size={15} />
+              Informe IR
+            </button>
+          )}
+          <button onClick={save} disabled={saving} className="inline-flex items-center gap-2 rounded-lg bg-moradda-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-moradda-blue-600 disabled:opacity-50">
+            {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
+            Salvar
+          </button>
+        </div>
       </div>
 
       <Section title="Dados Pessoais">
