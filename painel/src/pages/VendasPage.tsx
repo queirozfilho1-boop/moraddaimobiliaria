@@ -168,7 +168,7 @@ export const VendaEditorPage = () => {
   const [v, setV] = useState<Partial<Venda>>({
     status: 'em_negociacao',
     valor_venda: 0, valor_sinal: 0, valor_financiado: 0, parcelas_qtd: 0,
-    comissao_total_pct: 5, comissao_lider_pct: 0.5,
+    comissao_total_pct: 5, comissao_lider_pct: 5,
     data_proposta: new Date().toISOString().split('T')[0],
   })
   const [imoveis, setImoveis] = useState<{ id: string; codigo?: string; titulo?: string }[]>([])
@@ -409,8 +409,9 @@ export const VendaEditorPage = () => {
             <p className="mt-1 text-xs text-gray-500">5% residencial, 6% comercial, 4% lançamento</p>
           </div>
           <div>
-            <label className={labelCls}>% override líder</label>
+            <label className={labelCls}>% líder (sobre comissão)</label>
             <input type="number" step="0.01" className={inputCls} value={v.comissao_lider_pct || ''} onChange={(e) => set('comissao_lider_pct', Number(e.target.value))} />
+            <p className="mt-1 text-xs text-gray-500">Padrão: 5% sobre o total da comissão</p>
           </div>
         </div>
 

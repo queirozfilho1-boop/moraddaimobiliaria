@@ -63,8 +63,8 @@ export interface ComissaoCalc {
 
 export function calcularComissaoVenda(input: ComissaoVendaInput): ComissaoCalc[] {
   const total = input.valor_venda * (input.comissao_total_pct / 100)
-  // Só desconta líder quando há líder atribuído
-  const valorLider = input.lider_id ? input.valor_venda * (input.comissao_lider_pct / 100) : 0
+  // Líder ganha % SOBRE A COMISSÃO TOTAL (não sobre a venda)
+  const valorLider = input.lider_id ? total * (input.comissao_lider_pct / 100) : 0
   const sobra = total - valorLider
 
   const out: ComissaoCalc[] = []
@@ -73,8 +73,8 @@ export function calcularComissaoVenda(input: ComissaoVendaInput): ComissaoCalc[]
   if (input.lider_id) {
     out.push({
       papel: 'lider', beneficiario_id: input.lider_id,
-      base_calculo: input.valor_venda, percentual: input.comissao_lider_pct, valor: valorLider,
-      descricao: `Override líder — ${input.comissao_lider_pct}% sobre venda`,
+      base_calculo: total, percentual: input.comissao_lider_pct, valor: valorLider,
+      descricao: `Override líder — ${input.comissao_lider_pct}% sobre comissão`,
     })
   }
 
