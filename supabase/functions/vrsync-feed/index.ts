@@ -1,13 +1,6 @@
 // Supabase Edge Function — Feed XML VRSync
-// Deploy: supabase functions deploy vrsync-feed --no-verify-jwt
-//
 // URL pública: https://<project>.supabase.co/functions/v1/vrsync-feed
-// (ou via CDN/proxy: https://moradda.com.br/feeds/vrsync.xml)
-//
 // Padrão VRSync v3 — aceito por Zap+, VivaReal, OLX, Imovelweb, ImovelGuide
-// Documentação: https://github.com/grupozap/vrsync-schema
-
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const SITE_URL = 'https://moradda.com.br'
 
@@ -17,7 +10,7 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
 }
 
-function escapeXml(s: any): string {
+function escapeXml(s: unknown): string {
   if (s == null) return ''
   return String(s)
     .replace(/&/g, '&amp;')
@@ -27,12 +20,12 @@ function escapeXml(s: any): string {
     .replace(/'/g, '&apos;')
 }
 
-function cdata(s: any): string {
+function cdata(s: unknown): string {
   if (s == null) return ''
-  return `<![CDATA[${String(s).replace(/]]>/g, ']]]]><![CDATA[>')}]]>`
+  const safe = String(s).replace(/\]\]>/g, ']]]]><![CDATA[>')
+  return '<![CDATA[' + safe + ']]>'
 }
 
-// VRSync code mappings — aceitos pelos portais
 const TIPO_MAP: Record<string, { categoria: string; tipo: string }> = {
   apartamento:        { categoria: 'Residencial', tipo: 'Apartamento' },
   apartamento_padrao: { categoria: 'Residencial', tipo: 'Apartamento' },
@@ -48,7 +41,6 @@ const TIPO_MAP: Record<string, { categoria: string; tipo: string }> = {
   chacara:            { categoria: 'Residencial', tipo: 'Chácara' },
   sitio:              { categoria: 'Residencial', tipo: 'Sítio' },
   fazenda:            { categoria: 'Residencial', tipo: 'Fazenda' },
-  // Comerciais
   sala_comercial:     { categoria: 'Comercial',   tipo: 'Sala' },
   loja:               { categoria: 'Comercial',   tipo: 'Loja' },
   galpao:             { categoria: 'Comercial',   tipo: 'Galpão / Depósito' },
@@ -57,98 +49,103 @@ const TIPO_MAP: Record<string, { categoria: string; tipo: string }> = {
 
 function mapTipo(t?: string | null): { categoria: string; tipo: string } {
   if (!t) return { categoria: 'Residencial', tipo: 'Apartamento' }
-  const key = t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z]/g, '_')
+  const key = t
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z]/g, '_')
   return TIPO_MAP[key] || { categoria: 'Residencial', tipo: 'Apartamento' }
 }
 
-function buildXml(imoveis: any[]): string {
+function buildXml(imoveis: Array<Record<string, unknown>>): string {
   const now = new Date().toISOString()
   const items = imoveis.map((im) => {
-    const fotos: any[] = im.imoveis_fotos || []
-    const principal = fotos.find((f) => f.principal) || fotos[0]
+    const fotos = (im.imoveis_fotos as Array<Record<string, unknown>>) || []
     const fotosOrdenadas = [...fotos].sort((a, b) => {
       if (a.principal && !b.principal) return -1
       if (b.principal && !a.principal) return 1
-      return (a.ordem ?? 0) - (b.ordem ?? 0)
+      return ((a.ordem as number) ?? 0) - ((b.ordem as number) ?? 0)
     })
 
-    const { categoria, tipo } = mapTipo(im.tipo)
-    const finalidade = im.finalidade?.toLowerCase() || 'venda'
+    const { categoria, tipo } = mapTipo(im.tipo as string | undefined)
+    const finalidade = ((im.finalidade as string) || 'venda').toLowerCase()
     const transacao =
       finalidade === 'venda' ? 'For Sale' :
       finalidade === 'temporada' ? 'Season Rental' : 'For Rent'
 
-    const slug = im.slug || im.id
+    const slug = (im.slug as string) || (im.id as string)
     const url = `${SITE_URL}/imoveis/${slug}`
+    const bairro = im.bairros as { nome?: string } | null
+    const corretor = im.users_profiles as { nome?: string } | null
+    const caracteristicas = im.caracteristicas as string[] | null
 
-    return `
-    <Listing>
-      <ListingID>${escapeXml(im.codigo || im.id)}</ListingID>
-      <Title>${cdata(im.titulo || tipo)}</Title>
-      <TransactionType>${escapeXml(transacao)}</TransactionType>
-      <PublicationType>STANDARD</PublicationType>
-      <ListPrice>${im.preco || 0}</ListPrice>
-      ${im.condominio ? `<MonthlyCondoFee>${im.condominio}</MonthlyCondoFee>` : ''}
-      ${im.iptu_anual ? `<YearlyTax>${im.iptu_anual}</YearlyTax>` : ''}
-      <Details>
-        <PropertyType>${escapeXml(categoria)}</PropertyType>
-        <PropertySubtype>${escapeXml(tipo)}</PropertySubtype>
-        <Description>${cdata(im.descricao || im.titulo || '')}</Description>
-        ${im.area_total ? `<LotArea>${im.area_total}</LotArea>` : ''}
-        ${im.area_construida ? `<LivingArea>${im.area_construida}</LivingArea>` : ''}
-        ${im.quartos ? `<Bedrooms>${im.quartos}</Bedrooms>` : ''}
-        ${im.suites ? `<Suites>${im.suites}</Suites>` : ''}
-        ${im.banheiros ? `<Bathrooms>${im.banheiros}</Bathrooms>` : ''}
-        ${im.vagas ? `<Garage>${im.vagas}</Garage>` : ''}
-        ${im.tour_virtual_url ? `<VirtualTour>${escapeXml(im.tour_virtual_url)}</VirtualTour>` : ''}
-        ${im.video_url ? `<Videos><Video><VideoURL>${escapeXml(im.video_url)}</VideoURL></Video></Videos>` : ''}
-        ${
-          fotosOrdenadas.length
-            ? `<Media>${fotosOrdenadas
-                .map(
-                  (f, idx) => `<Item caption="Foto ${idx + 1}" medium="image" primary="${idx === 0 ? 'true' : 'false'}">${escapeXml(f.url_watermark || f.url)}</Item>`
-                )
-                .join('')}</Media>`
-            : ''
-        }
-        ${
-          im.caracteristicas && Array.isArray(im.caracteristicas) && im.caracteristicas.length
-            ? `<Features>${im.caracteristicas
-                .map((f: string) => `<Feature>${escapeXml(f)}</Feature>`)
-                .join('')}</Features>`
-            : ''
-        }
-      </Details>
-      <Location displayAddress="Neighborhood">
-        <Country abbreviation="BR">Brasil</Country>
-        <State abbreviation="${escapeXml((im.estado || 'MG').toUpperCase())}">${escapeXml(im.estado || 'Minas Gerais')}</State>
-        <City>${escapeXml(im.cidade || '')}</City>
-        ${im.bairros?.nome ? `<Neighborhood>${escapeXml(im.bairros.nome)}</Neighborhood>` : ''}
-        ${im.endereco ? `<Address>${escapeXml(im.endereco)}</Address>` : ''}
-        ${im.numero ? `<StreetNumber>${escapeXml(im.numero)}</StreetNumber>` : ''}
-        ${im.complemento ? `<Complement>${escapeXml(im.complemento)}</Complement>` : ''}
-        ${im.cep ? `<PostalCode>${escapeXml(im.cep.replace(/\D/g, ''))}</PostalCode>` : ''}
-      </Location>
-      <ContactInfo>
-        <Name>Moradda Imobiliária</Name>
-        <Email>contato@moradda.com.br</Email>
-        ${im.users_profiles?.nome ? `<RealtorName>${escapeXml(im.users_profiles.nome)}</RealtorName>` : ''}
-      </ContactInfo>
-      <ListingURL>${escapeXml(url)}</ListingURL>
-    </Listing>`
-  }).join('')
+    const parts: string[] = []
+    parts.push('    <Listing>')
+    parts.push(`      <ListingID>${escapeXml(im.codigo || im.id)}</ListingID>`)
+    parts.push(`      <Title>${cdata(im.titulo || tipo)}</Title>`)
+    parts.push(`      <TransactionType>${escapeXml(transacao)}</TransactionType>`)
+    parts.push('      <PublicationType>STANDARD</PublicationType>')
+    parts.push(`      <ListPrice>${im.preco || 0}</ListPrice>`)
+    if (im.preco_condominio) parts.push(`      <MonthlyCondoFee>${im.preco_condominio}</MonthlyCondoFee>`)
+    if (im.preco_iptu) parts.push(`      <YearlyTax>${im.preco_iptu}</YearlyTax>`)
+    parts.push('      <Details>')
+    parts.push(`        <PropertyType>${escapeXml(categoria)}</PropertyType>`)
+    parts.push(`        <PropertySubtype>${escapeXml(tipo)}</PropertySubtype>`)
+    parts.push(`        <Description>${cdata(im.descricao || im.titulo || '')}</Description>`)
+    if (im.area_total) parts.push(`        <LotArea>${im.area_total}</LotArea>`)
+    if (im.area_construida) parts.push(`        <LivingArea>${im.area_construida}</LivingArea>`)
+    if (im.quartos) parts.push(`        <Bedrooms>${im.quartos}</Bedrooms>`)
+    if (im.suites) parts.push(`        <Suites>${im.suites}</Suites>`)
+    if (im.banheiros) parts.push(`        <Bathrooms>${im.banheiros}</Bathrooms>`)
+    if (im.vagas_garagem) parts.push(`        <Garage>${im.vagas_garagem}</Garage>`)
+    if (im.tour_virtual_url) parts.push(`        <VirtualTour>${escapeXml(im.tour_virtual_url)}</VirtualTour>`)
+    if (im.video_url) parts.push(`        <Videos><Video><VideoURL>${escapeXml(im.video_url)}</VideoURL></Video></Videos>`)
+    if (fotosOrdenadas.length) {
+      const media = fotosOrdenadas.map((f, idx) =>
+        `<Item caption="Foto ${idx + 1}" medium="image" primary="${idx === 0 ? 'true' : 'false'}">${escapeXml(f.url_watermark || f.url)}</Item>`
+      ).join('')
+      parts.push(`        <Media>${media}</Media>`)
+    }
+    if (caracteristicas && Array.isArray(caracteristicas) && caracteristicas.length) {
+      const feats = caracteristicas.map((f) => `<Feature>${escapeXml(f)}</Feature>`).join('')
+      parts.push(`        <Features>${feats}</Features>`)
+    }
+    parts.push('      </Details>')
+    parts.push('      <Location displayAddress="Neighborhood">')
+    parts.push('        <Country abbreviation="BR">Brasil</Country>')
+    const estado = ((im.estado as string) || 'MG').toUpperCase()
+    parts.push(`        <State abbreviation="${escapeXml(estado)}">${escapeXml(im.estado || 'Minas Gerais')}</State>`)
+    parts.push(`        <City>${escapeXml(im.cidade || '')}</City>`)
+    if (bairro && bairro.nome) parts.push(`        <Neighborhood>${escapeXml(bairro.nome)}</Neighborhood>`)
+    if (im.endereco) parts.push(`        <Address>${escapeXml(im.endereco)}</Address>`)
+    if (im.numero) parts.push(`        <StreetNumber>${escapeXml(im.numero)}</StreetNumber>`)
+    if (im.complemento) parts.push(`        <Complement>${escapeXml(im.complemento)}</Complement>`)
+    if (im.cep) parts.push(`        <PostalCode>${escapeXml(String(im.cep).replace(/\D/g, ''))}</PostalCode>`)
+    parts.push('      </Location>')
+    parts.push('      <ContactInfo>')
+    parts.push('        <Name>Moradda Imobiliária</Name>')
+    parts.push('        <Email>contato@moradda.com.br</Email>')
+    if (corretor && corretor.nome) parts.push(`        <RealtorName>${escapeXml(corretor.nome)}</RealtorName>`)
+    parts.push('      </ContactInfo>')
+    parts.push(`      <ListingURL>${escapeXml(url)}</ListingURL>`)
+    parts.push('    </Listing>')
+    return parts.join('\n')
+  }).join('\n')
 
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<ListingDataFeed xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://gz-schemas.s3.amazonaws.com/vrsync-schema-1.0.1.xsd">
-  <Header>
-    <Provider>Moradda Imobiliária</Provider>
-    <Email>contato@moradda.com.br</Email>
-    <ContactName>Moradda</ContactName>
-    <PublishDate>${now}</PublishDate>
-  </Header>
-  <Listings>${items}
-  </Listings>
-</ListingDataFeed>`
+  return [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<ListingDataFeed xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://gz-schemas.s3.amazonaws.com/vrsync-schema-1.0.1.xsd">',
+    '  <Header>',
+    '    <Provider>Moradda Imobiliária</Provider>',
+    '    <Email>contato@moradda.com.br</Email>',
+    '    <ContactName>Moradda</ContactName>',
+    `    <PublishDate>${now}</PublishDate>`,
+    '  </Header>',
+    '  <Listings>',
+    items,
+    '  </Listings>',
+    '</ListingDataFeed>',
+  ].join('\n')
 }
 
 Deno.serve(async (req: Request) => {
@@ -159,24 +156,31 @@ Deno.serve(async (req: Request) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const supabase = createClient(supabaseUrl, serviceKey)
 
-    const { data: imoveis, error } = await supabase
-      .from('imoveis')
-      .select(
-        `id, codigo, slug, titulo, tipo, finalidade, preco, condominio, iptu_anual,
-         area_total, area_construida, quartos, suites, banheiros, vagas,
-         endereco, numero, complemento, cep, cidade, estado,
-         descricao, caracteristicas, tour_virtual_url, video_url,
-         bairros(nome),
-         users_profiles!corretor_id(nome),
-         imoveis_fotos(url, url_watermark, ordem, principal)`
-      )
-      .eq('status', 'publicado')
+    const select = [
+      'id', 'codigo', 'slug', 'titulo', 'tipo', 'finalidade', 'preco', 'preco_condominio', 'preco_iptu',
+      'area_total', 'area_construida', 'quartos', 'suites', 'banheiros', 'vagas_garagem',
+      'endereco', 'numero', 'complemento', 'cep', 'cidade', 'estado',
+      'descricao', 'caracteristicas', 'tour_virtual_url', 'video_url',
+      'bairros(nome)',
+      'users_profiles!corretor_id(nome)',
+      'imoveis_fotos(url,url_watermark,ordem,principal)',
+    ].join(',')
 
-    if (error) throw error
+    const url = `${supabaseUrl}/rest/v1/imoveis?select=${encodeURIComponent(select)}&status=eq.publicado`
+    const res = await fetch(url, {
+      headers: {
+        'apikey': serviceKey,
+        'Authorization': `Bearer ${serviceKey}`,
+      },
+    })
+    if (!res.ok) {
+      const errText = await res.text()
+      throw new Error(`Supabase REST: ${res.status} ${errText}`)
+    }
+    const imoveis = await res.json()
 
-    const xml = buildXml(imoveis || [])
+    const xml = buildXml((imoveis || []) as Array<Record<string, unknown>>)
 
     return new Response(xml, {
       status: 200,
@@ -186,9 +190,10 @@ Deno.serve(async (req: Request) => {
         'Cache-Control': 'public, max-age=300, s-maxage=600',
       },
     })
-  } catch (err: any) {
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Internal error'
     return new Response(
-      `<?xml version="1.0" encoding="UTF-8"?>\n<error>${escapeXml(err.message || 'Internal error')}</error>`,
+      `<?xml version="1.0" encoding="UTF-8"?>\n<error>${escapeXml(msg)}</error>`,
       {
         status: 500,
         headers: {
