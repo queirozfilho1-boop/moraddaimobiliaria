@@ -2,7 +2,7 @@
 // URL pública: https://<project>.supabase.co/functions/v1/vrsync-feed
 // Padrão VRSync v3 — aceito por Zap+, VivaReal, OLX, Imovelweb, ImovelGuide
 
-const SITE_URL = 'https://moradda.com.br'
+const SITE_URL = 'https://moraddaimobiliaria.com.br'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -124,7 +124,7 @@ function buildXml(imoveis: Array<Record<string, unknown>>): string {
     parts.push('      </Location>')
     parts.push('      <ContactInfo>')
     parts.push('        <Name>Moradda Imobiliária</Name>')
-    parts.push('        <Email>contato@moradda.com.br</Email>')
+    parts.push('        <Email>contato@moraddaimobiliaria.com.br</Email>')
     if (corretor && corretor.nome) parts.push(`        <RealtorName>${escapeXml(corretor.nome)}</RealtorName>`)
     parts.push('      </ContactInfo>')
     parts.push(`      <ListingURL>${escapeXml(url)}</ListingURL>`)
@@ -137,7 +137,7 @@ function buildXml(imoveis: Array<Record<string, unknown>>): string {
     '<ListingDataFeed xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://gz-schemas.s3.amazonaws.com/vrsync-schema-1.0.1.xsd">',
     '  <Header>',
     '    <Provider>Moradda Imobiliária</Provider>',
-    '    <Email>contato@moradda.com.br</Email>',
+    '    <Email>contato@moraddaimobiliaria.com.br</Email>',
     '    <ContactName>Moradda</ContactName>',
     `    <PublishDate>${now}</PublishDate>`,
     '  </Header>',

@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         type: 'magiclink',
         email: p.email,
-        options: { redirect_to: 'https://moradda.com.br/portal' },
+        options: { redirect_to: 'https://moraddaimobiliaria.com.br/portal' },
       }),
     })
     const linkData = await linkRes.json()

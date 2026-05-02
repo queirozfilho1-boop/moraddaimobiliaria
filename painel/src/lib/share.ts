@@ -1,7 +1,7 @@
 // Helpers para gerar textos de compartilhamento de imóveis
 // (WhatsApp, Instagram, link copy)
 
-export const SITE_URL = "https://moradda.com.br"
+export const SITE_URL = "https://moraddaimobiliaria.com.br"
 
 export interface ImovelShare {
   id: string

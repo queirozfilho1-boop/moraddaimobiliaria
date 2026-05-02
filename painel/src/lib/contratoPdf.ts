@@ -61,7 +61,7 @@ function buildPdfDoc({ contrato: c, partes, imovel }: Args): jsPDF {
   y = p(doc, 'MORADDA IMOBILIÁRIA', margin, 11, { bold: true, size: 14 })
   doc.setFontSize(8)
   doc.setFont('helvetica', 'normal')
-  doc.text('moradda.com.br · contato@moradda.com.br', W - margin, 11, { align: 'right' })
+  doc.text('moraddaimobiliaria.com.br · contato@moraddaimobiliaria.com.br', W - margin, 11, { align: 'right' })
 
   doc.setTextColor(0, 0, 0)
   y = 26

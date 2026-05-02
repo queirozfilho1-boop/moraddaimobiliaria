@@ -51,7 +51,7 @@ export default function BlogPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Blog</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Posts publicados em moradda.com.br/blog</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Posts publicados em moraddaimobiliaria.com.br/blog</p>
         </div>
         <button onClick={() => setShowModal({ id: '', titulo: '', publicado: false, created_at: '' })} className="inline-flex items-center gap-2 rounded-lg bg-moradda-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-moradda-blue-600">
           <Plus size={15} /> Novo Post

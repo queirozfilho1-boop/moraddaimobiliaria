@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
         type: 'magiclink',
         email: p.email,
         options: {
-          redirect_to: 'https://moradda.com.br/portal',
+          redirect_to: 'https://moraddaimobiliaria.com.br/portal',
         },
       }),
     })

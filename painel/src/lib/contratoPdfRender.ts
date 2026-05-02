@@ -199,7 +199,7 @@ function drawHeader(doc: jsPDF, logo: string | null, numero?: string) {
   doc.text('MORADDA IMOBILIÁRIA', PAGE.margin + (logo ? 16 : 0), 11)
   doc.setFont('times', 'normal')
   doc.setFontSize(7.5)
-  doc.text('moradda.com.br · contato@moradda.com.br', PAGE.margin + (logo ? 16 : 0), 15)
+  doc.text('moraddaimobiliaria.com.br · contato@moraddaimobiliaria.com.br', PAGE.margin + (logo ? 16 : 0), 15)
   // Numero
   if (numero) {
     doc.setFontSize(9)
