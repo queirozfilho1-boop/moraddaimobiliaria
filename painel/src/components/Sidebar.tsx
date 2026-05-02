@@ -23,7 +23,6 @@ import {
   Home,
   Briefcase,
   Palette,
-  MapPin,
   Settings,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -75,7 +74,6 @@ const groups: NavGroup[] = [
     items: [
       { label: 'Imóveis',        path: '/painel/imoveis',        icon: <Home size={18} /> },
       { label: 'Proprietários',  path: '/painel/proprietarios',  icon: <Wallet size={18} /> },
-      { label: 'Bairros',        path: '/painel/bairros',        icon: <MapPin size={18} /> },
       { label: 'Corretores',     path: '/painel/corretores',     icon: <Briefcase size={18} /> },
     ],
   },

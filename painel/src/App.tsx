@@ -26,7 +26,6 @@ import AprendizadoPage from '@/pages/AprendizadoPage'
 import ModuloAulaPage from '@/pages/ModuloAulaPage'
 import PerfilPage from '@/pages/PerfilPage'
 import AcessosPage from '@/pages/AcessosPage'
-import BairrosPage from '@/pages/BairrosPage'
 import CorretoresPage from '@/pages/CorretoresPage'
 import BannersPage from '@/pages/BannersPage'
 import BlogPage from '@/pages/BlogPage'
@@ -76,7 +75,6 @@ export default function App() {
               <Route path="aprendizado/modulo/:moduloId" element={<ModuloAulaPage />} />
               <Route path="perfil" element={<PerfilPage />} />
               <Route path="acessos" element={<AcessosPage />} />
-              <Route path="bairros" element={<BairrosPage />} />
               <Route path="corretores" element={<CorretoresPage />} />
               <Route path="banners" element={<BannersPage />} />
               <Route path="blog" element={<BlogPage />} />
