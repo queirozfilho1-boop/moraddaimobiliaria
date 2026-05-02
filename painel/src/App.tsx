@@ -7,6 +7,8 @@ import Dashboard from '@/pages/Dashboard'
 import ImoveisPage from '@/pages/ImoveisPage'
 import NovoImovelPage from '@/pages/NovoImovelPage'
 import EditarImovelPage from '@/pages/EditarImovelPage'
+import ContratosPage from '@/pages/ContratosPage'
+import ContratoEditorPage from '@/pages/ContratoEditorPage'
 import LeadsPage from '@/pages/LeadsPage'
 import PrecificacaoPage from '@/pages/PrecificacaoPage'
 import CRMPage from '@/pages/CRMPage'
@@ -27,6 +29,9 @@ export default function App() {
               <Route path="imoveis" element={<ImoveisPage />} />
               <Route path="imoveis/novo" element={<NovoImovelPage />} />
               <Route path="imoveis/:id" element={<EditarImovelPage />} />
+              <Route path="contratos" element={<ContratosPage />} />
+              <Route path="contratos/novo" element={<ContratoEditorPage />} />
+              <Route path="contratos/:id" element={<ContratoEditorPage />} />
               <Route path="leads" element={<LeadsPage />} />
               <Route path="precificacao" element={<PrecificacaoPage />} />
               <Route path="crm" element={<CRMPage />} />
