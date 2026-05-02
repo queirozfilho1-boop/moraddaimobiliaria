@@ -90,19 +90,45 @@ Deno.serve(async (req) => {
       vencimento = next.toISOString().split('T')[0]
     }
 
-    // Criar cobrança
+    // Buscar proprietários pra Split
+    const splitArr: Array<{ walletId: string; fixedValue?: number }> = []
+    const cImovelRes = await sb(`/rest/v1/contratos_locacao?id=eq.${contrato_id}&select=imovel_id,taxa_admin_pct,taxa_admin_minima,valor_aluguel`)
+    const cImovel = (await cImovelRes.json())[0]
+    if (cImovel?.imovel_id) {
+      const propRes = await sb(`/rest/v1/imoveis_proprietarios?imovel_id=eq.${cImovel.imovel_id}&select=participacao_pct,proprietarios(asaas_wallet_id,repasse_modo)`)
+      const props = await propRes.json()
+      const taxaPct = Number(cImovel.taxa_admin_pct || 10) / 100
+      const taxaMin = Number(cImovel.taxa_admin_minima || 0)
+      const taxaCalc = Math.max(Number(cImovel.valor_aluguel || 0) * taxaPct, taxaMin)
+      const valorRepassavel = valor - taxaCalc
+      for (const ip of props || []) {
+        const prop = ip.proprietarios as any
+        if (prop?.asaas_wallet_id && prop?.repasse_modo === 'split') {
+          const partic = Number(ip.participacao_pct || 100) / 100
+          splitArr.push({
+            walletId: prop.asaas_wallet_id,
+            fixedValue: Math.round(valorRepassavel * partic * 100) / 100,
+          })
+        }
+      }
+    }
+
+    // Criar cobrança avulsa
+    const payPayload: any = {
+      customer: customerId,
+      billingType: 'BOLETO',
+      value: valor,
+      dueDate: vencimento,
+      description: descricao || `Cobrança avulsa · Contrato ${c.numero}`,
+      externalReference: contrato_id,
+      fine:     { value: 2 },
+      interest: { value: 1 },
+    }
+    if (splitArr.length > 0) payPayload.split = splitArr
+
     const pay = await asaas('/payments', {
       method: 'POST',
-      body: JSON.stringify({
-        customer: customerId,
-        billingType: 'BOLETO',
-        value: valor,
-        dueDate: vencimento,
-        description: descricao || `Cobrança avulsa · Contrato ${c.numero}`,
-        externalReference: contrato_id,
-        fine:     { value: 2 },
-        interest: { value: 1 },
-      }),
+      body: JSON.stringify(payPayload),
     })
     const payData = await pay.json()
     if (!pay.ok) return json({ error: 'Asaas payment erro', detail: payData }, pay.status)

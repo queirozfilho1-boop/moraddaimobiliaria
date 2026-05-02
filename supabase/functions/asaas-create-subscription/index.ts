@@ -90,21 +90,47 @@ Deno.serve(async (req) => {
 
     const valor = Number(c.valor_aluguel || 0) + Number(c.valor_condominio || 0) + Number(c.valor_iptu || 0) + Number(c.valor_outros || 0)
 
-    // 3) Criar assinatura recorrente (boleto + PIX)
+    // 3) Buscar proprietários do imóvel pra montar Split (se houver wallet)
+    const cImovelRes = await sb(`/rest/v1/contratos_locacao?id=eq.${contrato_id}&select=imovel_id,taxa_admin_pct,taxa_admin_minima`)
+    const cImovel = (await cImovelRes.json())[0]
+    const splitArr: Array<{ walletId: string; fixedValue?: number; percentualValue?: number }> = []
+    if (cImovel?.imovel_id) {
+      const propRes = await sb(`/rest/v1/imoveis_proprietarios?imovel_id=eq.${cImovel.imovel_id}&select=participacao_pct,proprietario_id,proprietarios(asaas_wallet_id,repasse_modo)`)
+      const props = await propRes.json()
+      const taxaPct = Number(cImovel.taxa_admin_pct || 10) / 100
+      const taxaMin = Number(cImovel.taxa_admin_minima || 0)
+      const taxaCalc = Math.max(Number(c.valor_aluguel || 0) * taxaPct, taxaMin)
+      const valorRepassavel = valor - taxaCalc
+      for (const ip of props || []) {
+        const prop = ip.proprietarios as any
+        if (prop?.asaas_wallet_id && prop?.repasse_modo === 'split') {
+          const partic = Number(ip.participacao_pct || 100) / 100
+          splitArr.push({
+            walletId: prop.asaas_wallet_id,
+            fixedValue: Math.round(valorRepassavel * partic * 100) / 100,
+          })
+        }
+      }
+    }
+
+    // 4) Criar assinatura recorrente (boleto + PIX) com Split se aplicável
+    const subPayload: any = {
+      customer: customerId,
+      billingType: 'BOLETO',
+      nextDueDate: proxVenc.toISOString().split('T')[0],
+      value: valor,
+      cycle: 'MONTHLY',
+      description: `Aluguel · Contrato ${c.numero}`,
+      endDate: fim.toISOString().split('T')[0],
+      externalReference: contrato_id,
+      fine:     { value: 2 },
+      interest: { value: 1 },
+    }
+    if (splitArr.length > 0) subPayload.split = splitArr
+
     const sub = await asaas('/subscriptions', {
       method: 'POST',
-      body: JSON.stringify({
-        customer: customerId,
-        billingType: 'BOLETO',           // Asaas gera boleto + PIX em qualquer cobrança BOLETO
-        nextDueDate: proxVenc.toISOString().split('T')[0],
-        value: valor,
-        cycle: 'MONTHLY',
-        description: `Aluguel · Contrato ${c.numero}`,
-        endDate: fim.toISOString().split('T')[0],
-        externalReference: contrato_id,
-        fine:     { value: 2 },          // multa atraso 2%
-        interest: { value: 1 },          // juros 1% ao mês
-      }),
+      body: JSON.stringify(subPayload),
     })
     const subData = await sub.json()
     if (!sub.ok) return json({ error: 'Asaas subscription erro', detail: subData }, sub.status)

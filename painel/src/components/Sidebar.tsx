@@ -13,6 +13,7 @@ import {
   X,
   Pencil,
   FileSignature,
+  Wallet,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import logoImg from '@/assets/logo.png'
@@ -29,6 +30,7 @@ const navItems: NavItem[] = [
   { label: 'Dashboard', path: '/painel/', icon: <LayoutDashboard size={20} /> },
   { label: 'Imoveis', path: '/painel/imoveis', icon: <Building2 size={20} /> },
   { label: 'Locacoes', path: '/painel/contratos', icon: <FileSignature size={20} /> },
+  { label: 'Proprietarios', path: '/painel/proprietarios', icon: <Wallet size={20} /> },
   { label: 'Modelos Contrato', path: '/painel/modelos-contrato', icon: <FileSignature size={20} /> },
   { label: 'Leads', path: '/painel/leads', icon: <Users size={20} /> },
   { label: 'Precificacao', path: '/painel/precificacao', icon: <Calculator size={20} /> },
