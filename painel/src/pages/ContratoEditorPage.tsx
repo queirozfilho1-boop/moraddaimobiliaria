@@ -550,9 +550,29 @@ const ContratoEditorPage = () => {
                     {Object.entries(PAPEL_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                   </select>
                 </div>
-                <button onClick={() => removeParte(idx)} className="text-gray-400 hover:text-red-500" title="Remover">
-                  <Trash2 size={15} />
-                </button>
+                <div className="flex items-center gap-1">
+                  {p.papel === 'locatario' && (p as any).id && p.email && (
+                    <button onClick={async () => {
+                      if (!confirm(`Convidar ${p.nome} (${p.email}) pro Portal do Locatário?`)) return
+                      try {
+                        const { data: { session } } = await supabase.auth.getSession()
+                        const res = await fetch(`${SUPA_FN}/convidar-locatario`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token || ''}` },
+                          body: JSON.stringify({ parte_id: (p as any).id }),
+                        })
+                        const data = await res.json()
+                        if (!res.ok) throw new Error(data.error || 'erro')
+                        toast.success('Convite enviado · locatário receberá magic link')
+                      } catch (err: any) { toast.error('Erro: ' + err.message) }
+                    }} className="text-blue-500 hover:text-blue-700" title="Convidar pro Portal">
+                      <Send size={15} />
+                    </button>
+                  )}
+                  <button onClick={() => removeParte(idx)} className="text-gray-400 hover:text-red-500" title="Remover">
+                    <Trash2 size={15} />
+                  </button>
+                </div>
               </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 <div className="sm:col-span-2">
