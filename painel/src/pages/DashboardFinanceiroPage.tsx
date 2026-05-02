@@ -14,6 +14,9 @@ interface Stats {
   repasses_pendentes: number
   repasses_concluidos: number
   inadimplencia_total: number
+  vendas_concluidas_mes: number
+  vendas_em_negociacao: number
+  forecast_vendas: number
 }
 
 const Card = ({ icon, label, value, color = 'blue', sub }: { icon: React.ReactNode; label: string; value: string; color?: string; sub?: string }) => {
@@ -50,6 +53,7 @@ const DashboardFinanceiroPage = () => {
       const [
         contAtivos, contInad, contAguard, props,
         cobrPagas, repPend, repConc, cobrOver,
+        vendasMes, vendasNeg,
       ] = await Promise.all([
         supabase.from('contratos_locacao').select('id', { count: 'exact', head: true }).eq('status', 'ativo'),
         supabase.from('contratos_locacao').select('id', { count: 'exact', head: true }).eq('status', 'inadimplente'),
@@ -59,6 +63,8 @@ const DashboardFinanceiroPage = () => {
         supabase.from('contratos_repasses').select('valor_repasse,taxa_admin').eq('status', 'pendente'),
         supabase.from('contratos_repasses').select('valor_repasse,taxa_admin').eq('status', 'concluido').gte('data_repasse', inicioMes.toISOString()),
         supabase.from('contratos_cobrancas').select('valor').eq('status', 'OVERDUE'),
+        supabase.from('vendas').select('valor_venda,fechado_em').eq('status', 'concluida').gte('fechado_em', inicioMes.toISOString()),
+        supabase.from('vendas').select('valor_venda,probabilidade_pct').not('status', 'in', '(concluida,cancelada)'),
       ])
 
       const receita_mes_total = (cobrPagas.data || []).reduce((s, c: any) => s + Number(c.valor_pago || c.valor || 0), 0)
@@ -66,6 +72,9 @@ const DashboardFinanceiroPage = () => {
       const repassesPendentesTotal = (repPend.data || []).reduce((s, r: any) => s + Number(r.valor_repasse || 0), 0)
       const repassesConclTotal = (repConc.data || []).reduce((s, r: any) => s + Number(r.valor_repasse || 0), 0)
       const inadTotal = (cobrOver.data || []).reduce((s, c: any) => s + Number(c.valor || 0), 0)
+      const vendasConcluidasMes = (vendasMes.data || []).reduce((s, v: any) => s + Number(v.valor_venda || 0), 0)
+      const vendasEmNeg = (vendasNeg.data || []).reduce((s, v: any) => s + Number(v.valor_venda || 0), 0)
+      const forecastVendas = (vendasNeg.data || []).reduce((s, v: any) => s + (Number(v.valor_venda || 0) * Number(v.probabilidade_pct || 50) / 100), 0)
 
       setS({
         contratos_ativos: contAtivos.count || 0,
@@ -78,6 +87,9 @@ const DashboardFinanceiroPage = () => {
         repasses_pendentes: repassesPendentesTotal,
         repasses_concluidos: repassesConclTotal,
         inadimplencia_total: inadTotal,
+        vendas_concluidas_mes: vendasConcluidasMes,
+        vendas_em_negociacao: vendasEmNeg,
+        forecast_vendas: forecastVendas,
       })
       setLoading(false)
     })()
@@ -99,6 +111,14 @@ const DashboardFinanceiroPage = () => {
         <Card icon={<TrendingUp size={20} />} label="Taxa de adm. recebida" value={fmtMoeda(s.receita_mes_taxa_adm)} color="green" />
         <Card icon={<Wallet size={20} />} label="Total transitado" value={fmtMoeda(s.receita_mes_total)} color="blue" sub="Bruto pago pelos inquilinos" />
         <Card icon={<TrendingDown size={20} />} label="Inadimplência" value={fmtMoeda(s.inadimplencia_total)} color="red" />
+      </div>
+
+      {/* Vendas */}
+      <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Vendas</h2>
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <Card icon={<TrendingUp size={20} />} label="Concluídas no mês" value={fmtMoeda(s.vendas_concluidas_mes)} color="green" />
+        <Card icon={<Clock size={20} />} label="Em negociação" value={fmtMoeda(s.vendas_em_negociacao)} color="blue" />
+        <Card icon={<TrendingUp size={20} />} label="Forecast (ponderado)" value={fmtMoeda(s.forecast_vendas)} color="purple" sub="Σ (valor × probabilidade)" />
       </div>
 
       {/* Operação */}

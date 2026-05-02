@@ -1,4 +1,4 @@
-import{l as e}from"./constants-w5ouQPhi.js";import{t}from"./chevron-right-BVrlcrLV.js";import{c as n,t as r}from"./index-hNo8dsgI.js";import{t as i}from"./SEO-BJD4r9L8.js";import{t as a}from"./ScrollReveal-Df9atXqm.js";var o=e(),s=[{id:`coleta`,title:`1. Coleta de Dados`,content:`A Moradda Imobiliaria coleta dados pessoais fornecidos diretamente por voce ao utilizar nossos servicos, tais como:
+import{l as e}from"./constants-w5ouQPhi.js";import{t}from"./chevron-right-BVrlcrLV.js";import{c as n,t as r}from"./index-x1j_ewUX.js";import{t as i}from"./SEO-BJD4r9L8.js";import{t as a}from"./ScrollReveal-cEVlidkz.js";var o=e(),s=[{id:`coleta`,title:`1. Coleta de Dados`,content:`A Moradda Imobiliaria coleta dados pessoais fornecidos diretamente por voce ao utilizar nossos servicos, tais como:
 
 - Nome completo, e-mail, telefone e CPF ao preencher formularios de contato, agendamento de visitas ou cadastro em nosso site;
 - Dados de navegacao (endereco IP, tipo de navegador, paginas acessadas, tempo de permanencia) coletados automaticamente por meio de cookies e tecnologias similares;

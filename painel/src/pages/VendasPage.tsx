@@ -15,6 +15,9 @@ import {
 } from '@/lib/vendas'
 import { downloadPdfContratoFromMd } from '@/lib/contratoPdfRender'
 import { mergeTemplate } from '@/lib/contratoMerge'
+import {
+  DocumentosSection, FinanciamentoSection, ItbiCartorioSection, ProbabilidadeSection,
+} from '@/components/VendaSecoesAvancadas'
 
 interface Venda {
   id: string; numero: string; status: VendaStatus
@@ -433,6 +436,11 @@ export const VendaEditorPage = () => {
       <S title="Observações" icon={<FileText size={16} />}>
         <textarea rows={3} className={inputCls} value={v.observacoes || ''} onChange={(e) => set('observacoes', e.target.value)} />
       </S>
+
+      <ProbabilidadeSection venda={v} onChange={(patch) => setV({ ...v, ...patch })} />
+      <FinanciamentoSection venda={v} onChange={(patch) => setV({ ...v, ...patch })} />
+      <ItbiCartorioSection venda={v} onChange={(patch) => setV({ ...v, ...patch })} />
+      {!isNew && id && <DocumentosSection vendaId={id} />}
     </div>
   )
 }
