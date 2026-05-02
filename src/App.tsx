@@ -23,6 +23,7 @@ const FavoritosPage = lazy(() => import('@/pages/Favoritos'))
 const PoliticaPage = lazy(() => import('@/pages/Politica'))
 const ConfirmacaoPage = lazy(() => import('@/pages/Confirmacao'))
 const NotFoundPage = lazy(() => import('@/pages/NotFound'))
+const PortalPage = lazy(() => import('@/pages/Portal'))
 
 function App() {
   return (
@@ -37,6 +38,7 @@ function App() {
           }
         >
           <Routes>
+            <Route path="/portal" element={<PortalPage />} />
             <Route element={<Layout />}>
               <Route path="/" element={<HomePage />} />
               <Route path="/imoveis" element={<ImoveisPage />} />

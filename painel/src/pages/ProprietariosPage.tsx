@@ -244,24 +244,47 @@ export const ProprietarioEditorPage = () => {
         </div>
         <div className="flex flex-wrap gap-2">
           {!isNew && id && (
-            <button
-              onClick={async () => {
-                const ano = new Date().getFullYear() - 1
-                const { data } = await supabase.from('contratos_repasses')
-                  .select(`*, contratos_locacao(numero, imoveis(codigo, titulo))`)
-                  .eq('proprietario_id', id)
-                  .eq('status', 'concluido')
-                  .gte('data_referencia', `${ano}-01-01`).lte('data_referencia', `${ano}-12-31`)
-                if (!data || data.length === 0) {
-                  toast.error(`Sem repasses concluídos em ${ano}`); return
-                }
-                gerarInformeIR(p as any, ano, data as any)
-              }}
-              className="inline-flex items-center gap-2 rounded-lg border border-purple-300 bg-purple-50 px-4 py-2 text-sm font-medium text-purple-700 hover:bg-purple-100 dark:border-purple-700 dark:bg-purple-900/20 dark:text-purple-300"
-            >
-              <FileText size={15} />
-              Informe IR
-            </button>
+            <>
+              <button
+                onClick={async () => {
+                  if (!p.email) { toast.error('Proprietário sem e-mail'); return }
+                  if (!confirm(`Convidar ${p.nome} (${p.email}) pro Portal? Ele vai receber um link de acesso.`)) return
+                  try {
+                    const { data: { session } } = await supabase.auth.getSession()
+                    const res = await fetch(`${SUPA_FN}/convidar-proprietario`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token || ''}` },
+                      body: JSON.stringify({ proprietario_id: id }),
+                    })
+                    const data = await res.json()
+                    if (!res.ok) throw new Error(data.error || 'erro')
+                    toast.success('Convite enviado · proprietário receberá magic link no e-mail')
+                  } catch (err: any) { toast.error('Erro: ' + err.message) }
+                }}
+                className="inline-flex items-center gap-2 rounded-lg border border-blue-300 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 dark:border-blue-700 dark:bg-blue-900/20 dark:text-blue-300"
+              >
+                <ExternalLink size={15} />
+                Convidar pro Portal
+              </button>
+              <button
+                onClick={async () => {
+                  const ano = new Date().getFullYear() - 1
+                  const { data } = await supabase.from('contratos_repasses')
+                    .select(`*, contratos_locacao(numero, imoveis(codigo, titulo))`)
+                    .eq('proprietario_id', id)
+                    .eq('status', 'concluido')
+                    .gte('data_referencia', `${ano}-01-01`).lte('data_referencia', `${ano}-12-31`)
+                  if (!data || data.length === 0) {
+                    toast.error(`Sem repasses concluídos em ${ano}`); return
+                  }
+                  gerarInformeIR(p as any, ano, data as any)
+                }}
+                className="inline-flex items-center gap-2 rounded-lg border border-purple-300 bg-purple-50 px-4 py-2 text-sm font-medium text-purple-700 hover:bg-purple-100 dark:border-purple-700 dark:bg-purple-900/20 dark:text-purple-300"
+              >
+                <FileText size={15} />
+                Informe IR
+              </button>
+            </>
           )}
           <button onClick={save} disabled={saving} className="inline-flex items-center gap-2 rounded-lg bg-moradda-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-moradda-blue-600 disabled:opacity-50">
             {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
