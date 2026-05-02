@@ -16,6 +16,8 @@ import {
   fmtMoeda, calcularPrazoMeses, calcularRepasse,
 } from '@/lib/contratos'
 import { gerarPdfContrato, gerarPdfContratoBase64 } from '@/lib/contratoPdf'
+import { downloadPdfContratoFromMd, gerarPdfContratoBase64FromMd } from '@/lib/contratoPdfRender'
+import { mergeTemplate } from '@/lib/contratoMerge'
 import CobrancasSection from '@/components/CobrancasSection'
 
 const SUPA_FN = `${import.meta.env.VITE_SUPABASE_URL || 'https://mvzjqktgnwjwuinnxxcc.supabase.co'}/functions/v1`
@@ -247,14 +249,38 @@ const ContratoEditorPage = () => {
     }
   }
 
+  async function buscarModeloMarkdown(): Promise<string | null> {
+    // Se contrato tem modelo_id, usa esse. Senão tenta o padrão do tipo.
+    if (contrato.modelo_id) {
+      const { data } = await supabase.from('contratos_modelos').select('conteudo').eq('id', contrato.modelo_id).single()
+      if (data?.conteudo) return data.conteudo as string
+    }
+    if (contrato.tipo) {
+      const { data } = await supabase.from('contratos_modelos').select('conteudo').eq('tipo', contrato.tipo).eq('padrao', true).eq('ativo', true).limit(1).maybeSingle()
+      if (data?.conteudo) return data.conteudo as string
+    }
+    return null
+  }
+
   async function handleGerarPdf() {
     if (!imovelSelecionado) { toast.error('Selecione o imóvel primeiro'); return }
     try {
-      await gerarPdfContrato({
-        contrato: contrato as ContratoLocacao,
-        partes: partes as ContratoParte[],
-        imovel: imovelSelecionado,
-      })
+      const md = await buscarModeloMarkdown()
+      if (md) {
+        const merged = mergeTemplate(md, {
+          contrato,
+          partes: partes as any,
+          imovel: imovelSelecionado as any,
+        })
+        await downloadPdfContratoFromMd(merged, contrato.numero)
+      } else {
+        // Fallback: layout hardcoded antigo
+        await gerarPdfContrato({
+          contrato: contrato as ContratoLocacao,
+          partes: partes as ContratoParte[],
+          imovel: imovelSelecionado,
+        })
+      }
       toast.success('PDF gerado')
     } catch (err: any) {
       toast.error('Erro: ' + (err.message || ''))
@@ -272,12 +298,23 @@ const ContratoEditorPage = () => {
     try {
       // Salvar primeiro
       await handleSave()
-      // Gerar PDF base64
-      const pdfBase64 = await gerarPdfContratoBase64({
-        contrato: contrato as ContratoLocacao,
-        partes: partes as ContratoParte[],
-        imovel: imovelSelecionado,
-      })
+      // Gerar PDF base64 (preferir modelo Markdown)
+      let pdfBase64: string
+      const md = await buscarModeloMarkdown()
+      if (md) {
+        const merged = mergeTemplate(md, {
+          contrato,
+          partes: partes as any,
+          imovel: imovelSelecionado as any,
+        })
+        pdfBase64 = await gerarPdfContratoBase64FromMd(merged, contrato.numero)
+      } else {
+        pdfBase64 = await gerarPdfContratoBase64({
+          contrato: contrato as ContratoLocacao,
+          partes: partes as ContratoParte[],
+          imovel: imovelSelecionado,
+        })
+      }
       // Chamar Edge Function
       const { data: { session } } = await supabase.auth.getSession()
       const res = await fetch(`${SUPA_FN}/zapsign-send`, {
