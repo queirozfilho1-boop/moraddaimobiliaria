@@ -15,7 +15,10 @@ import {
   TIPO_LABEL, STATUS_LABEL, STATUS_COR, GARANTIA_LABEL, INDICE_LABEL, PAPEL_LABEL,
   fmtMoeda, calcularPrazoMeses, calcularRepasse,
 } from '@/lib/contratos'
-import { gerarPdfContrato } from '@/lib/contratoPdf'
+import { gerarPdfContrato, gerarPdfContratoBase64 } from '@/lib/contratoPdf'
+import CobrancasSection from '@/components/CobrancasSection'
+
+const SUPA_FN = `${import.meta.env.VITE_SUPABASE_URL || 'https://mvzjqktgnwjwuinnxxcc.supabase.co'}/functions/v1`
 
 interface ImovelLite {
   id: string
@@ -258,6 +261,46 @@ const ContratoEditorPage = () => {
     }
   }
 
+  async function handleEnviarAssinatura() {
+    if (!id || isNew) { toast.error('Salve o contrato primeiro'); return }
+    if (!imovelSelecionado) { toast.error('Selecione o imóvel'); return }
+    const partesValidas = partes.filter((p) => ['locador', 'locatario', 'fiador', 'avalista'].includes(p.papel))
+    if (partesValidas.length === 0) { toast.error('Adicione pelo menos um signatário'); return }
+    if (partesValidas.some((p) => !p.email)) { toast.error('Todas as partes signatárias precisam de e-mail'); return }
+
+    setSaving(true)
+    try {
+      // Salvar primeiro
+      await handleSave()
+      // Gerar PDF base64
+      const pdfBase64 = await gerarPdfContratoBase64({
+        contrato: contrato as ContratoLocacao,
+        partes: partes as ContratoParte[],
+        imovel: imovelSelecionado,
+      })
+      // Chamar Edge Function
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch(`${SUPA_FN}/zapsign-send`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token || ''}`,
+        },
+        body: JSON.stringify({ contrato_id: id, pdf_base64: pdfBase64 }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
+      toast.success(`Contrato enviado pra ${data.signers?.length || 0} signatário(s) via ZapSign`)
+      // Recarregar
+      const { data: updated } = await supabase.from('contratos_locacao').select('*').eq('id', id).single()
+      if (updated) setContrato(updated)
+    } catch (err: any) {
+      toast.error('Erro: ' + (err.message || ''))
+    } finally {
+      setSaving(false)
+    }
+  }
+
   if (loading) {
     return <div className="flex justify-center py-16"><Loader2 size={28} className="animate-spin text-moradda-blue-500" /></div>
   }
@@ -294,13 +337,14 @@ const ContratoEditorPage = () => {
               Gerar PDF
             </button>
           )}
-          {!isNew && contrato.status === 'rascunho' && (
+          {!isNew && (contrato.status === 'rascunho' || contrato.status === 'aguardando_assinatura') && (
             <button
-              onClick={() => handleSave('aguardando_assinatura')}
-              className="inline-flex items-center gap-2 rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-white hover:bg-amber-600"
+              onClick={handleEnviarAssinatura}
+              disabled={saving}
+              className="inline-flex items-center gap-2 rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-white hover:bg-amber-600 disabled:opacity-50"
             >
-              <Send size={15} />
-              Enviar pra assinatura
+              {saving ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
+              Enviar pra assinatura (ZapSign)
             </button>
           )}
           <button
@@ -523,6 +567,22 @@ const ContratoEditorPage = () => {
         <textarea rows={4} className={inputCls} placeholder="Cláusulas adicionais, observações gerais..."
           value={contrato.observacoes || ''} onChange={(e) => setC('observacoes', e.target.value)} />
       </Section>
+
+      {/* Cobranças (só pra contratos salvos) */}
+      {!isNew && id && (
+        <CobrancasSection
+          contratoId={id}
+          cobrancaModo={(contrato.cobranca_modo as any) || 'desativada'}
+          asaasSubscriptionId={contrato.asaas_subscription_id}
+          valorTotal={(contrato.valor_aluguel || 0) + (contrato.valor_condominio || 0) + (contrato.valor_iptu || 0) + (contrato.valor_outros || 0)}
+          diaVencimento={contrato.dia_vencimento || 5}
+          onChangeModo={async (m) => {
+            setC('cobranca_modo', m)
+            await supabase.from('contratos_locacao').update({ cobranca_modo: m }).eq('id', id)
+          }}
+          onSubscriptionCreated={(sid) => setC('asaas_subscription_id', sid)}
+        />
+      )}
     </div>
   )
 }

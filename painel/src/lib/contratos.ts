@@ -119,6 +119,7 @@ export interface ContratoLocacao {
   multa_atraso_pct: number
   juros_dia_pct: number
   multa_rescisao_meses: number
+  cobranca_modo?: 'desativada' | 'manual' | 'automatica'
   pdf_url?: string | null
   zapsign_doc_id?: string | null
   zapsign_status?: string | null

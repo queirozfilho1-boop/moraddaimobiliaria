@@ -33,7 +33,20 @@ function p(doc: jsPDF, text: string, x: number, y: number, opts: { maxW?: number
   return y + LH
 }
 
+export async function gerarPdfContratoBase64({ contrato, partes, imovel }: Args): Promise<string> {
+  const doc = buildPdfDoc({ contrato, partes, imovel })
+  // jsPDF datauristring vem como "data:application/pdf;filename=..;base64,XXXX"
+  const dataUri = doc.output('datauristring')
+  const idx = dataUri.indexOf('base64,')
+  return idx >= 0 ? dataUri.substring(idx + 7) : dataUri
+}
+
 export async function gerarPdfContrato({ contrato: c, partes, imovel }: Args): Promise<void> {
+  const doc = buildPdfDoc({ contrato: c, partes, imovel })
+  doc.save(`Contrato_${c.numero?.replace('/', '-') || 'rascunho'}.pdf`)
+}
+
+function buildPdfDoc({ contrato: c, partes, imovel }: Args): jsPDF {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   const W = doc.internal.pageSize.getWidth()
   const H = doc.internal.pageSize.getHeight()
@@ -163,7 +176,7 @@ export async function gerarPdfContrato({ contrato: c, partes, imovel }: Args): P
     )
   }
 
-  doc.save(`Contrato_${c.numero?.replace('/', '-') || 'rascunho'}.pdf`)
+  return doc
 }
 
 function descreverParte(p: any): string {
