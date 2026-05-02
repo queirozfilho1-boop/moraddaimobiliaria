@@ -14,6 +14,7 @@ import { ProprietariosListPage, ProprietarioEditorPage } from '@/pages/Proprieta
 import DashboardFinanceiroPage from '@/pages/DashboardFinanceiroPage'
 import { VendasListPage, VendaEditorPage } from '@/pages/VendasPage'
 import VendasPipelinePage from '@/pages/VendasPipelinePage'
+import LeadsPipelinePage from '@/pages/LeadsPipelinePage'
 import { PropostasListPage, PropostaEditorPage } from '@/pages/PropostasPage'
 import LeadsPage from '@/pages/LeadsPage'
 import PrecificacaoPage from '@/pages/PrecificacaoPage'
@@ -53,6 +54,7 @@ export default function App() {
               <Route path="propostas/novo" element={<PropostaEditorPage />} />
               <Route path="propostas/:id" element={<PropostaEditorPage />} />
               <Route path="leads" element={<LeadsPage />} />
+              <Route path="leads/pipeline" element={<LeadsPipelinePage />} />
               <Route path="precificacao" element={<PrecificacaoPage />} />
               <Route path="crm" element={<CRMPage />} />
               <Route path="aprendizado" element={<AprendizadoPage />} />
