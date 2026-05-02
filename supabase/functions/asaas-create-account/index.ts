@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
         name: p.nome,
         email: p.email,
         cpfCnpj: cleanDoc,
-        birthDate: p.data_nascimento || undefined,
+        birthDate: p.data_nascimento || (isPF ? '1990-01-01' : undefined),
         companyType: isPF ? undefined : 'LIMITED',
         phone: p.telefone ? p.telefone.replace(/\D/g, '') : undefined,
         mobilePhone: p.telefone ? p.telefone.replace(/\D/g, '') : undefined,
@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
         complement: p.complemento || undefined,
         province: p.bairro || undefined,
         postalCode: p.cep ? p.cep.replace(/\D/g, '') : '00000000',
-        site: undefined,
+        incomeValue: 5000,           // padrão pra sandbox · ajustável em prod
         externalReference: proprietario_id,
       }),
     })
