@@ -15,6 +15,9 @@ import DashboardFinanceiroPage from '@/pages/DashboardFinanceiroPage'
 import { VendasListPage, VendaEditorPage } from '@/pages/VendasPage'
 import VendasPipelinePage from '@/pages/VendasPipelinePage'
 import LeadsPipelinePage from '@/pages/LeadsPipelinePage'
+import VisitasPage from '@/pages/VisitasPage'
+import MarketingPage from '@/pages/MarketingPage'
+import { VistoriaListPage, VistoriaEditorPage } from '@/pages/VistoriaPage'
 import { PropostasListPage, PropostaEditorPage } from '@/pages/PropostasPage'
 import LeadsPage from '@/pages/LeadsPage'
 import PrecificacaoPage from '@/pages/PrecificacaoPage'
@@ -55,6 +58,11 @@ export default function App() {
               <Route path="propostas/:id" element={<PropostaEditorPage />} />
               <Route path="leads" element={<LeadsPage />} />
               <Route path="leads/pipeline" element={<LeadsPipelinePage />} />
+              <Route path="visitas" element={<VisitasPage />} />
+              <Route path="marketing" element={<MarketingPage />} />
+              <Route path="vistorias" element={<VistoriaListPage />} />
+              <Route path="vistorias/novo" element={<VistoriaEditorPage />} />
+              <Route path="vistorias/:id" element={<VistoriaEditorPage />} />
               <Route path="precificacao" element={<PrecificacaoPage />} />
               <Route path="crm" element={<CRMPage />} />
               <Route path="aprendizado" element={<AprendizadoPage />} />

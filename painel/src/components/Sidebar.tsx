@@ -18,6 +18,9 @@ import {
   Trophy,
   Handshake,
   Kanban,
+  Calendar,
+  Megaphone,
+  ClipboardCheck,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import logoImg from '@/assets/logo.png'
@@ -42,6 +45,9 @@ const navItems: NavItem[] = [
   { label: 'Modelos Contrato', path: '/painel/modelos-contrato', icon: <FileSignature size={20} /> },
   { label: 'Leads', path: '/painel/leads', icon: <Users size={20} /> },
   { label: 'Pipeline Leads', path: '/painel/leads/pipeline', icon: <Kanban size={20} /> },
+  { label: 'Visitas', path: '/painel/visitas', icon: <Calendar size={20} /> },
+  { label: 'Vistorias', path: '/painel/vistorias', icon: <ClipboardCheck size={20} /> },
+  { label: 'Marketing', path: '/painel/marketing', icon: <Megaphone size={20} /> },
   { label: 'Precificacao', path: '/painel/precificacao', icon: <Calculator size={20} /> },
   { label: 'CRM', path: '/painel/crm', icon: <LayoutDashboard size={20} />, superadminOnly: true },
   { label: 'Aprendizado', path: '/painel/aprendizado', icon: <GraduationCap size={20} /> },
