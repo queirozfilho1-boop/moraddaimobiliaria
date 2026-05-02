@@ -7,6 +7,7 @@ export type ContratoTipo =
   | 'administracao'
   | 'captacao_exclusiva'
   | 'compra_venda'
+  | 'associacao_corretor'
 
 export type ContratoStatus =
   | 'rascunho'
@@ -46,6 +47,7 @@ export const TIPO_LABEL: Record<ContratoTipo, string> = {
   administracao:       'Administração',
   captacao_exclusiva:  'Captação Exclusiva',
   compra_venda:        'Compra e Venda',
+  associacao_corretor: 'Associação com Corretor',
 }
 
 export const STATUS_LABEL: Record<ContratoStatus, string> = {

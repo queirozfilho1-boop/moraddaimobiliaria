@@ -4,6 +4,7 @@ import { TEMPLATE_TEMPORADA } from './temporada'
 import { TEMPLATE_ADMINISTRACAO } from './administracao'
 import { TEMPLATE_CAPTACAO_EXCLUSIVA } from './captacao_exclusiva'
 import { TEMPLATE_COMPRA_VENDA } from './compra_venda'
+import { TEMPLATE_ASSOCIACAO_CORRETOR } from './associacao_corretor'
 
 export const TEMPLATES_PADRAO = [
   {
@@ -40,6 +41,12 @@ export const TEMPLATES_PADRAO = [
     nome: 'Compra e Venda de Imóvel — Padrão Moradda',
     tipo: 'compra_venda' as any,
     conteudo: TEMPLATE_COMPRA_VENDA,
+    padrao: true,
+  },
+  {
+    nome: 'Associação Profissional com Corretor — Padrão Moradda',
+    tipo: 'associacao_corretor' as any,
+    conteudo: TEMPLATE_ASSOCIACAO_CORRETOR,
     padrao: true,
   },
 ]
