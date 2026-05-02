@@ -25,9 +25,11 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import JSZip from 'jszip'
+import { Share2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { uploadFotoComWatermark } from '@/lib/watermark'
+import ShareImovelModal from '@/components/ShareImovelModal'
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function generateSlug(text: string): string {
@@ -246,6 +248,7 @@ export default function EditarImovelPage() {
   const [savingDraft, setSavingDraft] = useState(false)
   const [fotosExistentes, setFotosExistentes] = useState<{ id: string; url: string; url_watermark: string; principal: boolean; ordem: number }[]>([])
   const [baixandoZip, setBaixandoZip] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
   const [draggingFotoIdx, setDraggingFotoIdx] = useState<number | null>(null)
   const [novasFotos, setNovasFotos] = useState<{ file: File; preview: string; principal: boolean }[]>([])
   const [uploadingFotos, setUploadingFotos] = useState(false)
@@ -1120,16 +1123,28 @@ export default function EditarImovelPage() {
             </p>
           </div>
         </div>
-        {isAdmin && (
-          <button
-            type="button"
-            onClick={() => setShowDeleteDialog(true)}
-            className="inline-flex items-center gap-2 rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20"
-          >
-            <Trash2 size={16} />
-            Excluir Imóvel
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {id && (
+            <button
+              type="button"
+              onClick={() => setShareOpen(true)}
+              className="inline-flex items-center gap-2 rounded-lg border border-purple-300 bg-purple-50 px-4 py-2 text-sm font-medium text-purple-700 transition hover:bg-purple-100 dark:border-purple-800 dark:bg-purple-900/20 dark:text-purple-300 dark:hover:bg-purple-900/40"
+            >
+              <Share2 size={16} />
+              Compartilhar
+            </button>
+          )}
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => setShowDeleteDialog(true)}
+              className="inline-flex items-center gap-2 rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20"
+            >
+              <Trash2 size={16} />
+              Excluir Imóvel
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ── Review Panel: Admin reviewing (status = enviado_revisao) ── */}
@@ -2207,6 +2222,14 @@ export default function EditarImovelPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {id && (
+        <ShareImovelModal
+          open={shareOpen}
+          onClose={() => setShareOpen(false)}
+          imovelId={id}
+        />
       )}
     </div>
   )

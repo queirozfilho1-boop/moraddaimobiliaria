@@ -17,10 +17,12 @@ import {
   FileText,
   UserCircle,
   ImageIcon,
+  Share2,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
+import ShareImovelModal from '@/components/ShareImovelModal'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type ImovelStatus =
@@ -153,6 +155,7 @@ export default function ImoveisPage() {
   const [deleteTarget, setDeleteTarget] = useState<Imovel | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [page, setPage] = useState(1)
+  const [shareTarget, setShareTarget] = useState<string | null>(null)
 
   const perPage = 10
 
@@ -373,6 +376,13 @@ export default function ImoveisPage() {
             <Pencil size={14} />
             Editar
           </Link>
+          <button
+            onClick={() => setShareTarget(imovel.id)}
+            className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-purple-700 transition hover:bg-purple-50 dark:text-purple-300 dark:hover:bg-purple-900/30"
+          >
+            <Share2 size={14} />
+            Compartilhar
+          </button>
           {isAdmin && imovel.status === 'enviado_revisao' && (
             <Link
               to={`/painel/imoveis/${imovel.id}`}
@@ -653,6 +663,13 @@ export default function ImoveisPage() {
                       >
                         <Pencil size={16} />
                       </Link>
+                      <button
+                        onClick={() => setShareTarget(imovel.id)}
+                        className="rounded-lg p-2 text-purple-500 transition hover:bg-purple-50 hover:text-purple-700 dark:text-purple-400 dark:hover:bg-purple-900/20 dark:hover:text-purple-300"
+                        title="Compartilhar"
+                      >
+                        <Share2 size={16} />
+                      </button>
                       {isAdmin && imovel.status === 'enviado_revisao' && (
                         <Link
                           to={`/painel/imoveis/${imovel.id}`}
@@ -782,6 +799,12 @@ export default function ImoveisPage() {
           </div>
         </div>
       )}
+
+      <ShareImovelModal
+        open={shareTarget !== null}
+        onClose={() => setShareTarget(null)}
+        imovelId={shareTarget || ''}
+      />
     </div>
   )
 }
