@@ -3,6 +3,7 @@ import { TEMPLATE_COMERCIAL } from './comercial'
 import { TEMPLATE_TEMPORADA } from './temporada'
 import { TEMPLATE_ADMINISTRACAO } from './administracao'
 import { TEMPLATE_CAPTACAO_EXCLUSIVA } from './captacao_exclusiva'
+import { TEMPLATE_COMPRA_VENDA } from './compra_venda'
 
 export const TEMPLATES_PADRAO = [
   {
@@ -33,6 +34,12 @@ export const TEMPLATES_PADRAO = [
     nome: 'Captação com Exclusividade — Padrão Moradda',
     tipo: 'captacao_exclusiva' as const,
     conteudo: TEMPLATE_CAPTACAO_EXCLUSIVA,
+    padrao: true,
+  },
+  {
+    nome: 'Compra e Venda de Imóvel — Padrão Moradda',
+    tipo: 'compra_venda' as any,
+    conteudo: TEMPLATE_COMPRA_VENDA,
     padrao: true,
   },
 ]

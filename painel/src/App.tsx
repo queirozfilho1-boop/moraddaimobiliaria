@@ -12,6 +12,7 @@ import ContratoEditorPage from '@/pages/ContratoEditorPage'
 import { ModelosContratoListPage, ModeloContratoEditorPage } from '@/pages/ModelosContratoPage'
 import { ProprietariosListPage, ProprietarioEditorPage } from '@/pages/ProprietariosPage'
 import DashboardFinanceiroPage from '@/pages/DashboardFinanceiroPage'
+import { VendasListPage, VendaEditorPage } from '@/pages/VendasPage'
 import LeadsPage from '@/pages/LeadsPage'
 import PrecificacaoPage from '@/pages/PrecificacaoPage'
 import CRMPage from '@/pages/CRMPage'
@@ -42,6 +43,9 @@ export default function App() {
               <Route path="proprietarios/novo" element={<ProprietarioEditorPage />} />
               <Route path="proprietarios/:id" element={<ProprietarioEditorPage />} />
               <Route path="financeiro" element={<DashboardFinanceiroPage />} />
+              <Route path="vendas" element={<VendasListPage />} />
+              <Route path="vendas/novo" element={<VendaEditorPage />} />
+              <Route path="vendas/:id" element={<VendaEditorPage />} />
               <Route path="leads" element={<LeadsPage />} />
               <Route path="precificacao" element={<PrecificacaoPage />} />
               <Route path="crm" element={<CRMPage />} />
