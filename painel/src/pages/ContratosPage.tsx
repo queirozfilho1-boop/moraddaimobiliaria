@@ -9,12 +9,13 @@ import {
   STATUS_COR,
   TIPO_LABEL,
   fmtData,
-  fmtMoeda,
 } from '@/lib/contratos'
 
 interface Row extends ContratoLocacao {
   imoveis?: { codigo?: string | null; titulo?: string | null } | null
   locatario_nome?: string | null
+  total_signatarios?: number
+  total_assinados?: number
 }
 
 const ContratosPage = () => {
@@ -34,7 +35,7 @@ const ContratosPage = () => {
         id, numero, tipo, status, valor_aluguel, data_inicio, data_fim, dia_vencimento,
         taxa_admin_pct, garantia_tipo, indice_reajuste, created_at,
         imoveis(codigo, titulo),
-        contratos_partes(nome, papel)
+        contratos_partes(nome, papel, zapsign_signed_at)
       `)
       .order('created_at', { ascending: false })
 
@@ -45,10 +46,15 @@ const ContratosPage = () => {
     }
 
     const mapped: Row[] = (data || []).map((r: any) => {
-      const locatario = (r.contratos_partes || []).find((p: any) => p.papel === 'locatario')
+      const partes = (r.contratos_partes || []) as Array<{ papel: string; zapsign_signed_at: string | null; nome: string }>
+      const locatario = partes.find((p) => p.papel === 'locatario')
+      const signatarios = partes.filter((p) => p.papel !== 'testemunha')
+      const assinados = signatarios.filter((p) => p.zapsign_signed_at).length
       return {
         ...r,
         locatario_nome: locatario?.nome || null,
+        total_signatarios: signatarios.length,
+        total_assinados: assinados,
       }
     })
     setRows(mapped)
@@ -150,30 +156,49 @@ const ContratosPage = () => {
             <thead className="bg-gray-50 text-xs uppercase tracking-wider text-gray-500 dark:bg-gray-900 dark:text-gray-400">
               <tr>
                 <th className="px-4 py-3 text-left font-medium">Número</th>
-                <th className="px-4 py-3 text-left font-medium">Imóvel</th>
-                <th className="px-4 py-3 text-left font-medium">Locatário</th>
                 <th className="px-4 py-3 text-left font-medium">Tipo</th>
-                <th className="px-4 py-3 text-right font-medium">Aluguel</th>
                 <th className="px-4 py-3 text-left font-medium">Vigência</th>
+                <th className="px-4 py-3 text-center font-medium">Assinaturas</th>
                 <th className="px-4 py-3 text-left font-medium">Status</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-              {filtered.map((r) => (
+              {filtered.map((r) => {
+                const total = r.total_signatarios || 0
+                const ass = r.total_assinados || 0
+                const pct = total > 0 ? (ass / total) * 100 : 0
+                return (
                 <tr key={r.id}
                     onClick={() => navigate(`/painel/contratos/${r.id}`)}
                     className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/40">
                   <td className="px-4 py-3 font-mono text-xs text-moradda-blue-700 dark:text-moradda-blue-300">{r.numero}</td>
-                  <td className="px-4 py-3 text-gray-700 dark:text-gray-200">
-                    <p className="font-medium">{r.imoveis?.codigo || '—'}</p>
-                    <p className="text-xs text-gray-500">{r.imoveis?.titulo || ''}</p>
-                  </td>
-                  <td className="px-4 py-3 text-gray-700 dark:text-gray-200">{r.locatario_nome || '—'}</td>
-                  <td className="px-4 py-3 text-xs text-gray-600 dark:text-gray-300">{TIPO_LABEL[r.tipo]}</td>
-                  <td className="px-4 py-3 text-right font-semibold text-gray-800 dark:text-gray-100">{fmtMoeda(r.valor_aluguel)}</td>
+                  <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{TIPO_LABEL[r.tipo]}</td>
                   <td className="px-4 py-3 text-xs text-gray-600 dark:text-gray-300">
-                    {fmtData(r.data_inicio)} → {fmtData(r.data_fim)}
+                    {r.data_inicio ? `${fmtData(r.data_inicio)} → ${fmtData(r.data_fim)}` : '—'}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-col items-center gap-1">
+                      <span className={`text-xs font-semibold ${
+                        ass === 0 ? 'text-gray-500' :
+                        ass < total ? 'text-amber-700 dark:text-amber-400' :
+                        'text-green-700 dark:text-green-400'
+                      }`}>
+                        {ass}/{total}
+                      </span>
+                      {total > 0 && (
+                        <div className="h-1.5 w-16 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${
+                              ass === 0 ? 'bg-gray-300' :
+                              ass < total ? 'bg-amber-500' :
+                              'bg-green-500'
+                            }`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COR[r.status]}`}>
@@ -206,7 +231,7 @@ const ContratosPage = () => {
                     </div>
                   </td>
                 </tr>
-              ))}
+              )})}
             </tbody>
           </table>
         </div>
