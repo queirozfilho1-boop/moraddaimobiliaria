@@ -237,8 +237,11 @@ export const MORADDA_DADOS = {
   estado_civil: '',
   profissao: '',
   nacionalidade: 'Brasileira',
-  observacoes: 'CRECI RJ 10404 · Nome fantasia: Moradda Imobiliária',
+  creci: 'RJ 10404',
+  observacoes: 'Nome fantasia: Moradda Imobiliária',
 }
+
+export const PAPEIS_COM_CRECI: PartePapel[] = ['corretor', 'corretor_parceiro', 'imobiliaria']
 
 // Helpers para identificar grupos de tipos
 export const isLocacaoMensal = (t: ContratoTipo) => t === 'locacao_residencial' || t === 'locacao_comercial'
@@ -263,6 +266,7 @@ export interface ContratoParte {
   nome: string
   cpf_cnpj?: string | null
   rg?: string | null
+  creci?: string | null
   nacionalidade?: string | null
   estado_civil?: string | null
   profissao?: string | null

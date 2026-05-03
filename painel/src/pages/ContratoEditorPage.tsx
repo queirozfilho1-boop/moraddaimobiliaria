@@ -13,7 +13,7 @@ import type {
 } from '@/lib/contratos'
 import {
   TIPO_LABEL, STATUS_LABEL, STATUS_COR, GARANTIA_LABEL, INDICE_LABEL, PAPEL_LABEL,
-  papeisPorTipo, MORADDA_DADOS,
+  papeisPorTipo, MORADDA_DADOS, PAPEIS_COM_CRECI,
   fmtMoeda, calcularPrazoMeses, calcularRepasse,
   isLocacao, isCompraVenda, isCaptacao, isAdministracao,
   isAssociacao, isTemporada, usaGarantia, usaReajuste, usaVigencia, usaCobrancaMensal,
@@ -41,6 +41,7 @@ const partePadrao = (papel: PartePapel): Omit<ContratoParte, 'id' | 'contrato_id
   nome: '',
   cpf_cnpj: '',
   rg: '',
+  creci: '',
   nacionalidade: 'Brasileira',
   estado_civil: '',
   profissao: '',
@@ -795,6 +796,12 @@ const ContratoEditorPage = () => {
                   <label className={labelCls}>RG</label>
                   <input className={inputCls} value={p.rg || ''} onChange={(e) => updateParte(idx, { rg: e.target.value })} />
                 </div>
+                {PAPEIS_COM_CRECI.includes(p.papel) && (
+                  <div>
+                    <label className={labelCls}>CRECI</label>
+                    <input className={inputCls} value={p.creci || ''} onChange={(e) => updateParte(idx, { creci: e.target.value })} placeholder="RJ 10404" />
+                  </div>
+                )}
                 <div>
                   <label className={labelCls}>Estado civil</label>
                   <input className={inputCls} value={p.estado_civil || ''} onChange={(e) => updateParte(idx, { estado_civil: e.target.value })} />
