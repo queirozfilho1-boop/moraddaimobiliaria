@@ -20,7 +20,8 @@ import {
 } from '@/lib/contratos'
 import { Home, Briefcase, FileCheck, Percent } from 'lucide-react'
 import { gerarPdfContrato, gerarPdfContratoBase64 } from '@/lib/contratoPdf'
-import { downloadPdfContratoFromMd, gerarPdfContratoBase64FromMd } from '@/lib/contratoPdfRender'
+import { gerarPdfContratoBase64FromMd } from '@/lib/contratoPdfRender'
+import { printContratoFromMd } from '@/lib/contratoPrint'
 import { mergeTemplate } from '@/lib/contratoMerge'
 import CobrancasSection from '@/components/CobrancasSection'
 import RepassesSection from '@/components/RepassesSection'
@@ -361,7 +362,10 @@ const ContratoEditorPage = () => {
           partes: partes as any,
           imovel: imovelSelecionado as any,
         })
-        await downloadPdfContratoFromMd(merged, contrato.numero)
+        // Abre janela de impressão (browser gera PDF estilizado)
+        printContratoFromMd(merged, contrato.numero)
+        toast.success('Janela de impressão aberta. Salve como PDF.')
+        return
       } else {
         // Fallback: layout hardcoded antigo
         await gerarPdfContrato({

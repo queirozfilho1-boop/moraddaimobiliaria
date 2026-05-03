@@ -1,0 +1,194 @@
+// Renderiza Markdown de contrato em HTML + CSS profissional e abre janela
+// com auto-print. O browser gera o PDF respeitando @page CSS (margens,
+// header/footer, paginação) — visual idêntico ao mockup Moradda.
+
+import contratoCss from './contratoStyle.css?raw'
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+}
+
+function inlineFmt(s: string): string {
+  // **bold** e *italic* (após escape HTML básico)
+  // Como o markdown pode ter ** dentro de cláusulas, processo greedy mas pareado.
+  return s
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/(?<![\*])\*([^*]+)\*(?![\*])/g, '<em>$1</em>')
+}
+
+function mdToHtml(md: string): string {
+  const lines = md.split('\n')
+  const out: string[] = []
+  let pBuffer: string[] = []
+  let inList = false
+  let inTable = false
+  let tableHeader: string[] = []
+  let tableSep = false
+  let tableRows: string[][] = []
+
+  const flushP = () => {
+    if (pBuffer.length === 0) return
+    const text = pBuffer.join(' ').trim()
+    if (text) out.push(`<p>${inlineFmt(escapeHtml(text))}</p>`)
+    pBuffer = []
+  }
+  const flushList = () => {
+    if (inList) { out.push('</ul>'); inList = false }
+  }
+  const flushTable = () => {
+    if (!inTable) return
+    out.push('<table>')
+    if (tableHeader.length) {
+      out.push('<thead><tr>')
+      for (const h of tableHeader) out.push(`<th>${inlineFmt(escapeHtml(h.trim()))}</th>`)
+      out.push('</tr></thead>')
+    }
+    if (tableRows.length) {
+      out.push('<tbody>')
+      for (const row of tableRows) {
+        out.push('<tr>')
+        for (const cell of row) out.push(`<td>${inlineFmt(escapeHtml(cell.trim()))}</td>`)
+        out.push('</tr>')
+      }
+      out.push('</tbody>')
+    }
+    out.push('</table>')
+    inTable = false
+    tableHeader = []
+    tableSep = false
+    tableRows = []
+  }
+
+  for (let raw of lines) {
+    const line = raw.trimEnd()
+
+    // Tabela markdown: detectar | col | col |
+    if (line.trim().startsWith('|') && line.trim().endsWith('|')) {
+      flushP(); flushList()
+      const cells = line.trim().slice(1, -1).split('|')
+      // separador?
+      if (cells.every((c) => /^\s*:?-+:?\s*$/.test(c))) {
+        tableSep = true
+        continue
+      }
+      if (!inTable) {
+        inTable = true
+        tableHeader = cells
+        continue
+      }
+      if (tableSep) {
+        tableRows.push(cells)
+      } else {
+        // sem separador, é uma linha de dado mesmo
+        tableRows.push(cells)
+      }
+      continue
+    } else if (inTable) {
+      flushTable()
+    }
+
+    if (!line.trim()) {
+      flushP()
+      flushList()
+      continue
+    }
+    if (/^---+$/.test(line.trim())) {
+      flushP(); flushList()
+      out.push('<hr/>')
+      continue
+    }
+    // Headings
+    if (line.startsWith('### ')) {
+      flushP(); flushList()
+      out.push(`<h3>${inlineFmt(escapeHtml(line.slice(4)))}</h3>`)
+      continue
+    }
+    if (line.startsWith('## ')) {
+      flushP(); flushList()
+      out.push(`<h2>${inlineFmt(escapeHtml(line.slice(3)))}</h2>`)
+      continue
+    }
+    if (line.startsWith('# ')) {
+      flushP(); flushList()
+      out.push(`<h1>${inlineFmt(escapeHtml(line.slice(2)))}</h1>`)
+      continue
+    }
+    // Lista
+    if (/^[-*]\s+/.test(line.trim())) {
+      flushP()
+      if (!inList) { out.push('<ul>'); inList = true }
+      out.push(`<li>${inlineFmt(escapeHtml(line.trim().replace(/^[-*]\s+/, '')))}</li>`)
+      continue
+    }
+    // Linha de assinatura ___________
+    if (/^_{3,}/.test(line.trim())) {
+      flushP(); flushList()
+      out.push('<div class="sig-line"></div>')
+      continue
+    }
+    // Parágrafo
+    if (inList) flushList()
+    pBuffer.push(line.trim())
+  }
+  flushP()
+  flushList()
+  flushTable()
+
+  let html = out.join('\n')
+
+  // Card "DAS PARTES": h2 vira parties-header e o conteúdo até o próximo hr fica em parties-card
+  html = html.replace(
+    /<h2>DAS PARTES<\/h2>([\s\S]*?)(<hr\/>)/,
+    '<h2 class="parties-header">DAS PARTES</h2><div class="parties-card">$1</div>$2'
+  )
+
+  // Cláusulas: h2 com texto começando com "CLÁUSULA N — ..." vira clause-heading com badge
+  html = html.replace(
+    /<h2>(CL[ÁA]USULA\s+(\d+)[ªa]?\s*[—–-]\s*([^<]+))<\/h2>/g,
+    '<h2 class="clause-heading"><span class="clause-num">$2</span><span class="clause-title">$3</span></h2>'
+  )
+
+  // Marca placeholders {{x.y}} restantes em amarelo
+  html = html.replace(
+    /(\{\{[^}]+\}\})/g,
+    '<span class="placeholder">$1</span>'
+  )
+
+  return html
+}
+
+export function printContratoFromMd(markdown: string, numero?: string) {
+  const bodyHtml = mdToHtml(markdown)
+  const titulo = `Contrato ${numero || ''}`.trim()
+
+  const fullHtml = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>${escapeHtml(titulo)}</title>
+<style>${contratoCss}</style>
+</head>
+<body>
+<div class="content">
+${bodyHtml}
+</div>
+<script>
+window.addEventListener('load', () => {
+  setTimeout(() => { window.print(); }, 300);
+});
+</script>
+</body>
+</html>`
+
+  const w = window.open('', '_blank', 'noopener,noreferrer,width=900,height=1200')
+  if (!w) {
+    alert('Bloqueio de pop-up. Permita pop-ups nesse site pra gerar o PDF.')
+    return
+  }
+  w.document.open()
+  w.document.write(fullHtml)
+  w.document.close()
+}
