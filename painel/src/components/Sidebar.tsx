@@ -95,7 +95,7 @@ const groups: NavGroup[] = [
     items: [
       { label: 'Precificação', path: '/painel/precificacao', icon: <Calculator size={18} /> },
       { label: 'Aprendizado',  path: '/painel/aprendizado',  icon: <GraduationCap size={18} /> },
-      { label: 'Guia do Sistema', path: 'https://moradda-system-map.pages.dev', icon: <BookOpen size={18} />, external: true },
+      { label: 'Guia do Sistema', path: '/mapamental/', icon: <BookOpen size={18} />, external: true },
       { label: 'Acessos',      path: '/painel/acessos',      icon: <UserCog size={18} />,   socioOnly: true },
       { label: 'Relatórios',   path: '/painel/relatorios',   icon: <TrendingUp size={18} /> },
       { label: 'Configurações',path: '/painel/configuracoes',icon: <Settings size={18} /> },

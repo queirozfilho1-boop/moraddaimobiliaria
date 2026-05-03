@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/types.ts","./src/vite-env.d.ts","./src/components/areagrid.tsx","./src/components/fluxossection.tsx","./src/components/herosection.tsx","./src/components/principiossection.tsx","./src/components/sitefooter.tsx","./src/data/moradda-data.ts","./src/data/moradda-simple.ts","./src/lib/utils.ts"],"version":"5.9.3"}

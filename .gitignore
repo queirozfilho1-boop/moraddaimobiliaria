@@ -27,3 +27,6 @@ referencia/
 *.sw?
 CREDENCIAIS_MORADDA.md
 painel/scripts/apply-leads-tipo.py
+
+mapamental/node_modules
+mapamental/dist
