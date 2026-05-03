@@ -39,11 +39,15 @@ interface MergeArgs {
 }
 
 const IMOBILIARIA_DEFAULT = {
-  nome: 'Moradda Imobiliária',
-  cnpj: '',
-  creci: '',
-  endereco: 'Brasil',
-  endereco_completo: 'Brasil',
+  nome: 'Moradda Empreendimentos Imobiliários LTDA',
+  cnpj: '47.527.793/0001-65',
+  creci: 'RJ 10404',
+  endereco: 'R Dom Bosco, nº 163, Galpão Fundos, Paraíso, Resende-RJ, CEP 27535-070',
+  endereco_completo: 'R Dom Bosco, nº 163, Galpão Fundos, Paraíso, Resende-RJ, CEP 27535-070',
+  email: 'contato@moraddaimobiliaria.com.br',
+  telefone: '(24) 99857-1528',
+  email_dpo: 'contato@moraddaimobiliaria.com.br',
+  dpo_nome: 'Sebastião Queiroz',
   foro: 'Resende-RJ',
 }
 
@@ -84,11 +88,21 @@ function buildContexto(args: MergeArgs): Record<string, any> {
   const locador = partes.find((p) => p.papel === 'locador')
   const locatario = partes.find((p) => p.papel === 'locatario')
   const fiador = partes.find((p) => p.papel === 'fiador')
+  const corretor = partes.find((p) => p.papel === 'corretor' || p.papel === 'corretor_parceiro')
+  const vendedor = partes.find((p) => p.papel === 'vendedor')
+  const comprador = partes.find((p) => p.papel === 'comprador')
+  const proprietarioParte = partes.find((p) => p.papel === 'proprietario')
+  const hospede = partes.find((p) => p.papel === 'hospede')
+  const testemunha1 = partes.find((p, i) => p.papel === 'testemunha' && i === partes.findIndex((x) => x.papel === 'testemunha'))
+  const testemunhasArr = partes.filter((p) => p.papel === 'testemunha')
+  const testemunha2 = testemunhasArr[1]
 
   const parteCtx = (p?: Partial<ContratoParte>) => p ? ({
     nome: p.nome || '',
+    cpf: p.cpf_cnpj || '',
     cpf_cnpj: p.cpf_cnpj || '',
     rg: p.rg || '',
+    creci: (p as any).creci || '',
     nacionalidade: p.nacionalidade || 'brasileiro(a)',
     estado_civil: p.estado_civil || '',
     profissao: p.profissao || '',
@@ -124,11 +138,35 @@ function buildContexto(args: MergeArgs): Record<string, any> {
       juros_dia_pct: contrato.juros_dia_pct ?? 0.033,
       multa_rescisao_meses: contrato.multa_rescisao_meses ?? 3,
       ramo_atividade: '',
+      // Campos da Associação com Corretor + outros tipos
+      comissao_venda_pct: (contrato as any).comissao_venda_pct ?? (contrato as any).comissao_pct ?? 6,
+      comissao_temporada_pct: (contrato as any).comissao_temporada_pct ?? 30,
+      dia_pagamento_comissao: (contrato as any).dia_pagamento_comissao ?? 10,
+      aviso_previo_dias: (contrato as any).aviso_previo_dias ?? 30,
+      multa_lgpd_valor: ((contrato as any).multa_lgpd_valor ?? 10000).toLocaleString('pt-BR', { minimumFractionDigits: 2 }),
+      // Compra e Venda
+      valor_venda: (contrato as any).valor_venda ? fmtMoeda((contrato as any).valor_venda) : '',
+      valor_sinal: (contrato as any).valor_sinal ? fmtMoeda((contrato as any).valor_sinal) : '',
+      valor_financiado: (contrato as any).valor_financiado ? fmtMoeda((contrato as any).valor_financiado) : '',
+      banco_financiamento: (contrato as any).banco_financiamento || '',
+      parcelas_qtd: (contrato as any).parcelas_qtd || '',
+      valor_itbi: (contrato as any).valor_itbi ? fmtMoeda((contrato as any).valor_itbi) : '',
+      valor_cartorio: (contrato as any).valor_cartorio ? fmtMoeda((contrato as any).valor_cartorio) : '',
+      data_escritura: fmtData((contrato as any).data_escritura),
+      data_registro: fmtData((contrato as any).data_registro),
+      // Captação Exclusiva
+      prazo_exclusividade_meses: (contrato as any).prazo_exclusividade_meses || 6,
     },
     locador: parteCtx(locador) || parteCtx(undefined),
     locatario: parteCtx(locatario) || parteCtx(undefined),
     fiador: parteCtx(fiador) || parteCtx(undefined),
-    proprietario: parteCtx(locador) || parteCtx(undefined), // alias pra contrato de administração
+    proprietario: parteCtx(proprietarioParte || locador) || parteCtx(undefined), // alias
+    corretor: parteCtx(corretor) || parteCtx(undefined),
+    vendedor: parteCtx(vendedor) || parteCtx(undefined),
+    comprador: parteCtx(comprador) || parteCtx(undefined),
+    hospede: parteCtx(hospede) || parteCtx(undefined),
+    testemunha1: parteCtx(testemunha1) || parteCtx(undefined),
+    testemunha2: parteCtx(testemunha2) || parteCtx(undefined),
     imovel: {
       codigo: imovel?.codigo || '',
       titulo: imovel?.titulo || '',
