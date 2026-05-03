@@ -6,12 +6,18 @@ RewriteRule ^assets/(.*)$ dist/assets/$1 [L]
 # Arquivos estáticos do painel: /painel/assets/* → dist/painel/assets/*
 RewriteRule ^painel/assets/(.*)$ dist/painel/assets/$1 [L]
 
+# Arquivos estáticos do guia: /mapamental/assets/* → dist/mapamental/assets/*
+RewriteRule ^mapamental/assets/(.*)$ dist/mapamental/assets/$1 [L]
+
 # Arquivos estáticos na raiz (favicon, robots, sitemap, logo, og-image)
 RewriteCond %{DOCUMENT_ROOT}/dist/%{REQUEST_URI} -f
 RewriteRule ^(.+\..+)$ dist/$1 [L]
 
 # Rotas do painel → dist/painel/index.html
 RewriteRule ^painel(/.*)?$ dist/painel/index.html [L]
+
+# Rotas do guia → dist/mapamental/index.html
+RewriteRule ^mapamental(/.*)?$ dist/mapamental/index.html [L]
 
 # Se arquivo real existe na raiz, servir
 RewriteCond %{REQUEST_FILENAME} -f
