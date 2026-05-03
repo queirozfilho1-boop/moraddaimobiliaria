@@ -33,7 +33,7 @@ interface NavItem {
   label: string
   path: string
   icon: ReactNode
-  superadminOnly?: boolean
+  socioOnly?: boolean
 }
 
 interface NavGroup {
@@ -52,7 +52,7 @@ const groups: NavGroup[] = [
   {
     label: 'Comercial',
     items: [
-      { label: 'CRM',            path: '/painel/crm',             icon: <Briefcase size={18} />, superadminOnly: true },
+      { label: 'CRM',            path: '/painel/crm',             icon: <Briefcase size={18} />, socioOnly: true },
       { label: 'Leads',          path: '/painel/leads',           icon: <Users size={18} /> },
       { label: 'Pipeline Leads', path: '/painel/leads/pipeline',  icon: <Kanban size={18} /> },
       { label: 'Visitas',        path: '/painel/visitas',         icon: <Calendar size={18} /> },
@@ -91,7 +91,7 @@ const groups: NavGroup[] = [
     items: [
       { label: 'Precificação', path: '/painel/precificacao', icon: <Calculator size={18} /> },
       { label: 'Aprendizado',  path: '/painel/aprendizado',  icon: <GraduationCap size={18} /> },
-      { label: 'Acessos',      path: '/painel/acessos',      icon: <UserCog size={18} />,   superadminOnly: true },
+      { label: 'Acessos',      path: '/painel/acessos',      icon: <UserCog size={18} />,   socioOnly: true },
       { label: 'Relatórios',   path: '/painel/relatorios',   icon: <TrendingUp size={18} /> },
       { label: 'Configurações',path: '/painel/configuracoes',icon: <Settings size={18} /> },
     ],
@@ -106,7 +106,7 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
-  const { profile, signOut, hasAccess } = useAuth()
+  const { profile, signOut, hasFuncao } = useAuth()
   const { theme } = useTheme()
   const location = useLocation()
 
@@ -127,7 +127,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
 
   const filteredGroups = groups.map((g) => ({
     ...g,
-    items: g.items.filter((item) => !item.superadminOnly || hasAccess('superadmin')),
+    items: g.items.filter((item) => !item.socioOnly || hasFuncao('socio')),
   })).filter((g) => g.items.length > 0)
 
   const sidebarWidth = collapsed ? 'w-16' : 'w-64'

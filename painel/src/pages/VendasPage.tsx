@@ -178,7 +178,7 @@ export const VendaEditorPage = () => {
     ;(async () => {
       const [{ data: imv }, { data: cor }] = await Promise.all([
         supabase.from('imoveis').select('id, codigo, titulo').order('codigo'),
-        supabase.from('users_profiles').select('id, nome').order('nome'),
+        supabase.from('users_profiles').select('id, nome').eq('is_corretor', true).eq('ativo', true).order('nome'),
       ])
       setImoveis((imv || []) as any)
       setCorretores((cor || []) as any)

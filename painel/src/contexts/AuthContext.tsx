@@ -9,6 +9,7 @@ import type { User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 
 export type UserRole = 'superadmin' | 'gestor' | 'corretor'
+export type Funcao = 'socio' | 'assistente' | 'corretor'
 
 export interface UserProfile {
   id: string
@@ -17,6 +18,9 @@ export interface UserProfile {
   email: string
   role: UserRole
   role_id: string
+  is_socio: boolean
+  is_assistente: boolean
+  is_corretor: boolean
   avatar_url?: string | null
   telefone?: string | null
   whatsapp?: string | null
@@ -33,6 +37,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
   hasAccess: (requiredRole: UserRole) => boolean
+  hasFuncao: (funcao: Funcao) => boolean
   refreshProfile: () => Promise<void>
 }
 
@@ -47,6 +52,9 @@ const DEV_MOCK_PROFILE: UserProfile = {
   email: 'admin@moradda.dev',
   role: 'superadmin',
   role_id: 'dev-role',
+  is_socio: true,
+  is_assistente: true,
+  is_corretor: true,
   avatar_url: null,
   telefone: null,
   whatsapp: null,
@@ -72,6 +80,9 @@ async function fetchProfile(userId: string): Promise<UserProfile | null> {
       slug,
       ativo,
       role_id,
+      is_socio,
+      is_assistente,
+      is_corretor,
       roles ( nome )
     `)
     .eq('user_id', userId)
@@ -88,6 +99,9 @@ async function fetchProfile(userId: string): Promise<UserProfile | null> {
     email: data.email,
     role: roleName,
     role_id: data.role_id,
+    is_socio: !!data.is_socio,
+    is_assistente: !!data.is_assistente,
+    is_corretor: !!data.is_corretor,
     avatar_url: data.avatar_url,
     telefone: data.telefone,
     whatsapp: data.whatsapp,
@@ -177,14 +191,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   function hasAccess(requiredRole: UserRole): boolean {
     if (!profile) return false
-    if (profile.role === 'superadmin') return true
-    if (profile.role === 'gestor' && requiredRole !== 'superadmin') return true
-    return profile.role === requiredRole
+    // Sócio = acesso total
+    if (profile.is_socio) return true
+    // Assistente = tudo exceto superadmin (Acessos, Configurações sensíveis)
+    if (profile.is_assistente && requiredRole !== 'superadmin') return true
+    // Corretor puro = só rotas de corretor
+    if (profile.is_corretor && requiredRole === 'corretor') return true
+    return false
+  }
+
+  function hasFuncao(funcao: Funcao): boolean {
+    if (!profile) return false
+    if (funcao === 'socio') return profile.is_socio
+    if (funcao === 'assistente') return profile.is_assistente
+    if (funcao === 'corretor') return profile.is_corretor
+    return false
   }
 
   return (
     <AuthContext.Provider
-      value={{ user, profile, loading, signIn, signOut, hasAccess, refreshProfile }}
+      value={{ user, profile, loading, signIn, signOut, hasAccess, hasFuncao, refreshProfile }}
     >
       {children}
     </AuthContext.Provider>

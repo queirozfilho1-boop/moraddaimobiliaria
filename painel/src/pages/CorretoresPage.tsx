@@ -46,12 +46,13 @@ export default function CorretoresPage() {
     try {
       const { data: usuarios, error } = await supabase
         .from('users_profiles')
-        .select('id, nome, email, telefone, whatsapp, creci, avatar_url, ativo, roles!inner(nome)')
+        .select('id, nome, email, telefone, whatsapp, creci, avatar_url, ativo, is_corretor')
+        .eq('is_corretor', true)
         .order('nome')
 
       if (error) throw error
 
-      const apenasCorretores = (usuarios || []).filter((u: any) => u.roles?.nome === 'corretor')
+      const apenasCorretores = usuarios || []
 
       const inicioMes = new Date()
       inicioMes.setDate(1)
