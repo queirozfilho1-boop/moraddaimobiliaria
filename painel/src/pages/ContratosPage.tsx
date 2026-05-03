@@ -10,6 +10,8 @@ import {
   TIPO_LABEL,
   fmtData,
 } from '@/lib/contratos'
+import { mergeTemplate } from '@/lib/contratoMerge'
+import { printContratoFromMd } from '@/lib/contratoPrint'
 
 interface Row extends ContratoLocacao {
   imoveis?: { codigo?: string | null; titulo?: string | null } | null
@@ -50,6 +52,40 @@ const ContratosPage = () => {
       toast.error('Erro ao anexar: ' + (e.message || ''))
     } finally {
       setUploadingId(null)
+    }
+  }
+
+  async function handleGerarOriginal(row: Row) {
+    try {
+      // Busca dados completos do contrato (partes + imóvel)
+      const [{ data: c }, { data: ps }, { data: modeloPadrao }] = await Promise.all([
+        supabase.from('contratos_locacao').select('*, imoveis(*)').eq('id', row.id).single(),
+        supabase.from('contratos_partes').select('*').eq('contrato_id', row.id).order('ordem'),
+        supabase.from('contratos_modelos').select('conteudo').eq('tipo', row.tipo).eq('padrao', true).eq('ativo', true).limit(1).maybeSingle(),
+      ])
+      if (!c) { toast.error('Contrato não encontrado'); return }
+
+      let md: string | null = (c as any).modelo_id
+        ? (await supabase.from('contratos_modelos').select('conteudo').eq('id', (c as any).modelo_id).single()).data?.conteudo
+        : null
+      md = md || (modeloPadrao?.conteudo as string | undefined) || null
+
+      if (!md) {
+        // Fallback: tentar template estático do tipo
+        const { TEMPLATE_MAP } = await import('@/lib/templates')
+        md = (TEMPLATE_MAP as any)[row.tipo] || null
+      }
+
+      if (!md) { toast.error('Modelo não encontrado pra esse tipo'); return }
+
+      const merged = mergeTemplate(md, {
+        contrato: c as any,
+        partes: (ps || []) as any,
+        imovel: (c as any).imoveis as any,
+      })
+      printContratoFromMd(merged, row.numero)
+    } catch (e: any) {
+      toast.error('Erro: ' + (e.message || ''))
     }
   }
 
@@ -266,19 +302,14 @@ const ContratosPage = () => {
                         <Eye size={15} />
                       </Link>
 
-                      {/* Baixar documento original */}
-                      <a
-                        href={r.pdf_url || '#'}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => { if (!r.pdf_url) { e.preventDefault(); toast.info('Nenhum PDF anexado ainda') } }}
-                        title={r.pdf_url ? 'Baixar documento original' : 'Documento original (anexe primeiro)'}
-                        className={`rounded-lg p-2 ${r.pdf_url
-                          ? 'text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20'
-                          : 'text-gray-300 cursor-not-allowed dark:text-gray-600'}`}
+                      {/* Gerar documento original (mesmo do botão "Gerar PDF" do editor) */}
+                      <button
+                        onClick={() => handleGerarOriginal(r)}
+                        title="Gerar documento original (PDF do template)"
+                        className="rounded-lg p-2 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
                       >
                         <Download size={15} />
-                      </a>
+                      </button>
 
                       {/* Baixar documento assinado */}
                       <a

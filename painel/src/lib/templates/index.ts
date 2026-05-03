@@ -6,6 +6,16 @@ import { TEMPLATE_CAPTACAO_EXCLUSIVA } from './captacao_exclusiva'
 import { TEMPLATE_COMPRA_VENDA } from './compra_venda'
 import { TEMPLATE_ASSOCIACAO_CORRETOR } from './associacao_corretor'
 
+export const TEMPLATE_MAP: Record<string, string> = {
+  locacao_residencial: TEMPLATE_RESIDENCIAL,
+  locacao_comercial:   TEMPLATE_COMERCIAL,
+  temporada:           TEMPLATE_TEMPORADA,
+  administracao:       TEMPLATE_ADMINISTRACAO,
+  captacao_exclusiva:  TEMPLATE_CAPTACAO_EXCLUSIVA,
+  compra_venda:        TEMPLATE_COMPRA_VENDA,
+  associacao_corretor: TEMPLATE_ASSOCIACAO_CORRETOR,
+}
+
 export const TEMPLATES_PADRAO = [
   {
     nome: 'Locação Residencial — Padrão Moradda',
