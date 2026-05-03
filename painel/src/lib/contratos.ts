@@ -206,6 +206,26 @@ export interface ContratoLocacao {
   prazo_exclusividade_meses?: number | null
   placa_autorizada?: boolean | null
   divulgacao_autorizada?: boolean | null
+  prazo_protecao_dias?: number | null
+  numero_minimo_fotos?: number | null
+  taxa_devolucao_material?: number | null
+  multa_quebra_percentual?: number | null
+  margem_negociacao_percentual?: number | null
+
+  // Compra e Venda extras
+  forma_sinal?: string | null
+  forma_saldo?: string | null
+  data_imissao?: string | null
+  arras_natureza?: string | null
+  averbacao?: boolean | null
+  comissao_pago_por?: string | null
+
+  // Locação extras
+  iptu_responsavel?: string | null
+  avcb_status?: string | null
+  seguro_rc_status?: string | null
+  camara_arbitral?: string | null
+  ramo_atividade?: string | null
   // Administração
   inclui_cobranca?: boolean | null
   inclui_vistoria?: boolean | null

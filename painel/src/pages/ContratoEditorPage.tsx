@@ -666,6 +666,39 @@ const ContratoEditorPage = () => {
               <label className={labelCls}>Comissão (%)</label>
               <input type="number" step="0.01" className={inputCls} value={contrato.comissao_pct ?? ''} onChange={(e) => setC('comissao_pct', Number(e.target.value))} placeholder="6" />
             </div>
+            <div>
+              <label className={labelCls}>Comissão paga por</label>
+              <select className={inputCls} value={contrato.comissao_pago_por || 'VENDEDOR'} onChange={(e) => setC('comissao_pago_por', e.target.value)}>
+                <option value="VENDEDOR">VENDEDOR</option>
+                <option value="COMPRADOR">COMPRADOR</option>
+                <option value="AMBOS">AMBOS (50/50)</option>
+              </select>
+            </div>
+            <div>
+              <label className={labelCls}>Data da imissão na posse</label>
+              <input type="date" className={inputCls} value={contrato.data_imissao || ''} onChange={(e) => setC('data_imissao', e.target.value)} />
+            </div>
+            <div>
+              <label className={labelCls}>Natureza das arras</label>
+              <select className={inputCls} value={contrato.arras_natureza || 'confirmatórias'} onChange={(e) => setC('arras_natureza', e.target.value)}>
+                <option value="confirmatórias">Confirmatórias (art. 417 CC)</option>
+                <option value="penitenciais">Penitenciais (art. 420 CC)</option>
+              </select>
+            </div>
+            <div className="sm:col-span-2">
+              <label className={labelCls}>Forma de pagamento do sinal</label>
+              <input className={inputCls} value={contrato.forma_sinal || ''} onChange={(e) => setC('forma_sinal', e.target.value)} placeholder="TED/PIX no ato da assinatura" />
+            </div>
+            <div className="sm:col-span-3">
+              <label className={labelCls}>Forma de pagamento do saldo</label>
+              <input className={inputCls} value={contrato.forma_saldo || ''} onChange={(e) => setC('forma_saldo', e.target.value)} placeholder="Financiamento + recursos próprios em até 60 dias" />
+            </div>
+            <div className="flex items-center gap-2 sm:col-span-3">
+              <label className="inline-flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={!!contrato.averbacao} onChange={(e) => setC('averbacao', e.target.checked)} />
+                Averbar promessa na matrícula (recomendado quando saldo parcelado)
+              </label>
+            </div>
           </div>
         </Section>
       )}
@@ -685,6 +718,26 @@ const ContratoEditorPage = () => {
             <div>
               <label className={labelCls}>Valor de venda pretendido</label>
               <input type="number" step="0.01" className={inputCls} value={contrato.valor_venda || ''} onChange={(e) => setC('valor_venda', Number(e.target.value))} />
+            </div>
+            <div>
+              <label className={labelCls}>Margem de negociação (%)</label>
+              <input type="number" step="0.01" className={inputCls} value={contrato.margem_negociacao_percentual ?? ''} onChange={(e) => setC('margem_negociacao_percentual', Number(e.target.value))} placeholder="5" />
+            </div>
+            <div>
+              <label className={labelCls}>Multa por quebra (% comissão)</label>
+              <input type="number" step="0.01" className={inputCls} value={contrato.multa_quebra_percentual ?? ''} onChange={(e) => setC('multa_quebra_percentual', Number(e.target.value))} placeholder="100" />
+            </div>
+            <div>
+              <label className={labelCls}>Proteção pós-contrato (dias)</label>
+              <input type="number" className={inputCls} value={contrato.prazo_protecao_dias ?? ''} onChange={(e) => setC('prazo_protecao_dias', Number(e.target.value))} placeholder="180" />
+            </div>
+            <div>
+              <label className={labelCls}>Mínimo de fotos profissionais</label>
+              <input type="number" className={inputCls} value={contrato.numero_minimo_fotos ?? ''} onChange={(e) => setC('numero_minimo_fotos', Number(e.target.value))} placeholder="12" />
+            </div>
+            <div>
+              <label className={labelCls}>Taxa devolução de material (R$)</label>
+              <input type="number" step="0.01" className={inputCls} value={contrato.taxa_devolucao_material ?? ''} onChange={(e) => setC('taxa_devolucao_material', Number(e.target.value))} placeholder="500" />
             </div>
             <div className="flex items-center gap-2 sm:col-span-3">
               <label className="inline-flex items-center gap-2 text-sm">
@@ -814,6 +867,47 @@ const ContratoEditorPage = () => {
               <label className={labelCls}>Multa rescisão (meses)</label>
               <input type="number" step="0.5" className={inputCls} value={contrato.multa_rescisao_meses ?? ''} onChange={(e) => setC('multa_rescisao_meses', Number(e.target.value))} />
             </div>
+          </div>
+        </Section>
+      )}
+
+      {/* Cláusulas adicionais — Locação Residencial/Comercial */}
+      {contrato.tipo && isLocacaoMensal(contrato.tipo) && (
+        <Section icon={<FileCheck size={16} />} title="Cláusulas Adicionais">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div>
+              <label className={labelCls}>IPTU pago por</label>
+              <select className={inputCls} value={contrato.iptu_responsavel || 'LOCATÁRIO'} onChange={(e) => setC('iptu_responsavel', e.target.value)}>
+                <option value="LOCATÁRIO">LOCATÁRIO</option>
+                <option value="LOCADOR">LOCADOR</option>
+              </select>
+            </div>
+            <div>
+              <label className={labelCls}>AVCB</label>
+              <select className={inputCls} value={contrato.avcb_status || ''} onChange={(e) => setC('avcb_status', e.target.value || null)}>
+                <option value="">Não aplicável</option>
+                <option value="COM AVCB">COM (entregue ao locador)</option>
+                <option value="SEM AVCB">SEM (locatário providencia)</option>
+              </select>
+            </div>
+            <div>
+              <label className={labelCls}>Seguro RC</label>
+              <select className={inputCls} value={contrato.seguro_rc_status || ''} onChange={(e) => setC('seguro_rc_status', e.target.value || null)}>
+                <option value="">Não aplicável</option>
+                <option value="COM SEGURO RC">COM (locatário contrata)</option>
+                <option value="SEM SEGURO RC">SEM</option>
+              </select>
+            </div>
+            <div className="sm:col-span-2">
+              <label className={labelCls}>Câmara arbitral (opcional)</label>
+              <input className={inputCls} value={contrato.camara_arbitral || ''} onChange={(e) => setC('camara_arbitral', e.target.value)} placeholder="Ex: CAM-CCBC, FGV-Câmara, ou em branco" />
+            </div>
+            {isCompraVenda(contrato.tipo) === false && contrato.tipo === 'locacao_comercial' && (
+              <div className="sm:col-span-3">
+                <label className={labelCls}>Ramo de atividade (locação comercial)</label>
+                <input className={inputCls} value={contrato.ramo_atividade || ''} onChange={(e) => setC('ramo_atividade', e.target.value)} placeholder="Ex: Comércio varejista de roupas" />
+              </div>
+            )}
           </div>
         </Section>
       )}
