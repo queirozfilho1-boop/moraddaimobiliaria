@@ -125,31 +125,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      const currentUser = session?.user ?? null
-      setUser(currentUser)
-      if (currentUser) {
-        fetchProfile(currentUser.id).then((p) => {
-          setProfile(p)
-          setLoading(false)
-        })
-      } else {
-        setLoading(false)
-      }
-    })
-
+    // Apenas onAuthStateChange — ele dispara INITIAL_SESSION imediatamente
+    // com a sessão atual e depois pra cada login/logout. Evita o lock
+    // disputado pelo getSession() concorrente.
+    let lastUserId: string | null = null
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       const currentUser = session?.user ?? null
       setUser(currentUser)
-      if (currentUser) {
+      // Não refaz fetchProfile se for o mesmo user (evita disputas no lock
+      // quando o Supabase emite TOKEN_REFRESHED automático)
+      if (currentUser && currentUser.id !== lastUserId) {
+        lastUserId = currentUser.id
         fetchProfile(currentUser.id).then((p) => {
           setProfile(p)
           setLoading(false)
         })
-      } else {
+      } else if (!currentUser) {
+        lastUserId = null
         setProfile(null)
+        setLoading(false)
+      } else {
+        // Mesmo user, sessão renovada — não precisa refazer fetchProfile
         setLoading(false)
       }
     })

@@ -59,9 +59,12 @@ Deno.serve(async (req) => {
 
     if (signersInput.length === 0) return json({ error: 'Nenhuma parte com email pra assinar' }, 400)
 
-    // Criar documento no ZapSign
-    const zapPayload = {
+    // Criar documento no ZapSign — sandbox=true permite testar sem plano
+    // de produção. Tire essa flag quando contratar plano API.
+    const ZAPSIGN_SANDBOX = (Deno.env.get('ZAPSIGN_SANDBOX') ?? 'true') === 'true'
+    const zapPayload: Record<string, unknown> = {
       name: `Contrato ${contrato.numero || ''}`.trim(),
+      sandbox: ZAPSIGN_SANDBOX,
       base64_pdf: pdf_base64,
       signers: signersInput.map((s: any) => ({
         name: s.name,
@@ -83,9 +86,13 @@ Deno.serve(async (req) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(zapPayload),
     })
-    const zapData = await zapRes.json()
+    // Lê como texto primeiro pra preservar mensagens de erro não-JSON
+    const zapText = await zapRes.text()
+    let zapData: any = null
+    try { zapData = JSON.parse(zapText) } catch { zapData = { raw: zapText } }
     if (!zapRes.ok) {
-      return json({ error: 'ZapSign erro', detail: zapData }, zapRes.status)
+      const errMsg = zapData?.detail || zapData?.message || zapData?.raw || `ZapSign retornou ${zapRes.status}`
+      return json({ error: typeof errMsg === 'string' ? errMsg : JSON.stringify(errMsg), detail: zapData, payload: zapPayload }, zapRes.status)
     }
 
     // Atualizar contrato
