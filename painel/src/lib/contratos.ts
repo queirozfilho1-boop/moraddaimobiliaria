@@ -222,22 +222,22 @@ export interface ContratoLocacao {
 // Dados fixos da Moradda Imobiliária — preenchidos automaticamente quando
 // o usuário escolhe papel "imobiliaria" em um contrato. Editar aqui se mudar.
 export const MORADDA_DADOS = {
-  nome: 'Moradda Imobiliária',
-  cpf_cnpj: '',  // Preencher quando tiver o CNPJ definitivo
+  nome: 'Moradda Empreendimentos Imobiliários LTDA',
+  cpf_cnpj: '47.527.793/0001-65',
   email: 'contato@moraddaimobiliaria.com.br',
   telefone: '24998571528',
-  endereco: '',
-  numero: '',
-  complemento: '',
-  bairro: '',
+  endereco: 'R Dom Bosco',
+  numero: '163',
+  complemento: 'Galpão Fundos',
+  bairro: 'Paraíso',
   cidade: 'Resende',
   estado: 'RJ',
-  cep: '',
+  cep: '27535-070',
   rg: '',
   estado_civil: '',
   profissao: '',
   nacionalidade: 'Brasileira',
-  observacoes: 'CRECI RJ 10404',
+  observacoes: 'CRECI RJ 10404 · Nome fantasia: Moradda Imobiliária',
 }
 
 // Helpers para identificar grupos de tipos
