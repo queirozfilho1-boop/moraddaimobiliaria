@@ -275,6 +275,12 @@ export default function LocacoesPage() {
           >
             <Download size={14} /> Exportar Excel
           </button>
+          <Link
+            to="/painel/contratos/novo?tipo=locacao_residencial"
+            className="inline-flex items-center gap-2 rounded-lg bg-moradda-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-moradda-blue-600"
+          >
+            <Plus size={15} /> Nova Locação
+          </Link>
         </div>
       </div>
 
