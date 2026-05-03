@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Loader2, Plus, ChevronLeft, ChevronRight, MessageCircle, Phone, Mail, Trash2,
-  CheckCircle2, X, Calendar as CalIcon, AlertTriangle,
+  CheckCircle2, X, Calendar as CalIcon, AlertTriangle, Handshake,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
@@ -83,6 +84,7 @@ async function callEdge(path: string, body: any) {
 
 const VisitasPage = () => {
   const { profile } = useAuth()
+  const navigate = useNavigate()
   const isSocio = !!profile?.is_socio
 
   const [visitas, setVisitas] = useState<Visita[]>([])
@@ -612,7 +614,24 @@ const VisitasPage = () => {
                         <textarea rows={3} value={posVisita.resultado} onChange={(e) => setPosVisita(p => ({ ...p, resultado: e.target.value }))}
                           className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200" />
                       </div>
-                      <div className="flex justify-end">
+                      <div className="flex flex-wrap justify-end gap-2">
+                        {posVisita.proximo_passo === 'proposta' && showModal.visita && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const v = showModal.visita!
+                              const params = new URLSearchParams()
+                              params.set('visita_id', v.id)
+                              if (v.imovel_id) params.set('imovel_id', v.imovel_id)
+                              if (v.cliente_id) params.set('cliente_id', v.cliente_id)
+                              navigate(`/painel/propostas/novo?${params.toString()}`)
+                            }}
+                            className="inline-flex items-center gap-2 rounded-lg bg-moradda-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-moradda-blue-600"
+                          >
+                            <Handshake size={14} />
+                            Criar proposta a partir desta visita
+                          </button>
+                        )}
                         <button
                           onClick={() => salvarPosVisita(showModal.visita!)}
                           disabled={savingPos}
