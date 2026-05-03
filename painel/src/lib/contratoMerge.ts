@@ -369,17 +369,32 @@ function buildContexto(args: MergeArgs): Record<string, any> {
     prazo_exclusividade_dias: prazoExclusividadeDias,
     prazo_protecao_dias: prazoProtecaoDias,
     prazo_protecao_extenso: diasPorExtenso(prazoProtecaoDias),
+    reembolso_fotos_valor_fmt: fmtMoeda((contrato as any).reembolso_fotos_valor ?? 300),
+    // Administração — campos opcionais (com {{#if}} no template)
+    aluguel_minimo_fmt: (contrato as any).aluguel_minimo ? fmtMoeda((contrato as any).aluguel_minimo) : '',
+    valor_evento_extra_fmt: (contrato as any).valor_evento_extra ? fmtMoeda((contrato as any).valor_evento_extra) : '',
+    multa_administracao_pct: (contrato as any).multa_administracao_pct ?? 10,
   }
 
   // Locação — parâmetros operacionais (apenas para locacao_residencial / comercial / temporada)
   const locacaoCtx: Record<string, any> = {
     iptu_responsavel: iptuResp,
     indice_reajuste: contratoCtx.indice_reajuste,
+    indice_reajuste_fmt: (() => {
+      const map: Record<string, string> = {
+        igpm: 'IGP-M/FGV',
+        ipca: 'IPCA/IBGE',
+        ipc_fipe: 'IPC-FIPE',
+        incc: 'INCC',
+        sem_reajuste: 'sem reajuste',
+      }
+      return map[contrato.indice_reajuste || 'igpm'] || 'IGP-M/FGV'
+    })(),
     multa_atraso_pct: contrato.multa_atraso_pct ?? 10,
     juros_dia_pct: contrato.juros_dia_pct ?? 0.033,
     multa_rescisao_meses: contrato.multa_rescisao_meses ?? 3,
-    avcb_status: (contrato as any).avcb_status || 'dispensado',
-    seguro_rc_status: (contrato as any).seguro_rc_status || 'não contratado',
+    avcb_status: (contrato as any).avcb_status || '',
+    seguro_rc_status: (contrato as any).seguro_rc_status || '',
     fianca: (contrato as any).garantia_tipo === 'fiador' ? 'X' : ' ',
     caucao: (contrato as any).garantia_tipo === 'caucao' ? 'X' : ' ',
     seguro: (contrato as any).garantia_tipo === 'seguro_fianca' ? 'X' : ' ',

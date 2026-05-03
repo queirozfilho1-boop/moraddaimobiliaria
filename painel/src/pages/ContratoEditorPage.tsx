@@ -767,6 +767,10 @@ const ContratoEditorPage = () => {
               <label className={labelCls}>Taxa devolução de material (R$)</label>
               <input type="number" step="0.01" className={inputCls} value={contrato.taxa_devolucao_material ?? ''} onChange={(e) => setC('taxa_devolucao_material', Number(e.target.value))} placeholder="500" />
             </div>
+            <div>
+              <label className={labelCls}>Reembolso de material (R$)</label>
+              <input type="number" step="0.01" className={inputCls} value={(contrato as any).reembolso_fotos_valor ?? ''} onChange={(e) => setC('reembolso_fotos_valor' as any, Number(e.target.value))} placeholder="300" />
+            </div>
             <div className="flex items-center gap-2 sm:col-span-3">
               <label className="inline-flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={!!contrato.placa_autorizada} onChange={(e) => setC('placa_autorizada', e.target.checked)} />
@@ -796,6 +800,18 @@ const ContratoEditorPage = () => {
             <div>
               <label className={labelCls}>Repasse ao proprietário (dia)</label>
               <input type="number" min={1} max={28} className={inputCls} value={contrato.repasse_dia || 10} onChange={(e) => setC('repasse_dia', Number(e.target.value))} />
+            </div>
+            <div>
+              <label className={labelCls}>Aluguel mínimo (R$)</label>
+              <input type="number" step="0.01" className={inputCls} value={(contrato as any).aluguel_minimo ?? ''} onChange={(e) => setC('aluguel_minimo' as any, Number(e.target.value))} placeholder="0" />
+            </div>
+            <div>
+              <label className={labelCls}>Valor por evento extra (R$)</label>
+              <input type="number" step="0.01" className={inputCls} value={(contrato as any).valor_evento_extra ?? ''} onChange={(e) => setC('valor_evento_extra' as any, Number(e.target.value))} placeholder="0" />
+            </div>
+            <div>
+              <label className={labelCls}>Multa rescisão administração (%)</label>
+              <input type="number" step="0.01" className={inputCls} value={(contrato as any).multa_administracao_pct ?? ''} onChange={(e) => setC('multa_administracao_pct' as any, Number(e.target.value))} placeholder="10" />
             </div>
             <div className="flex items-center gap-2 sm:col-span-3">
               <label className="inline-flex items-center gap-2 text-sm">
@@ -1020,6 +1036,18 @@ const ContratoEditorPage = () => {
                   <label className={labelCls}>Endereço</label>
                   <input className={inputCls} value={p.endereco || ''} onChange={(e) => updateParte(idx, { endereco: e.target.value })} />
                 </div>
+                {p.papel === 'fiador' && (
+                  <>
+                    <div>
+                      <label className={labelCls}>Nome do cônjuge (se casado)</label>
+                      <input className={inputCls} value={(p as any).conjuge_nome || ''} onChange={(e) => updateParte(idx, { conjuge_nome: e.target.value } as any)} />
+                    </div>
+                    <div>
+                      <label className={labelCls}>CPF do cônjuge</label>
+                      <input className={inputCls} value={(p as any).conjuge_cpf || ''} onChange={(e) => updateParte(idx, { conjuge_cpf: e.target.value } as any)} />
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           ))}

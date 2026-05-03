@@ -268,7 +268,7 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 ## CLÁUSULA 17 — DO FORO
 
-**17.1.** Fica eleito o **Foro da Comarca de {{cidade.foro}}**, com expressa renúncia a qualquer outro, por mais privilegiado que seja, para dirimir quaisquer controvérsias decorrentes do presente contrato.
+**17.1.** Fica eleito o **Foro da Comarca de {{imovel.cidade}}-{{imovel.estado}}**, lugar do imóvel locado (art. 47 do CPC), com expressa renúncia a qualquer outro, por mais privilegiado que seja, para dirimir quaisquer controvérsias decorrentes do presente contrato.
 
 ---
 

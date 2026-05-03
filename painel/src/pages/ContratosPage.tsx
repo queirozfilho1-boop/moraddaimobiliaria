@@ -95,6 +95,28 @@ const ContratosPage = () => {
         ;(c as any).imoveis.bairro_nome = (c as any).imoveis.bairros.nome
       }
 
+      // Validações por tipo — bloqueia geração quando dados críticos faltam
+      const partes = (ps || []) as any[]
+      const tipo = (c as any).tipo
+      const errors: string[] = []
+      if (tipo === 'temporada') {
+        if (!partes.find((p: any) => p.papel === 'hospede')?.nome) errors.push('Adicione o hóspede')
+        if (!(c as any).valor_diaria || (c as any).valor_diaria <= 0) errors.push('Defina o valor da diária')
+      }
+      if (tipo === 'compra_venda') {
+        if ((c as any).data_imissao && (c as any).data_escritura && (c as any).data_imissao < (c as any).data_escritura) {
+          errors.push('Data de imissão na posse não pode ser anterior à data da escritura')
+        }
+        if (!(c as any).valor_venda || (c as any).valor_venda <= 0) errors.push('Defina o valor de venda')
+      }
+      if (tipo === 'administracao') {
+        if (!(c as any).aluguel_minimo || (c as any).aluguel_minimo <= 0) errors.push('Defina o aluguel mínimo')
+      }
+      if (errors.length) {
+        toast.error('Não pude gerar:\n' + errors.join('\n'))
+        return
+      }
+
       let md: string | null = (c as any).modelo_id
         ? (await supabase.from('contratos_modelos').select('conteudo').eq('id', (c as any).modelo_id).single()).data?.conteudo
         : null

@@ -94,9 +94,9 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 **5.1.** A ADMINISTRADORA fica autorizada a celebrar contratos de locação observados, no mínimo, os seguintes parâmetros, sem prejuízo de ajustes pontuais aprovados pelo PROPRIETÁRIO:
 
-**5.1.1.** **Valor mínimo do aluguel:** {{contrato.valor_aluguel_fmt}};
+{{#if contrato.aluguel_minimo_fmt}}**5.1.1.** **Valor mínimo do aluguel:** {{contrato.aluguel_minimo_fmt}};{{/if}}
 
-**5.1.2.** **Reajuste anual** pelo **{{locacao.indice_reajuste}}** (IGP-M / IPCA);
+**5.1.2.** **Reajuste anual** pelo **{{locacao.indice_reajuste_fmt}}**, ou outro índice que vier a substituí-lo;
 
 **5.1.3.** **Prazo mínimo do contrato:** {{contrato.prazo_meses}} meses;
 
@@ -116,7 +116,7 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 **6.1.3. Honorário de cobrança extrajudicial** em caso de inadimplência, sobre os valores recuperados, sem ônus se a recuperação não ocorrer;
 
-**6.1.4. Honorário de vistoria** (entrada e saída): valor por evento conforme proposta vigente.
+**6.1.4. Honorário de vistoria** (entrada e saída): {{#if contrato.valor_evento_extra_fmt}}**{{contrato.valor_evento_extra_fmt}}** por evento{{/if}}, conforme proposta vigente.
 
 **6.2.** Os honorários serão deduzidos diretamente dos valores recebidos, mediante demonstrativo discriminado, com a respectiva NFS-e emitida em nome do(a) PROPRIETÁRIO(A).
 
@@ -224,7 +224,7 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 **13.3.** Caso, durante a vigência deste contrato ou em até **180 (cento e oitenta) dias** após sua rescisão, o(a) PROPRIETÁRIO(A) celebre **diretamente** contrato de locação com cliente apresentado pela ADMINISTRADORA, será devida integralmente a comissão de intermediação prevista no item 6.1.2, nos termos do art. 725 do Código Civil.
 
-**13.4.** A rescisão por inadimplemento confere à parte inocente direito à indenização por perdas e danos, além de cláusula penal pactuada em proposta.
+**13.4.** A rescisão por inadimplemento confere à parte inocente direito à indenização por perdas e danos, além de cláusula penal de **{{contrato.multa_administracao_pct}}%** sobre os honorários do mês corrente.
 
 ---
 

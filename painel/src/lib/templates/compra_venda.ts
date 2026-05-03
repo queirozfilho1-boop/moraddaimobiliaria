@@ -63,7 +63,7 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 **4.2.4.** A parte inocente poderá, alternativamente, exigir **execução do contrato** com indenização pelos prejuízos efetivamente comprovados, com fundamento no art. 419 do CC.
 
-**4.3. Efeitos das arras penitenciais** (somente quando expressamente ajustadas — quando "{{contrato.arras_natureza}}" estiver expresso como **penitenciais**):
+**4.3. Efeitos das arras penitenciais** (aplicáveis somente quando o item 4.1 indicar essa natureza):
 
 **4.3.1.** Constituem **direito de arrependimento** convencional, ao preço de perda do sinal pelo COMPRADOR ou devolução em dobro pelo VENDEDOR (art. 420 do CC);
 

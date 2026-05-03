@@ -58,7 +58,7 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 **4.1.2.** Alvará Sanitário (Vigilância Sanitária);
 
-**4.1.3.** AVCB/CLCB (Auto de Vistoria do Corpo de Bombeiros) — status atual: **{{locacao.avcb_status}}**;
+**4.1.3.** AVCB/CLCB (Auto de Vistoria do Corpo de Bombeiros){{#if locacao.avcb_status}} — **AVCB:** {{locacao.avcb_status}}{{/if}};
 
 **4.1.4.** Licença Ambiental (CETESB ou órgão equivalente), quando aplicável;
 
@@ -116,7 +116,7 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 ## CLÁUSULA 8ª — DO REAJUSTE
 
-**8.1.** Reajuste **anual** pelo **{{locacao.indice_reajuste}}** (IGP-M ou IPCA), com aplicação automática.
+**8.1.** O valor do aluguel será **reajustado anualmente**, na menor periodicidade permitida em lei, pela variação acumulada do **{{locacao.indice_reajuste_fmt}}**, ou outro índice que vier a substituí-lo.
 
 **8.2.** Em caso de extinção do índice, será adotado o **IPCA/IBGE**.
 
@@ -202,7 +202,7 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 **11.4.1.** Seguro contra incêndio, raio e explosão — **LOCATÁRIO** (obrigatório, com indicação do LOCADOR como beneficiário);
 
-**11.4.2.** Seguro de Responsabilidade Civil (RC) Comercial — **LOCATÁRIO** (recomendado, conforme volume de público); status atual: **{{locacao.seguro_rc_status}}**.
+**11.4.2.** Seguro de Responsabilidade Civil (RC) Comercial — **LOCATÁRIO** (recomendado, conforme volume de público){{#if locacao.seguro_rc_status}}; **Seguro RC:** {{locacao.seguro_rc_status}}{{/if}}.
 
 ---
 

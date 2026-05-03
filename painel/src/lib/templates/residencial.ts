@@ -88,7 +88,7 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 ## CLÁUSULA 7ª — DO REAJUSTE
 
-**7.1.** O valor do aluguel será **reajustado anualmente**, na menor periodicidade permitida em lei, pela variação acumulada do **{{locacao.indice_reajuste}}** (IGP-M/FGV ou IPCA/IBGE), ou outro índice que vier a substituí-lo.
+**7.1.** O valor do aluguel será **reajustado anualmente**, na menor periodicidade permitida em lei, pela variação acumulada do **{{locacao.indice_reajuste_fmt}}**, ou outro índice que vier a substituí-lo.
 
 **7.2.** Em caso de extinção do índice pactuado, será aplicado o **IPCA/IBGE** como índice substitutivo.
 
@@ -282,7 +282,7 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 **20.2.** A apólice deverá ser apresentada à {{imobiliaria.nome}} em até 30 (trinta) dias da assinatura, sob pena de rescisão.
 
-**20.3. AVCB e Seguro de Responsabilidade Civil — facultativo.** Quando o imóvel se localizar em condomínio com **AVCB** vigente exigível, fica o LOCATÁRIO obrigado a observar as regras correspondentes (extintores, sinalização, rotas de fuga). Status atual: **{{locacao.avcb_status}}**. A contratação de **Seguro de Responsabilidade Civil** complementar (RC familiar) é **facultativa**, com status **{{locacao.seguro_rc_status}}**.
+**20.3. AVCB e Seguro de Responsabilidade Civil — facultativo.** Quando o imóvel se localizar em condomínio com **AVCB** vigente exigível, fica o LOCATÁRIO obrigado a observar as regras correspondentes (extintores, sinalização, rotas de fuga).{{#if locacao.avcb_status}} **AVCB:** {{locacao.avcb_status}}.{{/if}} A contratação de **Seguro de Responsabilidade Civil** complementar (RC familiar) é **facultativa**.{{#if locacao.seguro_rc_status}} **Seguro RC:** {{locacao.seguro_rc_status}}.{{/if}}
 
 <!-- TODO: REVISAR JURÍDICO: avaliar se faz sentido tornar AVCB/RC obrigatório por padrão em residências dentro de condomínios verticais. -->
 

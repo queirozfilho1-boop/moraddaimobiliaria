@@ -132,7 +132,7 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 **7.2.1.** retirar de circulação o material em até 5 (cinco) dias úteis;
 
-**7.2.2.** disponibilizar ao(à) PROPRIETÁRIO(A) cópia digital das fotografias produzidas, em resolução padrão (não comercial), mediante reembolso simbólico de **R$ {{captacao.taxa_devolucao_material}}** referente ao custo de produção, quando assim acordado.
+**7.2.2.** disponibilizar ao(à) PROPRIETÁRIO(A) cópia digital das fotografias produzidas, em resolução padrão (não comercial), mediante reembolso simbólico de **{{contrato.reembolso_fotos_valor_fmt}}** referente ao custo de produção, quando assim acordado.
 
 **7.3.** Fica vedado ao(à) PROPRIETÁRIO(A) ceder o material a outras imobiliárias ou utilizá-lo para divulgação comercial sem autorização escrita da IMOBILIÁRIA.
 
@@ -152,7 +152,7 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 **9.1.1.** **Pagamento integral da comissão** prevista na Cláusula 4ª, calculada sobre o valor de oferta autorizado, ainda que o negócio se faça sem a mediação direta da IMOBILIÁRIA (art. 726 do CC); E
 
-**9.1.2.** **Cláusula penal compensatória adicional**, **destinada a indenizar danos diversos** (despesas comprovadas de marketing, fotografia, divulgação e oportunidade perdida), equivalente a **{{captacao.multa_quebra_percentual}}%** sobre o valor de oferta, observado o teto previsto no art. 412 do Código Civil.
+**9.1.2.** **Cláusula penal compensatória adicional**, **destinada a indenizar danos diversos** (despesas comprovadas de marketing, fotografia, divulgação e oportunidade perdida), equivalente a **10% (dez por cento)** sobre o valor de oferta autorizado, observados os arts. 412 e 413 do Código Civil.
 
 **9.1.3. Reembolso** das despesas extrajudiciais e judiciais de cobrança, inclusive **honorários advocatícios** fixados em 20% sobre o valor cobrado.
 
