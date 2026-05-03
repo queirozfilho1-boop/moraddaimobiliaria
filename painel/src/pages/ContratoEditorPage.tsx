@@ -350,7 +350,9 @@ const ContratoEditorPage = () => {
   }
 
   async function handleGerarPdf() {
-    if (!imovelSelecionado) { toast.error('Selecione o imóvel primeiro'); return }
+    if (!imovelSelecionado && contrato.tipo && !isAssociacao(contrato.tipo)) {
+      toast.error('Selecione o imóvel primeiro'); return
+    }
     try {
       const md = await buscarModeloMarkdown()
       if (md) {
