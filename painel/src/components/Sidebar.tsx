@@ -95,7 +95,6 @@ const groups: NavGroup[] = [
     items: [
       { label: 'Precificação', path: '/painel/precificacao', icon: <Calculator size={18} /> },
       { label: 'Aprendizado',  path: '/painel/aprendizado',  icon: <GraduationCap size={18} /> },
-      { label: 'Guia do Sistema', path: '/mapamental/', icon: <BookOpen size={18} />, external: true },
       { label: 'Acessos',      path: '/painel/acessos',      icon: <UserCog size={18} />,   socioOnly: true },
       { label: 'Relatórios',   path: '/painel/relatorios',   icon: <TrendingUp size={18} /> },
       { label: 'Configurações',path: '/painel/configuracoes',icon: <Settings size={18} /> },
@@ -165,6 +164,18 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
           <X size={18} />
         </button>
       </div>
+
+      {/* Botão Guia do Sistema (destaque no topo) */}
+      <a
+        href="/mapamental/"
+        target="_blank"
+        rel="noopener noreferrer"
+        title="Guia rápido do sistema"
+        className={`mx-3 mt-3 inline-flex items-center gap-2 rounded-lg border border-moradda-gold-400/40 bg-moradda-gold-400/10 px-3 py-2 text-sm font-medium text-moradda-gold-400 transition hover:bg-moradda-gold-400/20 hover:text-moradda-gold-300 ${collapsed ? 'justify-center' : ''}`}
+      >
+        <BookOpen size={16} />
+        {!collapsed && <span>Guia do Sistema</span>}
+      </a>
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-2">
