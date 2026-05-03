@@ -382,8 +382,12 @@ const ContratoEditorPage = () => {
 
   async function handleEnviarAssinatura() {
     if (!id || isNew) { toast.error('Salve o contrato primeiro'); return }
-    if (!imovelSelecionado) { toast.error('Selecione o imóvel'); return }
-    const partesValidas = partes.filter((p) => ['locador', 'locatario', 'fiador', 'avalista'].includes(p.papel))
+    if (!imovelSelecionado && contrato.tipo && !isAssociacao(contrato.tipo)) {
+      toast.error('Selecione o imóvel'); return
+    }
+    // Signatários por tipo de contrato (testemunhas não assinam pela ZapSign por padrão)
+    const papeisSignatarios = (contrato.tipo && papeisPorTipo(contrato.tipo).filter((p) => p !== 'testemunha')) || []
+    const partesValidas = partes.filter((p) => papeisSignatarios.includes(p.papel))
     if (partesValidas.length === 0) { toast.error('Adicione pelo menos um signatário'); return }
     if (partesValidas.some((p) => !p.email)) { toast.error('Todas as partes signatárias precisam de e-mail'); return }
 
