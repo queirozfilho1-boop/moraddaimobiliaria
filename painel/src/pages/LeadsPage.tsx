@@ -145,8 +145,8 @@ const origemConfig: Record<LeadOrigem, { label: string; color: string; bg: strin
 const tipoConfig: Record<LeadTipo, { label: string; short: string; color: string; bg: string; icon: string }> = {
   comprar:           { label: 'Quero comprar imóvel',   short: 'Comprar',     color: 'text-blue-700 dark:text-blue-300',     bg: 'bg-blue-100 dark:bg-blue-900/40',     icon: '🏠' },
   vender:            { label: 'Quero vender meu imóvel', short: 'Vender',      color: 'text-orange-700 dark:text-orange-300', bg: 'bg-orange-100 dark:bg-orange-900/40', icon: '💰' },
-  alugar_imovel:     { label: 'Quero alugar um imóvel',  short: 'Alugar',      color: 'text-emerald-700 dark:text-emerald-300', bg: 'bg-emerald-100 dark:bg-emerald-900/40', icon: '🔑' },
-  alugar_meu_imovel: { label: 'Quero alugar meu imóvel', short: 'Anunciar',    color: 'text-purple-700 dark:text-purple-300', bg: 'bg-purple-100 dark:bg-purple-900/40', icon: '📋' },
+  alugar_imovel:     { label: 'Procura imóvel para alugar', short: 'Inquilino', color: 'text-emerald-700 dark:text-emerald-300', bg: 'bg-emerald-100 dark:bg-emerald-900/40', icon: '🔑' },
+  alugar_meu_imovel: { label: 'Quer disponibilizar imóvel para locação', short: 'Locador', color: 'text-purple-700 dark:text-purple-300', bg: 'bg-purple-100 dark:bg-purple-900/40', icon: '📋' },
 }
 
 const allTipos = Object.keys(tipoConfig) as LeadTipo[]
