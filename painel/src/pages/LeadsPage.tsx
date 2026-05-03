@@ -33,7 +33,8 @@ import { toast } from 'sonner'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import LeadImoveisVinculados from '@/components/LeadImoveisVinculados'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
+import { NovoClienteModal, type Cliente } from '@/components/BuscarCliente'
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -79,6 +80,7 @@ interface Lead {
   convertido_at?: string | null
   perdido_at?: string | null
   mensagem?: string
+  cliente_id?: string | null
   created_at: string
   updated_at: string
 }
@@ -235,6 +237,7 @@ export default function LeadsPage() {
   const [filterCorretor, setFilterCorretor] = useState('')
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [page, setPage] = useState(0)
+  const [convertModal, setConvertModal] = useState<Lead | null>(null)
 
   // Corretores list (for admin filter + reassign)
   const [corretores, setCorretores] = useState<Corretor[]>([])
@@ -356,6 +359,7 @@ export default function LeadsPage() {
         convertido_at: row.convertido_at,
         perdido_at: row.perdido_at,
         mensagem: row.mensagem,
+        cliente_id: row.cliente_id || null,
         created_at: row.created_at || '',
         updated_at: row.updated_at || row.created_at || '',
       }))
@@ -1064,6 +1068,26 @@ export default function LeadsPage() {
                                 onCaptarNovo={() => navigate(`/painel/imoveis/novo?from_lead=${lead.id}`)}
                               />
 
+                              {/* Converter em cliente */}
+                              <div>
+                                {lead.cliente_id ? (
+                                  <Link
+                                    to={`/painel/clientes/${lead.cliente_id}`}
+                                    className="inline-flex items-center gap-2 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300"
+                                  >
+                                    <CheckCircle2 className="h-3.5 w-3.5" />
+                                    Já é cliente · Ver cadastro
+                                  </Link>
+                                ) : (
+                                  <button
+                                    onClick={() => setConvertModal(lead)}
+                                    className="inline-flex items-center gap-2 rounded-lg bg-moradda-blue-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-moradda-blue-600"
+                                  >
+                                    <UserPlus className="h-3.5 w-3.5" />
+                                    Converter em cliente
+                                  </button>
+                                )}
+                              </div>
 
                               {/* Status change */}
                               <div>
@@ -1622,6 +1646,34 @@ export default function LeadsPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ============ Modal: Converter Lead em Cliente ============ */}
+      {convertModal && (
+        <NovoClienteModal
+          tipoInicial="pf"
+          nomeInicial={convertModal.nome}
+          dadosIniciais={{
+            nome: convertModal.nome,
+            email: convertModal.email || null,
+            telefone: convertModal.telefone || null,
+            whatsapp: convertModal.telefone || null,
+            observacoes: convertModal.mensagem || null,
+            lead_origem_id: convertModal.id,
+          }}
+          onClose={() => setConvertModal(null)}
+          onCreated={async (c: Cliente) => {
+            const lead = convertModal
+            setConvertModal(null)
+            // Vincular lead -> cliente e cliente.lead_origem_id -> lead
+            await Promise.all([
+              supabase.from('leads').update({ cliente_id: c.id }).eq('id', lead.id),
+              supabase.from('clientes').update({ lead_origem_id: lead.id }).eq('id', c.id),
+            ])
+            setLeads((prev) => prev.map((l) => l.id === lead.id ? { ...l, cliente_id: c.id } : l))
+            toast.success(`Cliente "${c.nome}" criado e vinculado ao lead`)
+          }}
+        />
       )}
     </div>
   )

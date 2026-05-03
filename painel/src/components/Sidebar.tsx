@@ -46,6 +46,7 @@ const groups: NavGroup[] = [
     label: 'Principal',
     items: [
       { label: 'Dashboard',  path: '/painel/',          icon: <LayoutDashboard size={18} /> },
+      { label: 'Clientes',   path: '/painel/clientes',  icon: <Users size={18} /> },
       { label: 'Financeiro', path: '/painel/financeiro', icon: <TrendingUp size={18} /> },
     ],
   },

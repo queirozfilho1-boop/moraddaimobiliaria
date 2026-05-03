@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 import { useAuth } from '@/contexts/AuthContext'
 import { uploadFotoComWatermark } from '@/lib/watermark'
 import { supabase } from '@/lib/supabase'
+import BuscarCliente, { type Cliente } from '@/components/BuscarCliente'
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function generateSlug(text: string): string {
@@ -154,6 +155,8 @@ export default function NovoImovelPage() {
   const [proprietario, setProprietario] = useState({
     nome: '', cpf_cnpj: '', telefone: '', email: '', endereco: '', observacoes: ''
   })
+  // Cliente vinculado como proprietário (banco mestre)
+  const [clienteProprietario, setClienteProprietario] = useState<Cliente | null>(null)
 
   // Documentos state
   const [documentos, setDocumentos] = useState<{ file: File; tipo: string; observacoes: string }[]>([])
@@ -318,6 +321,16 @@ export default function NovoImovelPage() {
   }
 
   async function saveProprietario(imovelId: string) {
+    // Se houver cliente vinculado, criar vínculo no imoveis_clientes
+    if (clienteProprietario) {
+      await supabase.from('imoveis_clientes').insert({
+        imovel_id: imovelId,
+        cliente_id: clienteProprietario.id,
+        papel: 'proprietario',
+        percentual: 100,
+      })
+      return
+    }
     if (!proprietario.nome) return
     await supabase.from('imoveis_proprietarios').insert({
       imovel_id: imovelId,
@@ -940,7 +953,31 @@ export default function NovoImovelPage() {
             <UserCircle size={14} />
             Dados internos — não serão exibidos no site
           </p>
+
+          <div className="mb-4 rounded-lg border border-moradda-blue-200 bg-moradda-blue-50/40 p-4 dark:border-moradda-blue-800/40 dark:bg-moradda-blue-900/20">
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-moradda-blue-700 dark:text-moradda-blue-300">
+              Vincular cliente do banco mestre
+            </label>
+            <p className="mb-3 text-xs text-gray-600 dark:text-gray-400">
+              Recomendado · busque um cliente já cadastrado ou crie um novo. Ele ficará disponível pra contratos e vínculos futuros.
+            </p>
+            <BuscarCliente
+              value={clienteProprietario ? { id: clienteProprietario.id, nome: clienteProprietario.nome, cpf_cnpj: clienteProprietario.cpf_cnpj } : null}
+              onSelect={(c) => setClienteProprietario(c)}
+              papel="proprietário"
+            />
+            {clienteProprietario && (
+              <p className="mt-2 text-xs text-emerald-600 dark:text-emerald-400">
+                O cliente será vinculado como proprietário (100%) ao salvar o imóvel.
+              </p>
+            )}
+          </div>
+
+          {!clienteProprietario && (
           <div className="space-y-4">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Ou cadastre os dados livres do proprietário abaixo (legado):
+            </p>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className={labelClass}>Nome do Proprietário</label>
@@ -1006,6 +1043,7 @@ export default function NovoImovelPage() {
               />
             </div>
           </div>
+          )}
         </SectionCard>
 
         {/* Section 8: Documentos (interno) */}

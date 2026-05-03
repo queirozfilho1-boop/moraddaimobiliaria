@@ -31,6 +31,7 @@ import { supabase } from '@/lib/supabase'
 import { uploadFotoComWatermark } from '@/lib/watermark'
 import ShareImovelModal from '@/components/ShareImovelModal'
 import ImovelProprietariosSection from '@/components/ImovelProprietariosSection'
+import ImovelClientesSection from '@/components/ImovelClientesSection'
 import ImovelLinksSection from '@/components/ImovelLinksSection'
 import ImovelLeadsRelacionados from '@/components/ImovelLeadsRelacionados'
 
@@ -1695,7 +1696,10 @@ export default function EditarImovelPage() {
         {/* Leads relacionados (interesse + captação) */}
         {id && <ImovelLeadsRelacionados imovelId={id} />}
 
-        {/* Proprietários do Imóvel (módulo novo) */}
+        {/* Proprietários (Clientes — banco mestre) */}
+        {id && <ImovelClientesSection imovelId={id} />}
+
+        {/* Proprietários do Imóvel (legado — acesso ao Portal) */}
         {id && <ImovelProprietariosSection imovelId={id} />}
 
         {/* Section 6: Fotos */}

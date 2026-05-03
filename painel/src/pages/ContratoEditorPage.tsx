@@ -24,6 +24,7 @@ import { printContratoFromMd, gerarPdfBase64FromMd } from '@/lib/contratoPrint'
 import { mergeTemplate } from '@/lib/contratoMerge'
 import CobrancasSection from '@/components/CobrancasSection'
 import RepassesSection from '@/components/RepassesSection'
+import BuscarCliente, { type Cliente } from '@/components/BuscarCliente'
 
 const SUPA_FN = `${import.meta.env.VITE_SUPABASE_URL || 'https://mvzjqktgnwjwuinnxxcc.supabase.co'}/functions/v1`
 
@@ -224,6 +225,101 @@ const ContratoEditorPage = () => {
       return mudou ? next : prev
     })
   }, [contrato.tipo])
+
+  // Auto-importar proprietários do imóvel quando o imóvel muda (apenas em contratos novos)
+  useEffect(() => {
+    if (!contrato.imovel_id || !contrato.tipo || !isNew) return
+    ;(async () => {
+      const { data: vincs } = await supabase
+        .from('imoveis_clientes')
+        .select('papel, percentual, clientes(*)')
+        .eq('imovel_id', contrato.imovel_id)
+      if (!vincs || vincs.length === 0) return
+
+      // Determinar papel de proprietário pelo tipo de contrato
+      const papelProprietario: PartePapel | null =
+        contrato.tipo === 'locacao_residencial' || contrato.tipo === 'locacao_comercial' || contrato.tipo === 'temporada' ? 'locador' :
+        contrato.tipo === 'compra_venda' ? 'vendedor' :
+        contrato.tipo === 'captacao_exclusiva' || contrato.tipo === 'administracao' ? 'proprietario' :
+        null
+      if (!papelProprietario) return
+
+      setPartes((prev) => {
+        // Se já tem alguma parte preenchida com nome no papel de proprietário, não mexe
+        const jaTem = prev.some((p) => p.papel === papelProprietario && p.nome.trim() !== '')
+        if (jaTem) return prev
+
+        // Cria/preenche partes a partir dos clientes proprietários
+        const novasPartes = (vincs as any[]).map((v, idx) => {
+          const c = v.clientes
+          if (!c) return null
+          return {
+            papel: papelProprietario,
+            cliente_id: c.id,
+            nome: c.nome || '',
+            cpf_cnpj: c.cpf_cnpj || '',
+            rg: c.rg || '',
+            creci: '',
+            nacionalidade: c.nacionalidade || 'Brasileira',
+            estado_civil: c.estado_civil || '',
+            profissao: c.profissao || '',
+            email: c.email || '',
+            telefone: c.telefone || '',
+            endereco: c.endereco || '',
+            numero: c.numero || '',
+            complemento: c.complemento || '',
+            bairro: c.bairro || '',
+            cidade: c.cidade || '',
+            estado: c.estado || '',
+            cep: c.cep || '',
+            data_nascimento: c.data_nascimento || null,
+            conjuge_nome: c.conjuge_nome || '',
+            conjuge_cpf: c.conjuge_cpf || '',
+            observacoes: '',
+            ordem: idx,
+          } as any
+        }).filter(Boolean)
+
+        // Remove placeholders vazios pro mesmo papel e mantém outras partes
+        const outrasPartes = prev.filter((p) => p.papel !== papelProprietario || p.nome.trim() !== '')
+        return [...novasPartes, ...outrasPartes].map((p, i) => ({ ...p, ordem: i }))
+      })
+    })()
+  }, [contrato.imovel_id, contrato.tipo, isNew])
+
+  // Aplicar dados de um Cliente em uma Parte
+  function aplicarCliente(idx: number, c: Cliente | null) {
+    if (!c) {
+      // Desvincula
+      setPartes((prev) => prev.map((p, i) => i === idx ? ({ ...p, cliente_id: null } as any) : p))
+      return
+    }
+    setPartes((prev) => prev.map((p, i) => {
+      if (i !== idx) return p
+      return {
+        ...p,
+        cliente_id: c.id,
+        nome: c.nome || p.nome,
+        cpf_cnpj: c.cpf_cnpj || p.cpf_cnpj,
+        rg: c.rg || p.rg,
+        nacionalidade: c.nacionalidade || p.nacionalidade,
+        estado_civil: c.estado_civil || p.estado_civil,
+        profissao: c.profissao || p.profissao,
+        email: c.email || p.email,
+        telefone: c.telefone || p.telefone,
+        endereco: c.endereco || p.endereco,
+        numero: c.numero || p.numero,
+        complemento: c.complemento || p.complemento,
+        bairro: c.bairro || p.bairro,
+        cidade: c.cidade || p.cidade,
+        estado: c.estado || p.estado,
+        cep: c.cep || p.cep,
+        data_nascimento: c.data_nascimento || p.data_nascimento,
+        conjuge_nome: (c as any).conjuge_nome || (p as any).conjuge_nome,
+        conjuge_cpf: (c as any).conjuge_cpf || (p as any).conjuge_cpf,
+      } as any
+    }))
+  }
 
   const repasse = useMemo(() => calcularRepasse({
     valor_aluguel: contrato.valor_aluguel || 0,
@@ -999,6 +1095,17 @@ const ContratoEditorPage = () => {
                   </button>
                 </div>
               </div>
+              {p.papel !== 'imobiliaria' && (
+                <div className="mb-3">
+                  <label className={labelCls}>Buscar cliente do banco mestre</label>
+                  <BuscarCliente
+                    value={(p as any).cliente_id ? { id: (p as any).cliente_id, nome: p.nome, cpf_cnpj: p.cpf_cnpj } : null}
+                    onSelect={(c) => aplicarCliente(idx, c)}
+                    papel={PAPEL_LABEL[p.papel].toLowerCase()}
+                    tipoSugerido="pf"
+                  />
+                </div>
+              )}
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 <div className="sm:col-span-2">
                   <label className={labelCls}>Nome completo</label>

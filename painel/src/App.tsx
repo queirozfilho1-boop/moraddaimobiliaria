@@ -12,6 +12,7 @@ import LocacoesPage from '@/pages/LocacoesPage'
 import ContratoEditorPage from '@/pages/ContratoEditorPage'
 import { ModelosContratoListPage, ModeloContratoEditorPage } from '@/pages/ModelosContratoPage'
 import { ProprietariosListPage, ProprietarioEditorPage } from '@/pages/ProprietariosPage'
+import { ClientesListPage, ClienteDetalhePage } from '@/pages/ClientesPage'
 import DashboardFinanceiroPage from '@/pages/DashboardFinanceiroPage'
 import { VendasListPage, VendaEditorPage } from '@/pages/VendasPage'
 import VendasPipelinePage from '@/pages/VendasPipelinePage'
@@ -53,6 +54,9 @@ export default function App() {
               <Route path="modelos-contrato" element={<ModelosContratoListPage />} />
               <Route path="modelos-contrato/novo" element={<ModeloContratoEditorPage />} />
               <Route path="modelos-contrato/:id" element={<ModeloContratoEditorPage />} />
+              <Route path="clientes" element={<ClientesListPage />} />
+              <Route path="clientes/novo" element={<ClienteDetalhePage />} />
+              <Route path="clientes/:id" element={<ClienteDetalhePage />} />
               <Route path="proprietarios" element={<ProprietariosListPage />} />
               <Route path="proprietarios/novo" element={<ProprietarioEditorPage />} />
               <Route path="proprietarios/:id" element={<ProprietarioEditorPage />} />

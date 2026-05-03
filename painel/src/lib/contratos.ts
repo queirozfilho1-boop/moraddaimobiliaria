@@ -287,6 +287,7 @@ export interface ContratoParte {
   id: string
   contrato_id: string
   papel: PartePapel
+  cliente_id?: string | null
   nome: string
   cpf_cnpj?: string | null
   rg?: string | null
@@ -304,6 +305,8 @@ export interface ContratoParte {
   estado?: string | null
   cep?: string | null
   data_nascimento?: string | null
+  conjuge_nome?: string | null
+  conjuge_cpf?: string | null
   observacoes?: string | null
   ordem: number
 }
