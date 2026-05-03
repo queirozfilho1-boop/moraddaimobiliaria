@@ -34,14 +34,36 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json()
-    const { contrato_id, pdf_base64 } = body
-    if (!contrato_id || !pdf_base64) return json({ error: 'contrato_id e pdf_base64 obrigatórios' }, 400)
+    const { contrato_id, pdf_base64: pdfBase64Body } = body
+    if (!contrato_id) return json({ error: 'contrato_id obrigatório' }, 400)
 
     // Buscar contrato + partes
-    const cRes = await sb(`/rest/v1/contratos_locacao?id=eq.${contrato_id}&select=id,numero,tipo`)
+    const cRes = await sb(`/rest/v1/contratos_locacao?id=eq.${contrato_id}&select=id,numero,tipo,pdf_url`)
     const cArr = await cRes.json()
     const contrato = cArr[0]
     if (!contrato) return json({ error: 'Contrato não encontrado' }, 404)
+
+    // Decide qual PDF usar:
+    // 1. Se contrato tem pdf_url (anexado pelo usuário), baixa do Storage e usa
+    // 2. Senão, usa o pdf_base64 do body (gerado por html2canvas, fallback)
+    let pdf_base64: string | null = null
+    if (contrato.pdf_url) {
+      try {
+        const dlRes = await fetch(contrato.pdf_url)
+        if (!dlRes.ok) throw new Error(`Storage HTTP ${dlRes.status}`)
+        const buf = await dlRes.arrayBuffer()
+        const bytes = new Uint8Array(buf)
+        let binary = ''
+        for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
+        pdf_base64 = btoa(binary)
+      } catch (e) {
+        return json({ error: 'Erro ao baixar PDF anexado: ' + (e instanceof Error ? e.message : '') }, 500)
+      }
+    } else if (pdfBase64Body) {
+      pdf_base64 = pdfBase64Body
+    } else {
+      return json({ error: 'Nenhum PDF disponível: anexe um PDF ao contrato ou envie pdf_base64' }, 400)
+    }
 
     const pRes = await sb(`/rest/v1/contratos_partes?contrato_id=eq.${contrato_id}&select=id,nome,email,telefone,papel,cpf_cnpj&order=ordem`)
     const partes = await pRes.json()

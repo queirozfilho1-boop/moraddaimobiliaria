@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Plus, Search, FileSignature, Loader2, Pencil, Trash2, Eye } from 'lucide-react'
+import { Plus, Search, FileSignature, Loader2, Pencil, Trash2, Eye, Upload, Send, FileCheck2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import type { ContratoLocacao } from '@/lib/contratos'
@@ -26,6 +26,57 @@ const ContratosPage = () => {
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [deleteTarget, setDeleteTarget] = useState<Row | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [uploadingId, setUploadingId] = useState<string | null>(null)
+  const [sendingId, setSendingId] = useState<string | null>(null)
+
+  async function handleUploadPdf(row: Row, file: File) {
+    setUploadingId(row.id)
+    try {
+      const path = `${row.id}.pdf`
+      const { error: upErr } = await supabase.storage
+        .from('contratos-pdf')
+        .upload(path, file, { upsert: true, contentType: 'application/pdf' })
+      if (upErr) throw upErr
+      const { data } = supabase.storage.from('contratos-pdf').getPublicUrl(path)
+      const publicUrl = `${data.publicUrl}?v=${Date.now()}`
+      const { error: updErr } = await supabase
+        .from('contratos_locacao')
+        .update({ pdf_url: publicUrl })
+        .eq('id', row.id)
+      if (updErr) throw updErr
+      toast.success('PDF anexado ao contrato')
+      await load()
+    } catch (e: any) {
+      toast.error('Erro ao anexar: ' + (e.message || ''))
+    } finally {
+      setUploadingId(null)
+    }
+  }
+
+  async function handleEnviarZapSign(row: Row) {
+    if (!row.pdf_url) {
+      toast.error('Anexe o PDF do contrato antes de enviar')
+      return
+    }
+    setSendingId(row.id)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const SUPA_FN = `${import.meta.env.VITE_SUPABASE_URL || 'https://mvzjqktgnwjwuinnxxcc.supabase.co'}/functions/v1`
+      const res = await fetch(`${SUPA_FN}/zapsign-send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token || ''}` },
+        body: JSON.stringify({ contrato_id: row.id }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
+      toast.success(`Enviado pra ${data.signers?.length || 0} signatário(s)`)
+      await load()
+    } catch (e: any) {
+      toast.error('Erro: ' + (e.message || ''))
+    } finally {
+      setSendingId(null)
+    }
+  }
 
   async function load() {
     setLoading(true)
@@ -33,7 +84,7 @@ const ContratosPage = () => {
       .from('contratos_locacao')
       .select(`
         id, numero, tipo, status, valor_aluguel, data_inicio, data_fim, dia_vencimento,
-        taxa_admin_pct, garantia_tipo, indice_reajuste, created_at,
+        taxa_admin_pct, garantia_tipo, indice_reajuste, created_at, pdf_url, zapsign_doc_id,
         imoveis(codigo, titulo),
         contratos_partes(nome, papel, zapsign_signed_at)
       `)
@@ -214,6 +265,39 @@ const ContratosPage = () => {
                       >
                         <Eye size={15} />
                       </Link>
+
+                      {/* Anexar PDF */}
+                      <label
+                        title={r.pdf_url ? 'Substituir PDF anexado' : 'Anexar PDF do contrato'}
+                        className={`rounded-lg p-2 cursor-pointer ${r.pdf_url
+                          ? 'text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20'
+                          : 'text-gray-500 hover:bg-gray-100 hover:text-moradda-blue-600 dark:text-gray-400 dark:hover:bg-gray-700'}`}
+                      >
+                        {uploadingId === r.id ? <Loader2 size={15} className="animate-spin" />
+                          : r.pdf_url ? <FileCheck2 size={15} />
+                          : <Upload size={15} />}
+                        <input
+                          type="file"
+                          accept="application/pdf"
+                          className="hidden"
+                          onChange={(e) => {
+                            const f = e.target.files?.[0]
+                            if (f) handleUploadPdf(r, f)
+                            e.target.value = ''
+                          }}
+                        />
+                      </label>
+
+                      {/* Enviar pra ZapSign */}
+                      <button
+                        disabled={!r.pdf_url || sendingId === r.id}
+                        onClick={() => handleEnviarZapSign(r)}
+                        title={r.pdf_url ? 'Enviar pra ZapSign' : 'Anexe um PDF antes'}
+                        className="rounded-lg p-2 text-amber-600 hover:bg-amber-50 disabled:opacity-30 disabled:cursor-not-allowed dark:text-amber-400 dark:hover:bg-amber-900/20"
+                      >
+                        {sendingId === r.id ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
+                      </button>
+
                       <Link
                         to={`/painel/contratos/${r.id}`}
                         title="Editar"
