@@ -183,12 +183,16 @@ window.addEventListener('load', () => {
 </body>
 </html>`
 
-  const w = window.open('', '_blank', 'noopener,noreferrer,width=900,height=1200')
+  // Cria Blob URL com o HTML completo. Isso funciona melhor que
+  // document.write em janelas modernas (Edge/Chrome bloqueiam write em about:blank).
+  const blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const w = window.open(url, '_blank', 'width=900,height=1200')
   if (!w) {
     alert('Bloqueio de pop-up. Permita pop-ups nesse site pra gerar o PDF.')
+    URL.revokeObjectURL(url)
     return
   }
-  w.document.open()
-  w.document.write(fullHtml)
-  w.document.close()
+  // Revogar a URL depois de carregar (não logo, senão a janela perde a referência)
+  setTimeout(() => URL.revokeObjectURL(url), 60_000)
 }
