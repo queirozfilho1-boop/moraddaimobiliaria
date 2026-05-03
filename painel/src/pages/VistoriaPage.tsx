@@ -879,14 +879,8 @@ export const VistoriaEditorPage = () => {
     }
   }
 
-  if (loading) {
-    return <div className="flex justify-center py-16"><Loader2 size={28} className="animate-spin text-moradda-blue-500" /></div>
-  }
-
-  const inputCls = 'w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-moradda-blue-500 focus:outline-none'
-  const labelCls = 'mb-1.5 block text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-400'
-
   // Contratos relacionados ao imóvel selecionado (ativos primeiro)
+  // IMPORTANTE: hooks DEVEM vir antes do early return (Rules of Hooks)
   const contratosFiltrados = useMemo(() => {
     if (!v.imovel_id) return [] as ContratoLite[]
     return contratos
@@ -897,6 +891,13 @@ export const VistoriaEditorPage = () => {
         return a.numero.localeCompare(b.numero)
       })
   }, [contratos, v.imovel_id])
+
+  if (loading) {
+    return <div className="flex justify-center py-16"><Loader2 size={28} className="animate-spin text-moradda-blue-500" /></div>
+  }
+
+  const inputCls = 'w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:border-moradda-blue-500 focus:outline-none'
+  const labelCls = 'mb-1.5 block text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-400'
 
   const avariados = itens
     .map((it, idx) => ({ it, idx }))
