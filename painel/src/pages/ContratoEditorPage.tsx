@@ -275,6 +275,15 @@ const ContratoEditorPage = () => {
     try {
       let contratoId = id !== 'novo' ? id : undefined
 
+      // Sanitiza payload — converte strings vazias em null pra colunas com check/uuid
+      const sanitize = (obj: any) => {
+        const out: any = {}
+        for (const [k, v] of Object.entries(obj)) {
+          out[k] = v === '' ? null : v
+        }
+        return out
+      }
+
       if (!contratoId) {
         // Gerar número via RPC
         const { data: numData } = await supabase.rpc('proximo_numero_contrato')
@@ -282,13 +291,13 @@ const ContratoEditorPage = () => {
 
         const { data, error } = await supabase
           .from('contratos_locacao')
-          .insert({
+          .insert(sanitize({
             ...contrato,
             numero,
             status: novoStatus || contrato.status || 'rascunho',
             criado_por: profile?.id,
             corretor_id: contrato.corretor_id || profile?.id,
-          })
+          }))
           .select()
           .single()
         if (error) throw error
@@ -296,7 +305,7 @@ const ContratoEditorPage = () => {
       } else {
         const { error } = await supabase
           .from('contratos_locacao')
-          .update({ ...contrato, status: novoStatus || contrato.status })
+          .update(sanitize({ ...contrato, status: novoStatus || contrato.status }))
           .eq('id', contratoId)
         if (error) throw error
       }
