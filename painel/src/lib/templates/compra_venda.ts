@@ -28,7 +28,7 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 ## CLÁUSULA 2ª — DO OBJETO
 
-**2.1.** O VENDEDOR vende ao COMPRADOR, que adquire, livre e desembaraçado de quaisquer ônus, gravames, dívidas, hipotecas ou alienações fiduciárias, o imóvel cadastrado sob o código **{{imovel.codigo}}**{{#if imovel.titulo}} ("**{{imovel.titulo}}**"){{/if}}, tipo **{{imovel.tipo}}**, situado em **{{imovel.endereco_completo}}**{{#if imovel.area_total}}, com área total **{{imovel.area_total}}**{{/if}}{{#if imovel.area_construida}} e área construída **{{imovel.area_construida}}**{{/if}}{{#if imovel.quartos}}, contendo **{{imovel.quartos}}** quartos{{/if}}{{#if imovel.banheiros}}, **{{imovel.banheiros}}** banheiros{{/if}}{{#if imovel.vagas}} e **{{imovel.vagas}}** vagas de garagem{{/if}}.
+**2.1.** O VENDEDOR vende ao COMPRADOR, que adquire, livre e desembaraçado de quaisquer ônus, gravames, dívidas, hipotecas ou alienações fiduciárias, o imóvel cadastrado sob o código **{{imovel.codigo}}**{{#if imovel.titulo}} ("**{{imovel.titulo}}**"){{/if}}, tipo **{{imovel.tipo}}**, situado em **{{imovel.endereco_completo}}**{{#if imovel.area_total}}, com área total **{{imovel.area_total}}**{{/if}}{{#if imovel.area_construida}} e área construída **{{imovel.area_construida}}**{{/if}}{{#if imovel.quartos}}, contendo **{{imovel.quartos}}**{{/if}}{{#if imovel.banheiros}}, **{{imovel.banheiros}}**{{/if}}{{#if imovel.vagas_garagem}} e **{{imovel.vagas_garagem}}**{{/if}}.
 
 {{#if imovel.matricula}}**2.2.** O imóvel objeto deste contrato encontra-se devidamente registrado na **Matrícula nº {{imovel.matricula}}**{{#if imovel.cartorio}} do Cartório de Registro de Imóveis de **{{imovel.cartorio}}**{{/if}}{{#if imovel.inscricao_iptu}}, com inscrição imobiliária (IPTU) nº **{{imovel.inscricao_iptu}}**{{/if}}.{{/if}}
 
@@ -238,9 +238,9 @@ CNPJ: {{imobiliaria.cnpj}} · CRECI: {{imobiliaria.creci}}
 ### TESTEMUNHAS
 
 **1.** _________________________________________
-Nome: {{testemunha1.nome}} · CPF: {{testemunha1.cpf_cnpj}}
+Nome: {{testemunha1.nome}}{{#if testemunha1.cpf_cnpj}} · CPF: {{testemunha1.cpf_cnpj}}{{/if}}
 
 
 **2.** _________________________________________
-Nome: {{testemunha2.nome}} · CPF: {{testemunha2.cpf_cnpj}}
+Nome: {{testemunha2.nome}}{{#if testemunha2.cpf_cnpj}} · CPF: {{testemunha2.cpf_cnpj}}{{/if}}
 `

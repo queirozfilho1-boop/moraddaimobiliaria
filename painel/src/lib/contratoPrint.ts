@@ -59,6 +59,8 @@ function inlineFmt(s: string): string {
 }
 
 function mdToHtml(md: string): string {
+  // Remove comentários HTML <!-- ... --> (incluindo TODOs deixados nos templates)
+  md = md.replace(/<!--[\s\S]*?-->/g, '')
   const lines = md.split('\n')
   const out: string[] = []
   let pBuffer: string[] = []
