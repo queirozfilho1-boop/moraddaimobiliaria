@@ -13,6 +13,7 @@ import type {
 } from '@/lib/contratos'
 import {
   TIPO_LABEL, STATUS_LABEL, STATUS_COR, GARANTIA_LABEL, INDICE_LABEL, PAPEL_LABEL,
+  papeisPorTipo,
   fmtMoeda, calcularPrazoMeses, calcularRepasse,
   isLocacao, isCompraVenda, isCaptacao, isAdministracao,
   isAssociacao, isTemporada, usaGarantia, usaReajuste,
@@ -164,6 +165,21 @@ const ContratoEditorPage = () => {
       setContrato((c) => ({ ...c, prazo_meses: m }))
     }
   }, [contrato.data_inicio, contrato.data_fim])
+
+  // Quando o tipo muda, ajustar papéis de partes que ficaram inválidos pro novo tipo
+  useEffect(() => {
+    if (!contrato.tipo) return
+    const validos = papeisPorTipo(contrato.tipo)
+    setPartes((prev) => {
+      let mudou = false
+      const next = prev.map((p) => {
+        if (validos.includes(p.papel)) return p
+        mudou = true
+        return { ...p, papel: validos[0] }
+      })
+      return mudou ? next : prev
+    })
+  }, [contrato.tipo])
 
   const repasse = useMemo(() => calcularRepasse({
     valor_aluguel: contrato.valor_aluguel || 0,
@@ -716,7 +732,9 @@ const ContratoEditorPage = () => {
                     onChange={(e) => updateParte(idx, { papel: e.target.value as PartePapel })}
                     className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-moradda-blue-700 dark:border-gray-600 dark:bg-gray-700 dark:text-moradda-blue-300"
                   >
-                    {Object.entries(PAPEL_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                    {(contrato.tipo ? papeisPorTipo(contrato.tipo) : Object.keys(PAPEL_LABEL) as PartePapel[]).map((k) => (
+                      <option key={k} value={k}>{PAPEL_LABEL[k]}</option>
+                    ))}
                   </select>
                 </div>
                 <div className="flex items-center gap-1">
@@ -781,10 +799,15 @@ const ContratoEditorPage = () => {
           ))}
 
           <div className="flex flex-wrap gap-2">
-            <button onClick={() => addParte('locador')}    className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"><Plus size={13}/>Locador</button>
-            <button onClick={() => addParte('locatario')}  className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"><Plus size={13}/>Locatário</button>
-            <button onClick={() => addParte('fiador')}     className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"><Plus size={13}/>Fiador</button>
-            <button onClick={() => addParte('testemunha')} className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"><Plus size={13}/>Testemunha</button>
+            {(contrato.tipo ? papeisPorTipo(contrato.tipo) : ['locador','locatario','fiador','testemunha'] as PartePapel[]).map((papel) => (
+              <button
+                key={papel}
+                onClick={() => addParte(papel)}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+              >
+                <Plus size={13}/>{PAPEL_LABEL[papel]}
+              </button>
+            ))}
           </div>
         </div>
       </Section>

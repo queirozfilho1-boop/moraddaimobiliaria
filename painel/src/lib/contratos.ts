@@ -39,6 +39,12 @@ export type PartePapel =
   | 'avalista'
   | 'corretor'
   | 'testemunha'
+  | 'vendedor'
+  | 'comprador'
+  | 'proprietario'
+  | 'imobiliaria'
+  | 'hospede'
+  | 'corretor_parceiro'
 
 export const TIPO_LABEL: Record<ContratoTipo, string> = {
   locacao_residencial: 'Locação Residencial',
@@ -87,12 +93,60 @@ export const INDICE_LABEL: Record<ContratoIndice, string> = {
 }
 
 export const PAPEL_LABEL: Record<PartePapel, string> = {
-  locador:     'Locador',
-  locatario:   'Locatário',
-  fiador:      'Fiador',
-  avalista:    'Avalista',
-  corretor:    'Corretor',
-  testemunha:  'Testemunha',
+  locador:           'Locador',
+  locatario:         'Locatário',
+  fiador:            'Fiador',
+  avalista:          'Avalista',
+  corretor:          'Corretor',
+  testemunha:        'Testemunha',
+  vendedor:          'Vendedor',
+  comprador:         'Comprador',
+  proprietario:      'Proprietário',
+  imobiliaria:       'Imobiliária',
+  hospede:           'Hóspede',
+  corretor_parceiro: 'Corretor Parceiro',
+}
+
+// Papéis disponíveis por tipo de contrato (na ordem de exibição)
+export function papeisPorTipo(tipo: ContratoTipo): PartePapel[] {
+  switch (tipo) {
+    case 'locacao_residencial':
+    case 'locacao_comercial':
+      return ['locador', 'locatario', 'fiador', 'avalista', 'testemunha']
+    case 'temporada':
+      return ['locador', 'hospede', 'testemunha']
+    case 'compra_venda':
+      return ['vendedor', 'comprador', 'corretor', 'testemunha']
+    case 'captacao_exclusiva':
+      return ['proprietario', 'imobiliaria', 'corretor', 'testemunha']
+    case 'administracao':
+      return ['proprietario', 'imobiliaria', 'testemunha']
+    case 'associacao_corretor':
+      return ['imobiliaria', 'corretor_parceiro', 'testemunha']
+    default:
+      return ['locador', 'locatario', 'fiador', 'avalista', 'corretor', 'testemunha']
+  }
+}
+
+// Sugestões de partes que devem aparecer ao criar um contrato novo
+export function papeisIniciaisPorTipo(tipo: ContratoTipo): PartePapel[] {
+  switch (tipo) {
+    case 'locacao_residencial':
+    case 'locacao_comercial':
+      return ['locador', 'locatario']
+    case 'temporada':
+      return ['locador', 'hospede']
+    case 'compra_venda':
+      return ['vendedor', 'comprador']
+    case 'captacao_exclusiva':
+      return ['proprietario', 'imobiliaria']
+    case 'administracao':
+      return ['proprietario', 'imobiliaria']
+    case 'associacao_corretor':
+      return ['imobiliaria', 'corretor_parceiro']
+    default:
+      return ['locador', 'locatario']
+  }
 }
 
 export interface ContratoLocacao {
