@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, Outlet, useLocation } from 'react-router-dom'
 import { Menu, Moon, Sun, Bell, Check, CheckCheck } from 'lucide-react'
+import { Toaster } from 'sonner'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useNotificacoes } from '@/hooks/useNotificacoes'
@@ -235,6 +236,9 @@ export default function PainelLayout() {
           <Outlet />
         </main>
       </div>
+
+      {/* Toasts globais (success/error/info) */}
+      <Toaster richColors position="top-right" closeButton theme={theme} />
     </div>
   )
 }
