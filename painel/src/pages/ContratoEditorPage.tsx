@@ -519,22 +519,24 @@ const ContratoEditorPage = () => {
 
       {/* Identificação */}
       <Section icon={<FileSignature size={16} />} title="Identificação">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className={`grid grid-cols-1 gap-4 ${contrato.tipo && isAssociacao(contrato.tipo) ? '' : 'sm:grid-cols-2'}`}>
           <div>
             <label className={labelCls}>Tipo de contrato</label>
             <select className={inputCls} value={contrato.tipo} onChange={(e) => setC('tipo', e.target.value as ContratoTipo)}>
               {Object.entries(TIPO_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
           </div>
-          <div>
-            <label className={labelCls}>Imóvel</label>
-            <select className={inputCls} value={contrato.imovel_id || ''} onChange={(e) => setC('imovel_id', e.target.value || null)}>
-              <option value="">Selecione um imóvel...</option>
-              {imoveis.map((i) => (
-                <option key={i.id} value={i.id}>{i.codigo} - {i.titulo}</option>
-              ))}
-            </select>
-          </div>
+          {contrato.tipo && !isAssociacao(contrato.tipo) && (
+            <div>
+              <label className={labelCls}>Imóvel</label>
+              <select className={inputCls} value={contrato.imovel_id || ''} onChange={(e) => setC('imovel_id', e.target.value || null)}>
+                <option value="">Selecione um imóvel...</option>
+                {imoveis.map((i) => (
+                  <option key={i.id} value={i.id}>{i.codigo} - {i.titulo}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       </Section>
 
