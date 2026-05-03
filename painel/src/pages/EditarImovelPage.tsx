@@ -32,6 +32,7 @@ import { uploadFotoComWatermark } from '@/lib/watermark'
 import ShareImovelModal from '@/components/ShareImovelModal'
 import ImovelProprietariosSection from '@/components/ImovelProprietariosSection'
 import ImovelLinksSection from '@/components/ImovelLinksSection'
+import ImovelLeadsRelacionados from '@/components/ImovelLeadsRelacionados'
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function generateSlug(text: string): string {
@@ -1690,6 +1691,9 @@ export default function EditarImovelPage() {
 
         {/* Registros vinculados (cross-links) */}
         {id && <ImovelLinksSection imovelId={id} />}
+
+        {/* Leads relacionados (interesse + captação) */}
+        {id && <ImovelLeadsRelacionados imovelId={id} />}
 
         {/* Proprietários do Imóvel (módulo novo) */}
         {id && <ImovelProprietariosSection imovelId={id} />}

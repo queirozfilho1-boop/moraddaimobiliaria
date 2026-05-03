@@ -32,6 +32,8 @@ import {
 import { toast } from 'sonner'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
+import LeadImoveisVinculados from '@/components/LeadImoveisVinculados'
+import { useNavigate } from 'react-router-dom'
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -221,6 +223,7 @@ const PAGE_SIZE = 20
 
 export default function LeadsPage() {
   const { profile } = useAuth()
+  const navigate = useNavigate()
   const isAdmin = profile?.role === 'superadmin' || (profile as any)?.role === 'gestor'
 
   /* ---- State ---- */
@@ -1054,14 +1057,13 @@ export default function LeadsPage() {
                                 </div>
                               )}
 
-                              {lead.imovel_titulo && (
-                                <div className="rounded-lg border border-cyan-200 bg-cyan-50 p-3 dark:border-cyan-800 dark:bg-cyan-900/20">
-                                  <p className="mb-1 text-xs font-medium text-cyan-600 dark:text-cyan-400">Imovel de Interesse</p>
-                                  <a href={`/painel/imoveis/${lead.imovel_id}`} className="text-sm font-medium text-cyan-700 hover:underline dark:text-cyan-300">
-                                    {lead.imovel_titulo}
-                                  </a>
-                                </div>
-                              )}
+                              <LeadImoveisVinculados
+                                leadId={lead.id}
+                                leadNome={lead.nome}
+                                leadTipo={lead.tipo}
+                                onCaptarNovo={() => navigate(`/painel/imoveis/novo?from_lead=${lead.id}`)}
+                              />
+
 
                               {/* Status change */}
                               <div>

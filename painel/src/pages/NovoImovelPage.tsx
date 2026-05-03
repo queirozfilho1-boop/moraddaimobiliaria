@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm, type SubmitHandler } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -140,6 +140,8 @@ const labelClass =
 export default function NovoImovelPage() {
   const { profile } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const fromLeadId = searchParams.get('from_lead')
   const isAdmin = profile?.role === 'superadmin' || profile?.role === 'gestor'
 
   const [isDragOver, setIsDragOver] = useState(false)
@@ -214,6 +216,29 @@ export default function NovoImovelPage() {
     }
     fetchBairros()
   }, [])
+
+  // Pre-fill proprietário from lead (when navigated from lead "Captar novo")
+  useEffect(() => {
+    if (!fromLeadId) return
+    async function loadLead() {
+      const { data } = await supabase
+        .from('leads')
+        .select('nome, telefone, email, mensagem, notas')
+        .eq('id', fromLeadId)
+        .single()
+      if (data) {
+        setProprietario(p => ({
+          ...p,
+          nome: data.nome,
+          telefone: data.telefone || '',
+          email: data.email || '',
+          observacoes: [data.mensagem, data.notas].filter(Boolean).join(' · '),
+        }))
+        toast.success(`Dados do lead "${data.nome}" carregados como proprietário`)
+      }
+    }
+    loadLead()
+  }, [fromLeadId])
 
   // Fetch corretores for admin
   useEffect(() => {
@@ -386,6 +411,21 @@ export default function NovoImovelPage() {
       if (fotos.length > 0) await uploadFotos(inserted.id)
       await saveProprietario(inserted.id)
       if (documentos.length > 0) await uploadDocumentos(inserted.id)
+
+      // Auto-vincular ao lead de origem (vem de "Captar novo" no card do lead)
+      if (fromLeadId) {
+        const { data: lead } = await supabase
+          .from('leads')
+          .select('tipo')
+          .eq('id', fromLeadId)
+          .single()
+        const papel = lead?.tipo === 'vender' || lead?.tipo === 'alugar_meu_imovel' ? 'captacao' : 'interesse'
+        await supabase.from('leads_imoveis').insert({
+          lead_id: fromLeadId,
+          imovel_id: inserted.id,
+          papel,
+        })
+      }
     }
 
     return inserted
