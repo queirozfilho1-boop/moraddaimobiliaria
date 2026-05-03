@@ -15,7 +15,7 @@ import {
   TIPO_LABEL, STATUS_LABEL, STATUS_COR, GARANTIA_LABEL, INDICE_LABEL, PAPEL_LABEL,
   papeisPorTipo, MORADDA_DADOS, PAPEIS_COM_CRECI,
   fmtMoeda, calcularPrazoMeses, calcularRepasse,
-  isLocacao, isCompraVenda, isCaptacao, isAdministracao,
+  isLocacao, isLocacaoMensal, isCompraVenda, isCaptacao, isAdministracao,
   isAssociacao, isTemporada, usaGarantia, usaReajuste, usaVigencia, usaCobrancaMensal,
 } from '@/lib/contratos'
 import { Home, Briefcase, FileCheck, Percent } from 'lucide-react'
@@ -217,11 +217,42 @@ const ContratoEditorPage = () => {
   }
 
   async function handleSave(novoStatus?: ContratoStatus) {
-    if (!contrato.imovel_id) { toast.error('Selecione o imóvel'); return }
-    if (!contrato.data_inicio || !contrato.data_fim) { toast.error('Defina início e fim'); return }
-    if (!contrato.valor_aluguel || contrato.valor_aluguel <= 0) { toast.error('Defina o valor do aluguel'); return }
-    if (partes.filter((p) => p.papel === 'locador').length === 0) { toast.error('Adicione ao menos um locador'); return }
-    if (partes.filter((p) => p.papel === 'locatario').length === 0) { toast.error('Adicione ao menos um locatário'); return }
+    const tipo = contrato.tipo
+    if (!tipo) { toast.error('Selecione o tipo de contrato'); return }
+
+    // Validações por tipo
+    if (!isAssociacao(tipo) && !contrato.imovel_id) {
+      // Associação com Corretor pode não ter imóvel ainda
+      toast.error('Selecione o imóvel'); return
+    }
+    if (usaVigencia(tipo) && (!contrato.data_inicio || !contrato.data_fim)) {
+      toast.error('Defina início e fim da vigência'); return
+    }
+    if (isLocacaoMensal(tipo) && (!contrato.valor_aluguel || contrato.valor_aluguel <= 0)) {
+      toast.error('Defina o valor do aluguel'); return
+    }
+    if (isCompraVenda(tipo) && (!contrato.valor_venda || contrato.valor_venda <= 0)) {
+      toast.error('Defina o valor da venda'); return
+    }
+    if (isTemporada(tipo) && (!contrato.valor_diaria || contrato.valor_diaria <= 0)) {
+      toast.error('Defina o valor da diária'); return
+    }
+
+    // Partes obrigatórias por tipo
+    const partesObrigatorias: Record<string, PartePapel[]> = {
+      locacao_residencial: ['locador', 'locatario'],
+      locacao_comercial:   ['locador', 'locatario'],
+      temporada:           ['locador', 'hospede'],
+      compra_venda:        ['vendedor', 'comprador'],
+      captacao_exclusiva:  ['proprietario', 'imobiliaria'],
+      administracao:       ['proprietario', 'imobiliaria'],
+      associacao_corretor: ['imobiliaria', 'corretor_parceiro'],
+    }
+    for (const papel of partesObrigatorias[tipo] || []) {
+      if (partes.filter((p) => p.papel === papel).length === 0) {
+        toast.error(`Adicione ao menos um(a) ${PAPEL_LABEL[papel]}`); return
+      }
+    }
     for (const p of partes) {
       if (!p.nome.trim()) { toast.error(`${PAPEL_LABEL[p.papel]} sem nome`); return }
     }
