@@ -28,6 +28,9 @@ export interface UserProfile {
   bio?: string | null
   slug: string
   ativo: boolean
+  gcal_email?: string | null
+  gcal_connected_at?: string | null
+  gcal_calendar_id?: string | null
 }
 
 interface AuthContextType {
@@ -83,6 +86,9 @@ async function fetchProfile(userId: string): Promise<UserProfile | null> {
       is_socio,
       is_assistente,
       is_corretor,
+      gcal_email,
+      gcal_connected_at,
+      gcal_calendar_id,
       roles ( nome )
     `)
     .eq('user_id', userId)
@@ -109,6 +115,9 @@ async function fetchProfile(userId: string): Promise<UserProfile | null> {
     bio: data.bio,
     slug: data.slug,
     ativo: data.ativo,
+    gcal_email: (data as any).gcal_email ?? null,
+    gcal_connected_at: (data as any).gcal_connected_at ?? null,
+    gcal_calendar_id: (data as any).gcal_calendar_id ?? null,
   }
 }
 

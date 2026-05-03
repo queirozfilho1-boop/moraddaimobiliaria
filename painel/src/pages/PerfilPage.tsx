@@ -10,10 +10,36 @@ import {
   CheckCircle2,
   AlertCircle,
   Info,
+  Calendar as CalendarIcon,
+  Link2,
+  Unlink,
+  Clock,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
+
+const DIAS_SEMANA = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
+
+interface DispRow {
+  id?: string
+  dia_semana: number
+  hora_inicio: string
+  hora_fim: string
+  duracao_visita_min: number
+  buffer_min: number
+  ativo: boolean
+}
+
+const DEFAULT_DISP: DispRow[] = [
+  { dia_semana: 0, hora_inicio: '09:00', hora_fim: '13:00', duracao_visita_min: 60, buffer_min: 30, ativo: false },
+  { dia_semana: 1, hora_inicio: '08:00', hora_fim: '18:00', duracao_visita_min: 60, buffer_min: 30, ativo: true  },
+  { dia_semana: 2, hora_inicio: '08:00', hora_fim: '18:00', duracao_visita_min: 60, buffer_min: 30, ativo: true  },
+  { dia_semana: 3, hora_inicio: '08:00', hora_fim: '18:00', duracao_visita_min: 60, buffer_min: 30, ativo: true  },
+  { dia_semana: 4, hora_inicio: '08:00', hora_fim: '18:00', duracao_visita_min: 60, buffer_min: 30, ativo: true  },
+  { dia_semana: 5, hora_inicio: '08:00', hora_fim: '18:00', duracao_visita_min: 60, buffer_min: 30, ativo: true  },
+  { dia_semana: 6, hora_inicio: '09:00', hora_fim: '13:00', duracao_visita_min: 60, buffer_min: 30, ativo: true  },
+]
 
 interface ProfileForm {
   nome: string
@@ -75,6 +101,165 @@ export default function PerfilPage() {
   const [showCurrent, setShowCurrent] = useState(false)
   const [showNew, setShowNew] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
+
+  // Google Calendar
+  const [gcalConnecting, setGcalConnecting] = useState(false)
+  const [gcalDisconnecting, setGcalDisconnecting] = useState(false)
+
+  // Disponibilidade
+  const [disp, setDisp] = useState<DispRow[]>(DEFAULT_DISP)
+  const [savingDisp, setSavingDisp] = useState(false)
+  const [loadingDisp, setLoadingDisp] = useState(true)
+
+  // Detecta retorno do OAuth e mostra toast
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const flag = params.get('gcal')
+    if (flag === 'connected') {
+      toast.success('Google Calendar conectado com sucesso!')
+      const url = new URL(window.location.href)
+      url.searchParams.delete('gcal')
+      window.history.replaceState({}, '', url.toString())
+      refreshProfile()
+    } else if (flag === 'error') {
+      const reason = params.get('reason') || 'erro desconhecido'
+      toast.error('Erro ao conectar Google Calendar: ' + reason)
+      const url = new URL(window.location.href)
+      url.searchParams.delete('gcal')
+      url.searchParams.delete('reason')
+      url.searchParams.delete('detail')
+      window.history.replaceState({}, '', url.toString())
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Carrega disponibilidade do user
+  useEffect(() => {
+    if (!profile?.id) return
+    loadDisp()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.id])
+
+  async function loadDisp() {
+    if (!profile?.id) return
+    setLoadingDisp(true)
+    const { data } = await supabase
+      .from('corretor_disponibilidade')
+      .select('*')
+      .eq('user_profile_id', profile.id)
+      .order('dia_semana')
+    if (data && data.length > 0) {
+      // Para cada dia, pega a primeira regra (MVP só suporta uma janela por dia)
+      const map = new Map<number, any>()
+      for (const r of data) {
+        if (!map.has(r.dia_semana)) map.set(r.dia_semana, r)
+      }
+      const rows: DispRow[] = []
+      for (let dow = 0; dow < 7; dow++) {
+        const r = map.get(dow)
+        if (r) {
+          rows.push({
+            id: r.id,
+            dia_semana: dow,
+            hora_inicio: (r.hora_inicio || '08:00').slice(0, 5),
+            hora_fim: (r.hora_fim || '18:00').slice(0, 5),
+            duracao_visita_min: r.duracao_visita_min || 60,
+            buffer_min: r.buffer_min || 30,
+            ativo: !!r.ativo,
+          })
+        } else {
+          rows.push({ ...DEFAULT_DISP[dow] })
+        }
+      }
+      setDisp(rows)
+    } else {
+      setDisp(DEFAULT_DISP.map(d => ({ ...d })))
+    }
+    setLoadingDisp(false)
+  }
+
+  async function handleConectarGoogle() {
+    if (!user) return
+    setGcalConnecting(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) { toast.error('Sessão não encontrada.'); setGcalConnecting(false); return }
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://mvzjqktgnwjwuinnxxcc.supabase.co'
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/gcal-oauth-init`, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${session.access_token}` },
+      })
+      const json = await res.json()
+      if (!res.ok || !json.url) {
+        toast.error('Erro: ' + (json.error || 'Falha ao iniciar OAuth'))
+        setGcalConnecting(false)
+        return
+      }
+      window.location.href = json.url
+    } catch (e: any) {
+      toast.error('Erro: ' + (e?.message || 'inesperado'))
+      setGcalConnecting(false)
+    }
+  }
+
+  async function handleDesconectarGoogle() {
+    if (!user || !profile) return
+    if (!confirm('Desconectar Google Calendar? Visitas existentes não serão removidas do seu calendário, mas novas visitas não serão mais adicionadas.')) return
+    setGcalDisconnecting(true)
+    const { error } = await supabase
+      .from('users_profiles')
+      .update({
+        gcal_email: null,
+        gcal_refresh_token: null,
+        gcal_connected_at: null,
+        gcal_channel_id: null,
+        gcal_resource_id: null,
+        gcal_sync_token: null,
+      })
+      .eq('id', profile.id)
+    setGcalDisconnecting(false)
+    if (error) { toast.error('Erro: ' + error.message); return }
+    toast.success('Google Calendar desconectado')
+    await refreshProfile()
+  }
+
+  function setDispRow(dow: number, patch: Partial<DispRow>) {
+    setDisp(prev => prev.map(r => r.dia_semana === dow ? { ...r, ...patch } : r))
+  }
+
+  async function salvarDisp() {
+    if (!profile?.id) return
+    setSavingDisp(true)
+    try {
+      // Estratégia: deleta tudo do user e re-insere as ativas + as inativas
+      // (mantemos as inativas pra usuário poder voltar a ativar com config preservada)
+      const { error: delErr } = await supabase
+        .from('corretor_disponibilidade')
+        .delete()
+        .eq('user_profile_id', profile.id)
+      if (delErr) { toast.error('Erro ao limpar: ' + delErr.message); setSavingDisp(false); return }
+
+      const rows = disp.map(r => ({
+        user_profile_id: profile.id,
+        dia_semana: r.dia_semana,
+        hora_inicio: r.hora_inicio,
+        hora_fim: r.hora_fim,
+        duracao_visita_min: r.duracao_visita_min,
+        buffer_min: r.buffer_min,
+        ativo: r.ativo,
+      }))
+
+      const { error: insErr } = await supabase.from('corretor_disponibilidade').insert(rows)
+      if (insErr) { toast.error('Erro: ' + insErr.message); setSavingDisp(false); return }
+
+      toast.success('Disponibilidade salva')
+      await loadDisp()
+    } catch (e: any) {
+      toast.error('Erro: ' + (e?.message || 'inesperado'))
+    } finally {
+      setSavingDisp(false)
+    }
+  }
 
   useEffect(() => {
     if (profile) {
@@ -555,6 +740,151 @@ export default function PerfilPage() {
           >
             {changingPass ? <Loader2 size={16} className="animate-spin" /> : <Lock size={16} />}
             Alterar Senha
+          </button>
+        </div>
+      </div>
+
+      {/* Google Calendar */}
+      <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+        <div className="mb-4 flex items-center gap-2">
+          <CalendarIcon size={18} className="text-gray-500 dark:text-gray-400" />
+          <h2 className="text-base font-semibold text-gray-900 dark:text-white">Minha Agenda Google</h2>
+        </div>
+
+        {profile?.gcal_connected_at ? (
+          <div className="space-y-3">
+            <div className="flex items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-800/40 dark:bg-emerald-900/20">
+              <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300">
+                  Conectado: {profile.gcal_email}
+                </p>
+                <p className="text-xs text-emerald-700/70 dark:text-emerald-400/70">
+                  Desde {new Date(profile.gcal_connected_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
+                </p>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Quando outros usuários marcam visitas pra você, o sistema só enxerga seus horários "ocupado/livre" — nunca o conteúdo dos seus eventos pessoais. As visitas marcadas no painel são automaticamente adicionadas ao seu Google Calendar.
+            </p>
+            <button
+              onClick={handleDesconectarGoogle}
+              disabled={gcalDisconnecting}
+              className="inline-flex items-center gap-2 rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50 dark:border-red-800/40 dark:bg-gray-700 dark:text-red-400 dark:hover:bg-red-900/20"
+            >
+              {gcalDisconnecting ? <Loader2 size={14} className="animate-spin" /> : <Unlink size={14} />}
+              Desconectar
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Conecte seu Google Calendar para que outros usuários possam marcar visitas nos seus horários disponíveis. Ninguém vê seus eventos pessoais — apenas slots livres.
+            </p>
+            <button
+              onClick={handleConectarGoogle}
+              disabled={gcalConnecting}
+              className="inline-flex items-center gap-2 rounded-lg bg-moradda-blue-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-moradda-blue-600 disabled:opacity-50"
+            >
+              {gcalConnecting ? <Loader2 size={16} className="animate-spin" /> : <Link2 size={16} />}
+              Conectar Google Calendar
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Disponibilidade para Visitas */}
+      <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+        <div className="mb-4 flex items-center gap-2">
+          <Clock size={18} className="text-gray-500 dark:text-gray-400" />
+          <h2 className="text-base font-semibold text-gray-900 dark:text-white">Disponibilidade para Visitas</h2>
+        </div>
+        <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">
+          Defina sua janela de atendimento por dia da semana. Os slots livres serão calculados automaticamente combinando essa configuração com os eventos do seu Google Calendar (se conectado).
+        </p>
+
+        {loadingDisp ? (
+          <div className="flex justify-center py-8"><Loader2 className="animate-spin text-moradda-gold-500" /></div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 text-xs uppercase tracking-wider text-gray-500 dark:border-gray-700">
+                  <th className="px-2 py-2 text-left">Dia</th>
+                  <th className="px-2 py-2 text-center">Atende?</th>
+                  <th className="px-2 py-2 text-left">Início</th>
+                  <th className="px-2 py-2 text-left">Fim</th>
+                  <th className="px-2 py-2 text-left">Duração (min)</th>
+                  <th className="px-2 py-2 text-left">Buffer (min)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {disp.map((r) => (
+                  <tr key={r.dia_semana} className="border-b border-gray-100 dark:border-gray-700">
+                    <td className="px-2 py-2 font-medium text-gray-700 dark:text-gray-300">{DIAS_SEMANA[r.dia_semana]}</td>
+                    <td className="px-2 py-2 text-center">
+                      <input
+                        type="checkbox"
+                        checked={r.ativo}
+                        onChange={(e) => setDispRow(r.dia_semana, { ativo: e.target.checked })}
+                        className="h-4 w-4 rounded border-gray-300 text-moradda-blue-500 focus:ring-moradda-blue-500"
+                      />
+                    </td>
+                    <td className="px-2 py-2">
+                      <input
+                        type="time"
+                        value={r.hora_inicio}
+                        disabled={!r.ativo}
+                        onChange={(e) => setDispRow(r.dia_semana, { hora_inicio: e.target.value })}
+                        className="rounded-lg border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white disabled:opacity-50"
+                      />
+                    </td>
+                    <td className="px-2 py-2">
+                      <input
+                        type="time"
+                        value={r.hora_fim}
+                        disabled={!r.ativo}
+                        onChange={(e) => setDispRow(r.dia_semana, { hora_fim: e.target.value })}
+                        className="rounded-lg border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white disabled:opacity-50"
+                      />
+                    </td>
+                    <td className="px-2 py-2">
+                      <input
+                        type="number"
+                        min={15}
+                        step={15}
+                        value={r.duracao_visita_min}
+                        disabled={!r.ativo}
+                        onChange={(e) => setDispRow(r.dia_semana, { duracao_visita_min: Number(e.target.value) || 60 })}
+                        className="w-20 rounded-lg border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white disabled:opacity-50"
+                      />
+                    </td>
+                    <td className="px-2 py-2">
+                      <input
+                        type="number"
+                        min={0}
+                        step={5}
+                        value={r.buffer_min}
+                        disabled={!r.ativo}
+                        onChange={(e) => setDispRow(r.dia_semana, { buffer_min: Number(e.target.value) || 0 })}
+                        className="w-20 rounded-lg border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white disabled:opacity-50"
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <div className="mt-4 flex justify-end">
+          <button
+            onClick={salvarDisp}
+            disabled={savingDisp}
+            className="inline-flex items-center gap-2 rounded-lg bg-moradda-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-moradda-blue-600 disabled:opacity-50"
+          >
+            {savingDisp ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+            Salvar disponibilidade
           </button>
         </div>
       </div>
