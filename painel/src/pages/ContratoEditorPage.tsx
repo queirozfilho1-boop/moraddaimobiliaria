@@ -671,21 +671,27 @@ const ContratoEditorPage = () => {
       {/* Associação com Corretor */}
       {contrato.tipo && isAssociacao(contrato.tipo) && (
         <Section icon={<Percent size={16} />} title="Split da Associação">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="lg:col-span-1">
               <label className={labelCls}>Corretor parceiro</label>
-              <input className={inputCls} value={contrato.corretor_parceiro_id || ''} onChange={(e) => setC('corretor_parceiro_id', e.target.value)} placeholder="Nome do corretor parceiro" />
+              <input className={inputCls} value={contrato.corretor_parceiro_id || ''} onChange={(e) => setC('corretor_parceiro_id', e.target.value)} placeholder="Nome" />
             </div>
             <div>
-              <label className={labelCls}>Comissão do corretor (%)</label>
-              <input type="number" step="0.01" className={inputCls} value={contrato.split_corretor_pct ?? ''} onChange={(e) => setC('split_corretor_pct', Number(e.target.value))} placeholder="30" />
+              <label className={labelCls}>% sobre imóvel captado</label>
+              <input type="number" step="0.01" className={inputCls} value={contrato.comissao_capt_pct ?? ''} onChange={(e) => setC('comissao_capt_pct', Number(e.target.value))} placeholder="20" />
+              <p className="mt-1 text-[10px] text-gray-400">Quando o parceiro só captou e a Moradda vendeu</p>
+            </div>
+            <div>
+              <label className={labelCls}>% sobre imóvel vendido</label>
+              <input type="number" step="0.01" className={inputCls} value={contrato.comissao_venda_pct ?? ''} onChange={(e) => setC('comissao_venda_pct', Number(e.target.value))} placeholder="30" />
+              <p className="mt-1 text-[10px] text-gray-400">Quando o parceiro só vendeu (a Moradda captou)</p>
+            </div>
+            <div>
+              <label className={labelCls}>% captou e vendeu</label>
+              <input type="number" step="0.01" className={inputCls} value={contrato.comissao_capt_venda_pct ?? ''} onChange={(e) => setC('comissao_capt_venda_pct', Number(e.target.value))} placeholder="50" />
+              <p className="mt-1 text-[10px] text-gray-400">Quando o parceiro fez tudo</p>
             </div>
           </div>
-          {contrato.split_corretor_pct ? (
-            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-              Moradda fica com {(100 - Number(contrato.split_corretor_pct)).toFixed(2)}% do total da venda.
-            </p>
-          ) : null}
         </Section>
       )}
 

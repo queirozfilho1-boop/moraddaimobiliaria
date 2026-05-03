@@ -212,6 +212,9 @@ export interface ContratoLocacao {
   corretor_parceiro_id?: string | null
   split_moradda_pct?: number | null
   split_corretor_pct?: number | null
+  comissao_capt_pct?: number | null         // % se corretor parceiro só captou
+  comissao_venda_pct?: number | null        // % se corretor parceiro só vendeu
+  comissao_capt_venda_pct?: number | null   // % se captou E vendeu
   // Temporada
   valor_diaria?: number | null
   diaria_minima?: number | null
