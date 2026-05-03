@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft, Save, Loader2, Trash2, Plus, FileSignature, Download, Send,
-  Building2, User, Calendar, DollarSign, Shield,
+  Building2, User, Calendar, DollarSign, Shield, ClipboardCheck,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
@@ -587,6 +587,15 @@ const ContratoEditorPage = () => {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
+          {!isNew && contrato.tipo && (isLocacao(contrato.tipo) || isTemporada(contrato.tipo)) && (
+            <Link
+              to={`/painel/vistorias/novo?contrato_id=${id}${contrato.imovel_id ? `&imovel_id=${contrato.imovel_id}` : ''}`}
+              className="inline-flex items-center gap-2 rounded-lg border border-moradda-blue-300 bg-moradda-blue-50 px-4 py-2 text-sm font-medium text-moradda-blue-700 hover:bg-moradda-blue-100 dark:border-moradda-blue-700 dark:bg-moradda-blue-900/20 dark:text-moradda-blue-300"
+            >
+              <ClipboardCheck size={15} />
+              Nova Vistoria
+            </Link>
+          )}
           {!isNew && (
             <button onClick={handleGerarPdf} className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">
               <Download size={15} />
