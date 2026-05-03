@@ -386,7 +386,7 @@ const ContratoEditorPage = () => {
       toast.error('Selecione o imóvel'); return
     }
     // Signatários por tipo de contrato (testemunhas não assinam pela ZapSign por padrão)
-    const papeisSignatarios = (contrato.tipo && papeisPorTipo(contrato.tipo).filter((p) => p !== 'testemunha')) || []
+    const papeisSignatarios: string[] = (contrato.tipo ? papeisPorTipo(contrato.tipo).filter((p) => p !== 'testemunha') : [])
     const partesValidas = partes.filter((p) => papeisSignatarios.includes(p.papel))
     if (partesValidas.length === 0) { toast.error('Adicione pelo menos um signatário'); return }
     if (partesValidas.some((p) => !p.email)) { toast.error('Todas as partes signatárias precisam de e-mail'); return }
@@ -409,7 +409,7 @@ const ContratoEditorPage = () => {
         pdfBase64 = await gerarPdfContratoBase64({
           contrato: contrato as ContratoLocacao,
           partes: partes as ContratoParte[],
-          imovel: imovelSelecionado,
+          imovel: imovelSelecionado as any,
         })
       }
       // Chamar Edge Function
