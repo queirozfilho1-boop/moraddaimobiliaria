@@ -24,6 +24,7 @@ import {
   Briefcase,
   Palette,
   Settings,
+  BookOpen,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import logoImg from '@/assets/logo.png'
@@ -34,6 +35,7 @@ interface NavItem {
   path: string
   icon: ReactNode
   socioOnly?: boolean
+  external?: boolean
 }
 
 interface NavGroup {
@@ -93,6 +95,7 @@ const groups: NavGroup[] = [
     items: [
       { label: 'Precificação', path: '/painel/precificacao', icon: <Calculator size={18} /> },
       { label: 'Aprendizado',  path: '/painel/aprendizado',  icon: <GraduationCap size={18} /> },
+      { label: 'Guia do Sistema', path: 'https://moradda-system-map.pages.dev', icon: <BookOpen size={18} />, external: true },
       { label: 'Acessos',      path: '/painel/acessos',      icon: <UserCog size={18} />,   socioOnly: true },
       { label: 'Relatórios',   path: '/painel/relatorios',   icon: <TrendingUp size={18} /> },
       { label: 'Configurações',path: '/painel/configuracoes',icon: <Settings size={18} /> },
@@ -178,21 +181,34 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
             <ul className="space-y-0.5 px-2">
               {group.items.map((item) => (
                 <li key={item.path}>
-                  <NavLink
-                    to={item.path}
-                    end={item.path === '/painel/'}
-                    title={collapsed ? item.label : undefined}
-                    className={({ isActive }) =>
-                      `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
-                        isActive
-                          ? 'bg-white/10 text-moradda-gold-400 border-l-2 border-moradda-gold-400 pl-2.5'
-                          : 'text-white/70 hover:bg-white/5 hover:text-white'
-                      } ${collapsed ? 'justify-center' : ''}`
-                    }
-                  >
-                    {item.icon}
-                    {!collapsed && <span>{item.label}</span>}
-                  </NavLink>
+                  {item.external ? (
+                    <a
+                      href={item.path}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={collapsed ? item.label : undefined}
+                      className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-white/70 transition hover:bg-white/5 hover:text-white ${collapsed ? 'justify-center' : ''}`}
+                    >
+                      {item.icon}
+                      {!collapsed && <span>{item.label}</span>}
+                    </a>
+                  ) : (
+                    <NavLink
+                      to={item.path}
+                      end={item.path === '/painel/'}
+                      title={collapsed ? item.label : undefined}
+                      className={({ isActive }) =>
+                        `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
+                          isActive
+                            ? 'bg-white/10 text-moradda-gold-400 border-l-2 border-moradda-gold-400 pl-2.5'
+                            : 'text-white/70 hover:bg-white/5 hover:text-white'
+                        } ${collapsed ? 'justify-center' : ''}`
+                      }
+                    >
+                      {item.icon}
+                      {!collapsed && <span>{item.label}</span>}
+                    </NavLink>
+                  )}
                 </li>
               ))}
             </ul>
