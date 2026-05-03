@@ -79,6 +79,7 @@ const contratoPadrao = (): Partial<ContratoLocacao> => {
     garantia_tipo: 'sem_garantia',
     garantia_valor: 0,
     indice_reajuste: 'igpm',
+    cobranca_modo: 'desativada',
     multa_atraso_pct: 2,
     juros_dia_pct: 0.033,
     multa_rescisao_meses: 3,
