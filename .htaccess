@@ -25,3 +25,7 @@ RewriteRule ^ - [L]
 
 # Todas as outras rotas → index.html (SPA compilado)
 RewriteRule ^ index.html [L]
+
+# php -- BEGIN cPanel-generated handler, do not edit
+# Este domínio herda o pacote “PHP”.
+# php -- END cPanel-generated handler, do not edit
