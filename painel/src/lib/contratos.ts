@@ -336,3 +336,98 @@ export function calcularRepasse(c: Pick<ContratoLocacao, 'valor_aluguel' | 'valo
   const repasse = totalRecebido - taxa
   return { totalRecebido, taxa, repasse }
 }
+
+// ===== Cobranças (estendida com extras/abatimento) =====
+export interface ContratoCobranca {
+  id: string
+  contrato_id: string
+  asaas_payment_id: string | null
+  asaas_invoice_url: string | null
+  asaas_bank_slip_url: string | null
+  asaas_pix_qrcode?: string | null
+  valor: number
+  valor_extras?: number | null
+  descricao_extras?: string | null
+  valor_abatimento?: number | null
+  descricao_abatimento?: string | null
+  valor_total?: number | null  // GENERATED
+  vencimento: string
+  status: string
+  pago_em: string | null
+  valor_pago: number | null
+  referencia_mes?: string | null
+  enviado_em?: string | null
+  enviado_por?: string | null
+  whatsapp_enviado_em?: string | null
+  created_at: string
+  updated_at?: string
+}
+
+// ===== Despesas (manutenção/reforma com aprovação do proprietário) =====
+export type DespesaTipo = 'manutencao' | 'reforma' | 'taxa' | 'outro'
+export type DespesaStatus = 'orcamento' | 'aguardando_aprovacao' | 'aprovada' | 'recusada' | 'executada' | 'paga'
+export type DespesaQuemPaga = 'locador' | 'locatario' | 'imobiliaria'
+export type DespesaAbaterEm = 'aluguel' | 'repasse' | 'nao_abater'
+
+export interface ContratoDespesa {
+  id: string
+  contrato_id: string
+  tipo: DespesaTipo
+  descricao: string
+  valor: number
+  data_despesa: string | null
+  status: DespesaStatus
+  quem_paga: DespesaQuemPaga
+  abater_em: DespesaAbaterEm
+  cobranca_id?: string | null
+  repasse_id?: string | null
+  anexo_url?: string | null
+  aprovacao_token?: string | null
+  enviado_aprovacao_em?: string | null
+  aprovado_em?: string | null
+  aprovado_por?: string | null
+  recusado_em?: string | null
+  motivo_recusa?: string | null
+  saldo_pendente?: number | null
+  observacoes?: string | null
+  criado_por?: string | null
+  created_at?: string
+  updated_at?: string
+}
+
+export const DESPESA_TIPO_LABEL: Record<DespesaTipo, string> = {
+  manutencao: 'Manutenção',
+  reforma: 'Reforma',
+  taxa: 'Taxa',
+  outro: 'Outro',
+}
+
+export const DESPESA_STATUS_LABEL: Record<DespesaStatus, string> = {
+  orcamento: 'Orçamento',
+  aguardando_aprovacao: 'Aguardando aprovação',
+  aprovada: 'Aprovada',
+  recusada: 'Recusada',
+  executada: 'Executada',
+  paga: 'Paga',
+}
+
+export const DESPESA_STATUS_COR: Record<DespesaStatus, string> = {
+  orcamento: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
+  aguardando_aprovacao: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+  aprovada: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  recusada: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+  executada: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
+  paga: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+}
+
+export const DESPESA_QUEM_PAGA_LABEL: Record<DespesaQuemPaga, string> = {
+  locador: 'Locador (proprietário)',
+  locatario: 'Locatário (inquilino)',
+  imobiliaria: 'Imobiliária',
+}
+
+export const DESPESA_ABATER_LABEL: Record<DespesaAbaterEm, string> = {
+  aluguel: 'Abater no aluguel',
+  repasse: 'Abater no repasse',
+  nao_abater: 'Não abater (cobrar à parte)',
+}

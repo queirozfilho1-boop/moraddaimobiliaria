@@ -24,6 +24,7 @@ import { printContratoFromMd, gerarPdfBase64FromMd } from '@/lib/contratoPrint'
 import { mergeTemplate } from '@/lib/contratoMerge'
 import CobrancasSection from '@/components/CobrancasSection'
 import RepassesSection from '@/components/RepassesSection'
+import DespesasSection from '@/components/DespesasSection'
 import BuscarCliente, { type Cliente } from '@/components/BuscarCliente'
 
 const SUPA_FN = `${import.meta.env.VITE_SUPABASE_URL || 'https://mvzjqktgnwjwuinnxxcc.supabase.co'}/functions/v1`
@@ -1192,12 +1193,19 @@ const ContratoEditorPage = () => {
           asaasSubscriptionId={contrato.asaas_subscription_id}
           valorTotal={(contrato.valor_aluguel || 0) + (contrato.valor_condominio || 0) + (contrato.valor_iptu || 0) + (contrato.valor_outros || 0)}
           diaVencimento={contrato.dia_vencimento || 5}
+          numeroContrato={contrato.numero}
+          locatarioTelefone={partes.find((p) => p.papel === 'locatario' || p.papel === 'hospede')?.telefone || null}
           onChangeModo={async (m) => {
             setC('cobranca_modo', m)
             await supabase.from('contratos_locacao').update({ cobranca_modo: m }).eq('id', id)
           }}
           onSubscriptionCreated={(sid) => setC('asaas_subscription_id', sid)}
         />
+      )}
+
+      {/* Despesas (manutenção/reforma com aprovação do proprietário) — só locação mensal/administração */}
+      {!isNew && id && contrato.tipo && (isLocacaoMensal(contrato.tipo) || isAdministracao(contrato.tipo)) && (
+        <DespesasSection contratoId={id} />
       )}
     </div>
   )

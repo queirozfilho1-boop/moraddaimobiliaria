@@ -34,6 +34,7 @@ import BlogPage from '@/pages/BlogPage'
 import DepoimentosPage from '@/pages/DepoimentosPage'
 import RelatoriosPage from '@/pages/RelatoriosPage'
 import ConfiguracoesPage from '@/pages/ConfiguracoesPage'
+import AprovarDespesaPage from '@/pages/AprovarDespesaPage'
 
 export default function App() {
   return (
@@ -41,6 +42,7 @@ export default function App() {
       <AuthProvider>
         <ThemeProvider>
           <Routes>
+            <Route path="/aprovar-despesa/:token" element={<AprovarDespesaPage />} />
             <Route path="/painel/login" element={<Login />} />
             <Route path="/painel" element={<PainelLayout />}>
               <Route index element={<Dashboard />} />
