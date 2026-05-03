@@ -12,6 +12,7 @@ import { fmtMoeda, fmtData } from '@/lib/contratos'
 import type { PropostaStatus } from '@/lib/vendas'
 import { PROPOSTA_STATUS_LABEL, PROPOSTA_STATUS_COR } from '@/lib/vendas'
 import BuscarCliente, { type Cliente } from '@/components/BuscarCliente'
+import { printProposta } from '@/lib/propostaPrint'
 
 interface Proposta {
   id: string
@@ -559,6 +560,57 @@ export const PropostaEditorPage = () => {
     }))
   }
 
+  async function gerarPdf() {
+    if (!p.imovel_id) { toast.error('Selecione o imóvel antes de gerar o PDF'); return }
+    if (!p.comprador_nome) { toast.error('Informe o comprador antes de gerar o PDF'); return }
+    if (!p.valor || p.valor <= 0) { toast.error('Informe o valor antes de gerar o PDF'); return }
+    try {
+      const { data: im } = await supabase
+        .from('imoveis')
+        .select('codigo, titulo, endereco, numero, complemento, cidade, estado, cep, matricula, cartorio, bairros(nome)')
+        .eq('id', p.imovel_id)
+        .single()
+      const imovel = (im || {}) as any
+      const bairro_nome = imovel.bairros?.nome || null
+      const compradorEndereco = (p as any).cliente_id ? (await supabase.from('clientes').select('endereco, cidade, estado').eq('id', (p as any).cliente_id).maybeSingle()).data : null
+      printProposta({
+        numero: p.numero || 'P-XXXX/XXXXXX',
+        created_at: p.created_at,
+        imovel: {
+          codigo: imovel.codigo,
+          titulo: imovel.titulo,
+          endereco: imovel.endereco,
+          numero: imovel.numero,
+          complemento: imovel.complemento,
+          bairro_nome,
+          cidade: imovel.cidade,
+          estado: imovel.estado,
+          cep: imovel.cep,
+          matricula: imovel.matricula,
+          cartorio: imovel.cartorio,
+        },
+        comprador: {
+          nome: p.comprador_nome,
+          cpf_cnpj: p.comprador_cpf_cnpj,
+          email: p.comprador_email,
+          telefone: p.comprador_telefone,
+          endereco: compradorEndereco?.endereco,
+          cidade: compradorEndereco?.cidade,
+          estado: compradorEndereco?.estado,
+        },
+        valor: p.valor || 0,
+        forma_pagamento: p.forma_pagamento,
+        condicoes: p.condicoes,
+        prazo_resposta: p.prazo_resposta,
+        observacoes: p.observacoes,
+        contraproposta_valor: p.contraproposta_valor,
+        contraproposta_obs: p.contraproposta_obs,
+      })
+    } catch (e: any) {
+      toast.error('Erro ao gerar PDF: ' + (e.message || ''))
+    }
+  }
+
   async function save() {
     if (!p.imovel_id) { toast.error('Selecione o imóvel'); return }
     if (!p.comprador_nome || !p.comprador_nome.trim()) { toast.error('Informe o comprador'); return }
@@ -631,9 +683,9 @@ export const PropostaEditorPage = () => {
           {!isNew && (
             <button
               type="button"
-              disabled
-              title="Em breve — geração de PDF da proposta"
-              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-400 cursor-not-allowed dark:border-gray-600 dark:bg-gray-700 dark:text-gray-500"
+              onClick={gerarPdf}
+              title="Abrir versão para impressão / salvar como PDF"
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
             >
               <Download size={15} />
               Gerar PDF
