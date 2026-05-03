@@ -306,29 +306,27 @@ const VisitasPage = () => {
     if (error) { toast.error('Erro: ' + error.message); return }
     toast.success('Visita agendada')
 
-    // Fire-and-forget: criar evento no Google Calendar do corretor
+    // Aguarda criação do evento no Google Calendar antes de fechar o modal
+    // (síncrono pra garantir que google_event_id seja gravado antes de o user remover)
     const corretor = corretores.find((c) => c.id === novo.corretor_id)
     if (corretor?.gcal_connected_at && inserted?.id) {
       toast.message('Adicionando ao Google Calendar...')
-      callEdge('gcal-create-event', { visita_id: inserted.id })
-        .then(({ res, json }) => {
-          if (res.ok && json.ok) toast.success('Adicionado ao Google Calendar')
-          else if (json?.skipped) { /* sem ação */ }
-          else toast.error('Falha ao adicionar ao Google Calendar')
-        })
-        .catch(() => {})
+      try {
+        const { res, json } = await callEdge('gcal-create-event', { visita_id: inserted.id })
+        if (res.ok && json.ok) toast.success('Adicionado ao Google Calendar')
+        else if (!json?.skipped) toast.error('Falha ao adicionar ao Google Calendar')
+      } catch { toast.error('Falha ao adicionar ao Google Calendar') }
     }
 
     setShowModal(null); load()
   }
 
   async function mudarStatus(v: Visita, novoStatus: Visita['status']) {
+    if (novoStatus === 'cancelada' && v.google_event_id) {
+      try { await callEdge('gcal-update-event', { visita_id: v.id, action: 'delete' }) } catch { /* segue */ }
+    }
     const { error } = await supabase.from('visitas').update({ status: novoStatus }).eq('id', v.id)
     if (error) { toast.error('Erro: ' + error.message); return }
-
-    if (novoStatus === 'cancelada' && v.google_event_id) {
-      callEdge('gcal-update-event', { visita_id: v.id, action: 'delete' }).catch(() => {})
-    }
 
     if (novoStatus === 'realizada') {
       // Atualiza estado local pra abrir os campos pós-visita
