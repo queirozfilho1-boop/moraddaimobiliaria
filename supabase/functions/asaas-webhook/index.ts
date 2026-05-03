@@ -61,6 +61,16 @@ Deno.serve(async (req) => {
     }
     if (!cId) return new Response('contrato não localizado', { status: 200, headers: corsHeaders })
 
+    // Mapeia status Asaas (UPPERCASE) → modelo interno minúsculo
+    function mapStatus(s: string): string {
+      const up = (s || '').toUpperCase()
+      if (up === 'CONFIRMED' || up === 'RECEIVED' || up === 'RECEIVED_IN_CASH') return 'paga'
+      if (up === 'OVERDUE') return 'vencida'
+      if (up === 'REFUNDED' || up === 'REFUND_REQUESTED' || up === 'CHARGEBACK_REQUESTED' || up === 'CHARGEBACK_DISPUTE') return 'estornada'
+      if (up === 'DELETED' || up === 'CANCELED' || up === 'CANCELLED' || up === 'PAYMENT_DELETED') return 'cancelada'
+      return 'pendente'
+    }
+
     // Upsert da cobrança
     const cobranca = {
       contrato_id: cId,
@@ -69,7 +79,7 @@ Deno.serve(async (req) => {
       asaas_bank_slip_url: payment.bankSlipUrl || null,
       valor: Number(payment.value || 0),
       vencimento: payment.dueDate,
-      status: payment.status,
+      status: mapStatus(payment.status),
       pago_em: payment.paymentDate || payment.clientPaymentDate || null,
       valor_pago: payment.netValue || payment.value || null,
       updated_at: new Date().toISOString(),

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { TrendingUp, TrendingDown, Wallet, Users, AlertCircle, CheckCircle2, Clock, FileSignature, Loader2 } from 'lucide-react'
+import { TrendingUp, TrendingDown, Wallet, Users, AlertCircle, CheckCircle2, Clock, FileSignature, Loader2, Wrench, Receipt } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { fmtMoeda } from '@/lib/contratos'
 
@@ -17,6 +17,11 @@ interface Stats {
   vendas_concluidas_mes: number
   vendas_em_negociacao: number
   forecast_vendas: number
+  despesas_aguardando_aprovacao: number
+  despesas_aprovadas_mes: number
+  despesas_pagas_mes: number
+  comissoes_a_pagar: number
+  comissoes_pagas_mes: number
 }
 
 const Card = ({ icon, label, value, color = 'blue', sub }: { icon: React.ReactNode; label: string; value: string; color?: string; sub?: string }) => {
@@ -54,24 +59,35 @@ const DashboardFinanceiroPage = () => {
         contAtivos, contInad, contAguard, props,
         cobrPagas, repPend, repConc, cobrOver,
         vendasMes, vendasNeg,
+        despAguardando, despAprovadas, despPagas,
+        comAPagar, comPagasMes,
       ] = await Promise.all([
         supabase.from('contratos_locacao').select('id', { count: 'exact', head: true }).eq('status', 'ativo'),
         supabase.from('contratos_locacao').select('id', { count: 'exact', head: true }).eq('status', 'inadimplente'),
         supabase.from('contratos_locacao').select('id', { count: 'exact', head: true }).eq('status', 'aguardando_assinatura'),
         supabase.from('proprietarios').select('id', { count: 'exact', head: true }),
-        supabase.from('contratos_cobrancas').select('valor_pago,valor,pago_em').in('status', ['RECEIVED','CONFIRMED']).gte('pago_em', inicioMes.toISOString()),
+        // Status padronizado em minúsculo (asaas-webhook mapeia)
+        supabase.from('contratos_cobrancas').select('valor_pago,valor,valor_total,pago_em').eq('status', 'paga').gte('pago_em', inicioMes.toISOString()),
         supabase.from('contratos_repasses').select('valor_repasse,taxa_admin').eq('status', 'pendente'),
         supabase.from('contratos_repasses').select('valor_repasse,taxa_admin').eq('status', 'concluido').gte('data_repasse', inicioMes.toISOString()),
-        supabase.from('contratos_cobrancas').select('valor').eq('status', 'OVERDUE'),
+        supabase.from('contratos_cobrancas').select('valor,valor_total').eq('status', 'vencida'),
         supabase.from('vendas').select('valor_venda,fechado_em').eq('status', 'concluida').gte('fechado_em', inicioMes.toISOString()),
         supabase.from('vendas').select('valor_venda,probabilidade_pct').not('status', 'in', '(concluida,cancelada)'),
+        // Despesas
+        supabase.from('contratos_despesas').select('valor', { count: 'exact' }).eq('status', 'aguardando_aprovacao'),
+        supabase.from('contratos_despesas').select('valor').eq('status', 'aprovada').gte('updated_at', inicioMes.toISOString()),
+        supabase.from('contratos_despesas').select('valor').eq('status', 'paga').gte('updated_at', inicioMes.toISOString()),
+        // Comissões
+        supabase.from('comissoes').select('valor').eq('status', 'pendente'),
+        supabase.from('comissoes').select('valor').eq('status', 'pago').gte('pago_em', inicioMes.toISOString()),
       ])
 
-      const receita_mes_total = (cobrPagas.data || []).reduce((s, c: any) => s + Number(c.valor_pago || c.valor || 0), 0)
+      const sumValor = (rows: any[] | null) => (rows || []).reduce((acc: number, r: any) => acc + Number(r.valor_total ?? r.valor_pago ?? r.valor ?? 0), 0)
+      const receita_mes_total = sumValor(cobrPagas.data)
       const taxaAdmRepConc = (repConc.data || []).reduce((s, r: any) => s + Number(r.taxa_admin || 0), 0)
       const repassesPendentesTotal = (repPend.data || []).reduce((s, r: any) => s + Number(r.valor_repasse || 0), 0)
       const repassesConclTotal = (repConc.data || []).reduce((s, r: any) => s + Number(r.valor_repasse || 0), 0)
-      const inadTotal = (cobrOver.data || []).reduce((s, c: any) => s + Number(c.valor || 0), 0)
+      const inadTotal = sumValor(cobrOver.data)
       const vendasConcluidasMes = (vendasMes.data || []).reduce((s, v: any) => s + Number(v.valor_venda || 0), 0)
       const vendasEmNeg = (vendasNeg.data || []).reduce((s, v: any) => s + Number(v.valor_venda || 0), 0)
       const forecastVendas = (vendasNeg.data || []).reduce((s, v: any) => s + (Number(v.valor_venda || 0) * Number(v.probabilidade_pct || 50) / 100), 0)
@@ -90,6 +106,11 @@ const DashboardFinanceiroPage = () => {
         vendas_concluidas_mes: vendasConcluidasMes,
         vendas_em_negociacao: vendasEmNeg,
         forecast_vendas: forecastVendas,
+        despesas_aguardando_aprovacao: despAguardando.count || 0,
+        despesas_aprovadas_mes: (despAprovadas.data || []).reduce((s, d: any) => s + Number(d.valor || 0), 0),
+        despesas_pagas_mes: (despPagas.data || []).reduce((s, d: any) => s + Number(d.valor || 0), 0),
+        comissoes_a_pagar: (comAPagar.data || []).reduce((s, c: any) => s + Number(c.valor || 0), 0),
+        comissoes_pagas_mes: (comPagasMes.data || []).reduce((s, c: any) => s + Number(c.valor || 0), 0),
       })
       setLoading(false)
     })()
@@ -135,6 +156,21 @@ const DashboardFinanceiroPage = () => {
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Card icon={<Clock size={20} />} label="Repasses pendentes" value={fmtMoeda(s.repasses_pendentes)} color="amber" sub="Aguardando processamento" />
         <Card icon={<CheckCircle2 size={20} />} label="Repassado no mês" value={fmtMoeda(s.repasses_concluidos)} color="green" />
+      </div>
+
+      {/* Despesas (manutenção / reformas) */}
+      <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Despesas (manutenção)</h2>
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <Card icon={<Wrench size={20} />} label="Aguardando aprovação" value={String(s.despesas_aguardando_aprovacao)} color="amber" sub="Proprietários precisam responder" />
+        <Card icon={<CheckCircle2 size={20} />} label="Aprovadas (mês)" value={fmtMoeda(s.despesas_aprovadas_mes)} color="blue" sub="Liberadas para execução" />
+        <Card icon={<TrendingDown size={20} />} label="Pagas (mês)" value={fmtMoeda(s.despesas_pagas_mes)} color="green" />
+      </div>
+
+      {/* Comissões */}
+      <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Comissões</h2>
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Card icon={<Receipt size={20} />} label="A pagar (corretores)" value={fmtMoeda(s.comissoes_a_pagar)} color="amber" />
+        <Card icon={<CheckCircle2 size={20} />} label="Pagas no mês" value={fmtMoeda(s.comissoes_pagas_mes)} color="green" />
       </div>
 
       <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
