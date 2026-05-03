@@ -219,6 +219,27 @@ export interface ContratoLocacao {
   alta_temporada_fim?: string | null
 }
 
+// Dados fixos da Moradda Imobiliária — preenchidos automaticamente quando
+// o usuário escolhe papel "imobiliaria" em um contrato. Editar aqui se mudar.
+export const MORADDA_DADOS = {
+  nome: 'Moradda Imobiliária',
+  cpf_cnpj: '',  // Preencher quando tiver o CNPJ definitivo
+  email: 'contato@moraddaimobiliaria.com.br',
+  telefone: '24998571528',
+  endereco: '',
+  numero: '',
+  complemento: '',
+  bairro: '',
+  cidade: 'Resende',
+  estado: 'RJ',
+  cep: '',
+  rg: '',
+  estado_civil: '',
+  profissao: '',
+  nacionalidade: 'Brasileira',
+  observacoes: 'CRECI RJ 10404',
+}
+
 // Helpers para identificar grupos de tipos
 export const isLocacaoMensal = (t: ContratoTipo) => t === 'locacao_residencial' || t === 'locacao_comercial'
 export const isLocacao = (t: ContratoTipo) => isLocacaoMensal(t) || t === 'temporada'

@@ -13,7 +13,7 @@ import type {
 } from '@/lib/contratos'
 import {
   TIPO_LABEL, STATUS_LABEL, STATUS_COR, GARANTIA_LABEL, INDICE_LABEL, PAPEL_LABEL,
-  papeisPorTipo,
+  papeisPorTipo, MORADDA_DADOS,
   fmtMoeda, calcularPrazoMeses, calcularRepasse,
   isLocacao, isCompraVenda, isCaptacao, isAdministracao,
   isAssociacao, isTemporada, usaGarantia, usaReajuste,
@@ -195,10 +195,21 @@ const ContratoEditorPage = () => {
   }
 
   function updateParte(i: number, patch: Partial<ContratoParte>) {
-    setPartes((p) => p.map((x, idx) => (idx === i ? { ...x, ...patch } : x)))
+    setPartes((p) => p.map((x, idx) => {
+      if (idx !== i) return x
+      const next = { ...x, ...patch }
+      // Auto-preenchimento: ao escolher Imobiliária e o nome estiver vazio,
+      // copia os dados fixos da Moradda
+      if (patch.papel === 'imobiliaria' && !next.nome) {
+        return { ...next, ...MORADDA_DADOS }
+      }
+      return next
+    }))
   }
   function addParte(papel: PartePapel) {
-    setPartes((p) => [...p, { ...partePadrao(papel), ordem: p.length }])
+    const base = partePadrao(papel)
+    const dados = papel === 'imobiliaria' ? { ...base, ...MORADDA_DADOS } : base
+    setPartes((p) => [...p, { ...dados, papel, ordem: p.length }])
   }
   function removeParte(i: number) {
     setPartes((p) => p.filter((_, idx) => idx !== i))
