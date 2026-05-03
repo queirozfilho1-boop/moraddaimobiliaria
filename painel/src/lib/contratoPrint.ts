@@ -160,6 +160,67 @@ function mdToHtml(md: string): string {
   return html
 }
 
+// Renderiza o HTML+CSS num iframe oculto, captura via html2canvas e
+// monta PDF base64 (multi-página). Usado pra enviar ao ZapSign.
+export async function gerarPdfBase64FromMd(markdown: string, _numero?: string): Promise<string> {
+  const html2canvas = (await import('html2canvas')).default
+  const jsPDF = (await import('jspdf')).default
+
+  const bodyHtml = mdToHtml(markdown)
+  const fullHtml = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style>${contratoCss}</style></head><body><div class="content">${bodyHtml}</div></body></html>`
+
+  // Cria iframe escondido
+  const iframe = document.createElement('iframe')
+  iframe.style.position = 'fixed'
+  iframe.style.left = '-99999px'
+  iframe.style.top = '0'
+  iframe.style.width = '794px'  // A4 a 96dpi
+  iframe.style.height = '1123px'
+  iframe.style.border = 'none'
+  document.body.appendChild(iframe)
+
+  try {
+    const doc = iframe.contentDocument!
+    doc.open()
+    doc.write(fullHtml)
+    doc.close()
+
+    // Aguarda o conteúdo renderizar
+    await new Promise((r) => setTimeout(r, 500))
+    if (doc.fonts && doc.fonts.ready) await doc.fonts.ready
+
+    const target = doc.querySelector('.content') as HTMLElement || doc.body
+    const canvas = await html2canvas(target, {
+      scale: 2,
+      backgroundColor: '#ffffff',
+      useCORS: true,
+      windowWidth: 794,
+    })
+
+    // Monta PDF A4 (210x297mm) multi-página
+    const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' })
+    const imgData = canvas.toDataURL('image/jpeg', 0.92)
+    const pdfWidth = 210
+    const pdfHeight = 297
+    const imgHeight = (canvas.height * pdfWidth) / canvas.width
+    let heightLeft = imgHeight
+    let position = 0
+    pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeight)
+    heightLeft -= pdfHeight
+    while (heightLeft > 0) {
+      position = -((imgHeight - heightLeft))
+      pdf.addPage()
+      pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeight)
+      heightLeft -= pdfHeight
+    }
+
+    const dataUri = pdf.output('datauristring')
+    return dataUri.split(',')[1]
+  } finally {
+    document.body.removeChild(iframe)
+  }
+}
+
 export function printContratoFromMd(markdown: string, numero?: string) {
   const bodyHtml = mdToHtml(markdown)
   const titulo = `Contrato ${numero || ''}`.trim()

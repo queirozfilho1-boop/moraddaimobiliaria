@@ -20,8 +20,7 @@ import {
 } from '@/lib/contratos'
 import { Home, Briefcase, FileCheck, Percent } from 'lucide-react'
 import { gerarPdfContrato, gerarPdfContratoBase64 } from '@/lib/contratoPdf'
-import { gerarPdfContratoBase64FromMd } from '@/lib/contratoPdfRender'
-import { printContratoFromMd } from '@/lib/contratoPrint'
+import { printContratoFromMd, gerarPdfBase64FromMd } from '@/lib/contratoPrint'
 import { mergeTemplate } from '@/lib/contratoMerge'
 import CobrancasSection from '@/components/CobrancasSection'
 import RepassesSection from '@/components/RepassesSection'
@@ -402,7 +401,7 @@ const ContratoEditorPage = () => {
           partes: partes as any,
           imovel: imovelSelecionado as any,
         })
-        pdfBase64 = await gerarPdfContratoBase64FromMd(merged, contrato.numero)
+        pdfBase64 = await gerarPdfBase64FromMd(merged, contrato.numero)
       } else {
         pdfBase64 = await gerarPdfContratoBase64({
           contrato: contrato as ContratoLocacao,
