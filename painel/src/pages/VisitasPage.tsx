@@ -361,7 +361,9 @@ const VisitasPage = () => {
   async function remover(v: Visita) {
     if (!confirm(`Remover visita com ${v.cliente_nome}?`)) return
     if (v.google_event_id) {
-      callEdge('gcal-update-event', { visita_id: v.id, action: 'delete' }).catch(() => {})
+      try {
+        await callEdge('gcal-update-event', { visita_id: v.id, action: 'delete' })
+      } catch { /* segue mesmo assim */ }
     }
     await supabase.from('visitas').delete().eq('id', v.id); load()
   }

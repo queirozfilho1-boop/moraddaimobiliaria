@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
     if (!visita_id || !action) return json({ error: 'visita_id e action obrigatórios' }, 400)
     if (action !== 'update' && action !== 'delete') return json({ error: 'action inválida' }, 400)
 
-    const vRes = await sb(`/rest/v1/visitas?id=eq.${visita_id}&select=id,data_hora,duracao_min,observacoes,cliente_nome,cliente_telefone,cliente_email,corretor_id,google_event_id,google_calendar_id,clientes(nome,email,telefone),imoveis(codigo,titulo,endereco,bairro,cidade,estado)`)
+    const vRes = await sb(`/rest/v1/visitas?id=eq.${visita_id}&select=id,data_hora,duracao_min,observacoes,cliente_nome,cliente_telefone,cliente_email,corretor_id,google_event_id,google_calendar_id,clientes(nome,email,telefone),imoveis(codigo,titulo,endereco,numero,cidade,estado,bairros(nome))`)
     const vArr = await vRes.json()
     const visita = vArr?.[0]
     if (!visita) return json({ error: 'Visita não encontrada' }, 404)
@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
       visita.observacoes ? `\nObservações: ${visita.observacoes}` : '',
     ].filter(Boolean)
 
-    const location = [imovel?.endereco, imovel?.bairro, imovel?.cidade, imovel?.estado].filter(Boolean).join(', ')
+    const location = [imovel?.endereco, imovel?.bairros?.nome, imovel?.cidade, imovel?.estado].filter(Boolean).join(', ')
 
     const eventBody = {
       summary,
