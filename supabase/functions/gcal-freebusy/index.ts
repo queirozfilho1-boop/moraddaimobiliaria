@@ -60,7 +60,27 @@ interface BusyInterval {
   end: number   // ms
 }
 
-// Constrói grid de slots usando regras de disponibilidade entre data_inicio e data_fim
+// Timezone fixo Brasil (sem horário de verão desde 2019)
+const BRT_OFFSET = '-03:00'
+const pad = (n: number) => String(n).padStart(2, '0')
+
+// Retorna 'YYYY-MM-DD' representando o dia em BRT do timestamp dado
+function toBrtDateStr(d: Date): string {
+  const brt = new Date(d.getTime() - 3 * 60 * 60 * 1000)
+  return `${brt.getUTCFullYear()}-${pad(brt.getUTCMonth() + 1)}-${pad(brt.getUTCDate())}`
+}
+
+function dowFromDateStr(s: string): number {
+  return new Date(`${s}T12:00:00${BRT_OFFSET}`).getUTCDay()
+}
+
+function nextDayStr(s: string): string {
+  const d = new Date(`${s}T12:00:00${BRT_OFFSET}`)
+  d.setUTCDate(d.getUTCDate() + 1)
+  return toBrtDateStr(d)
+}
+
+// Constrói grid de slots usando regras de disponibilidade entre data_inicio e data_fim (em BRT)
 function buildSlots(
   disp: Disponibilidade[],
   inicio: Date,
@@ -73,30 +93,28 @@ function buildSlots(
     dispByDow.get(d.dia_semana)!.push(d)
   }
 
-  const cursor = new Date(inicio)
-  cursor.setHours(0, 0, 0, 0)
-  const stop = new Date(fim)
-  while (cursor <= stop) {
-    const dow = cursor.getDay()
+  let dateStr = toBrtDateStr(inicio)
+  const stopStr = toBrtDateStr(fim)
+  while (dateStr <= stopStr) {
+    const dow = dowFromDateStr(dateStr)
     const regras = dispByDow.get(dow) || []
     for (const r of regras) {
       const [hi, mi] = r.hora_inicio.split(':').map(Number)
       const [hf, mf] = r.hora_fim.split(':').map(Number)
-      const dayStart = new Date(cursor)
-      dayStart.setHours(hi, mi, 0, 0)
-      const dayEnd = new Date(cursor)
-      dayEnd.setHours(hf, mf, 0, 0)
-      const stepMin = (r.duracao_visita_min || 60) + (r.buffer_min || 0)
+      const dayStart = new Date(`${dateStr}T${pad(hi)}:${pad(mi)}:00${BRT_OFFSET}`)
+      const dayEnd = new Date(`${dateStr}T${pad(hf)}:${pad(mf)}:00${BRT_OFFSET}`)
+      const dur = r.duracao_visita_min || 60
+      const stepMin = dur + (r.buffer_min || 0)
       let s = new Date(dayStart)
-      while (s.getTime() + (r.duracao_visita_min || 60) * 60000 <= dayEnd.getTime()) {
-        const e = new Date(s.getTime() + (r.duracao_visita_min || 60) * 60000)
+      while (s.getTime() + dur * 60000 <= dayEnd.getTime()) {
+        const e = new Date(s.getTime() + dur * 60000)
         if (e >= inicio && s <= fim) {
           slots.push({ start: new Date(s), end: e })
         }
         s = new Date(s.getTime() + stepMin * 60000)
       }
     }
-    cursor.setDate(cursor.getDate() + 1)
+    dateStr = nextDayStr(dateStr)
   }
   return slots
 }
