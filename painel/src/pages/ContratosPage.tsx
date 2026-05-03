@@ -205,8 +205,8 @@ const ContratosPage = () => {
     <div>
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Locações</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Contratos de locação ativos, rascunhos e histórico.</p>
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Contratos</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Todos os contratos: locação, compra e venda, captação, administração, temporada e associação.</p>
         </div>
         <Link
           to="/painel/contratos/novo"

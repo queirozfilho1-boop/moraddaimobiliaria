@@ -8,6 +8,7 @@ import ImoveisPage from '@/pages/ImoveisPage'
 import NovoImovelPage from '@/pages/NovoImovelPage'
 import EditarImovelPage from '@/pages/EditarImovelPage'
 import ContratosPage from '@/pages/ContratosPage'
+import LocacoesPage from '@/pages/LocacoesPage'
 import ContratoEditorPage from '@/pages/ContratoEditorPage'
 import { ModelosContratoListPage, ModeloContratoEditorPage } from '@/pages/ModelosContratoPage'
 import { ProprietariosListPage, ProprietarioEditorPage } from '@/pages/ProprietariosPage'
@@ -46,6 +47,7 @@ export default function App() {
               <Route path="imoveis/novo" element={<NovoImovelPage />} />
               <Route path="imoveis/:id" element={<EditarImovelPage />} />
               <Route path="contratos" element={<ContratosPage />} />
+              <Route path="locacoes" element={<LocacoesPage />} />
               <Route path="contratos/novo" element={<ContratoEditorPage />} />
               <Route path="contratos/:id" element={<ContratoEditorPage />} />
               <Route path="modelos-contrato" element={<ModelosContratoListPage />} />

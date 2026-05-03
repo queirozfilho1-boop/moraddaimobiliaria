@@ -65,6 +65,7 @@ const groups: NavGroup[] = [
     label: 'Locação',
     items: [
       { label: 'Contratos',        path: '/painel/contratos',         icon: <FileSignature size={18} /> },
+      { label: 'Locações',         path: '/painel/locacoes',          icon: <Home size={18} /> },
       { label: 'Vistorias',        path: '/painel/vistorias',         icon: <ClipboardCheck size={18} /> },
       { label: 'Modelos Contrato', path: '/painel/modelos-contrato',  icon: <FileSignature size={18} /> },
     ],
