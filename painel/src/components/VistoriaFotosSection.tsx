@@ -194,23 +194,23 @@ export default function VistoriaFotosSection({ vistoriaId }: Props) {
                     className="w-full rounded border border-gray-200 bg-white px-2 py-1 text-xs dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
                   />
                 </div>
-                <div className="absolute right-1 top-1 flex gap-1 opacity-0 transition group-hover:opacity-100">
+                <div className="absolute right-1.5 top-1.5 flex gap-1.5">
                   <button
                     type="button"
                     onClick={() => moverFoto(idx, -1)}
                     disabled={idx === 0}
                     title="Mover pra esquerda"
-                    className="rounded bg-black/50 p-1 text-white hover:bg-black/70 disabled:opacity-30"
+                    className="rounded-md bg-black/60 p-1.5 text-white shadow hover:bg-black/80 disabled:opacity-30"
                   >
-                    <GripVertical size={11} />
+                    <GripVertical size={14} />
                   </button>
                   <button
                     type="button"
                     onClick={() => removerFoto(f.id)}
                     title="Remover"
-                    className="rounded bg-red-500/90 p-1 text-white hover:bg-red-600"
+                    className="rounded-md bg-red-500 p-1.5 text-white shadow hover:bg-red-600"
                   >
-                    <Trash2 size={11} />
+                    <Trash2 size={14} />
                   </button>
                 </div>
                 <span className="absolute left-1 top-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-medium text-white">
