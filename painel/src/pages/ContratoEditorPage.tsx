@@ -671,24 +671,21 @@ const ContratoEditorPage = () => {
       {/* Associação com Corretor */}
       {contrato.tipo && isAssociacao(contrato.tipo) && (
         <Section icon={<Percent size={16} />} title="Split da Associação">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className={labelCls}>Corretor parceiro</label>
               <input className={inputCls} value={contrato.corretor_parceiro_id || ''} onChange={(e) => setC('corretor_parceiro_id', e.target.value)} placeholder="Nome do corretor parceiro" />
             </div>
             <div>
-              <label className={labelCls}>% Moradda</label>
-              <input type="number" step="0.01" className={inputCls} value={contrato.split_moradda_pct ?? ''} onChange={(e) => setC('split_moradda_pct', Number(e.target.value))} placeholder="50" />
-            </div>
-            <div>
-              <label className={labelCls}>% Corretor</label>
-              <input type="number" step="0.01" className={inputCls} value={contrato.split_corretor_pct ?? ''} onChange={(e) => setC('split_corretor_pct', Number(e.target.value))} placeholder="50" />
-            </div>
-            <div>
-              <label className={labelCls}>Comissão total (%)</label>
-              <input type="number" step="0.01" className={inputCls} value={contrato.comissao_pct ?? ''} onChange={(e) => setC('comissao_pct', Number(e.target.value))} placeholder="6" />
+              <label className={labelCls}>Comissão do corretor (%)</label>
+              <input type="number" step="0.01" className={inputCls} value={contrato.split_corretor_pct ?? ''} onChange={(e) => setC('split_corretor_pct', Number(e.target.value))} placeholder="30" />
             </div>
           </div>
+          {contrato.split_corretor_pct ? (
+            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+              Moradda fica com {(100 - Number(contrato.split_corretor_pct)).toFixed(2)}% do total da venda.
+            </p>
+          ) : null}
         </Section>
       )}
 
