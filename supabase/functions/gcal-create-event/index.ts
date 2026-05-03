@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
     if (!visita_id) return json({ error: 'visita_id obrigatório' }, 400)
 
     // Busca visita + corretor + imovel + cliente
-    const vRes = await sb(`/rest/v1/visitas?id=eq.${visita_id}&select=id,data_hora,duracao_min,observacoes,cliente_nome,cliente_telefone,cliente_email,corretor_id,imovel_id,clientes(nome,email,telefone),imoveis(codigo,titulo,endereco,bairro,cidade,estado)`)
+    const vRes = await sb(`/rest/v1/visitas?id=eq.${visita_id}&select=id,data_hora,duracao_min,observacoes,cliente_nome,cliente_telefone,cliente_email,corretor_id,imovel_id,clientes(nome,email,telefone),imoveis(codigo,titulo,endereco,numero,cidade,estado,bairros(nome))`)
     const vArr = await vRes.json()
     const visita = vArr?.[0]
     if (!visita) return json({ error: 'Visita não encontrada' }, 404)
@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
       `\nLink no painel: https://moraddaimobiliaria.com.br/painel/visitas`,
     ].filter(Boolean)
 
-    const location = [imovel?.endereco, imovel?.bairro, imovel?.cidade, imovel?.estado].filter(Boolean).join(', ')
+    const location = [imovel?.endereco, imovel?.bairros?.nome, imovel?.cidade, imovel?.estado].filter(Boolean).join(', ')
 
     const eventBody: Record<string, unknown> = {
       summary,

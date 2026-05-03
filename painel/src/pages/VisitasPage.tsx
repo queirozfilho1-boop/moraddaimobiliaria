@@ -169,7 +169,7 @@ const VisitasPage = () => {
     setLoading(true)
     let q = supabase
       .from('visitas')
-      .select('*, imoveis(codigo, titulo, endereco), users_profiles(nome)')
+      .select('*, imoveis(codigo, titulo, endereco), users_profiles!visitas_corretor_id_fkey(nome)')
       .gte('data_hora', range.ini.toISOString())
       .lte('data_hora', range.fim.toISOString())
       .order('data_hora')
