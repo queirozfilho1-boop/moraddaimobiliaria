@@ -45,8 +45,9 @@ Deno.serve(async (req) => {
 
     const pRes = await sb(`/rest/v1/contratos_partes?contrato_id=eq.${contrato_id}&select=id,nome,email,telefone,papel,cpf_cnpj&order=ordem`)
     const partes = await pRes.json()
+    // Todos os papéis assinam, exceto testemunhas (que não assinam pela ZapSign por padrão)
     const signersInput = partes
-      .filter((p: any) => ['locador', 'locatario', 'fiador', 'avalista'].includes(p.papel))
+      .filter((p: any) => p.papel !== 'testemunha' && p.email)
       .map((p: any) => ({
         parte_id: p.id,
         name: p.nome,

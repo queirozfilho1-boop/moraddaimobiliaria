@@ -393,8 +393,6 @@ const ContratoEditorPage = () => {
 
     setSaving(true)
     try {
-      // Salvar primeiro
-      await handleSave()
       // Gerar PDF base64 (preferir modelo Markdown)
       let pdfBase64: string
       const md = await buscarModeloMarkdown()

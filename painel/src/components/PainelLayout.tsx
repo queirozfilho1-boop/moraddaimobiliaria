@@ -237,8 +237,8 @@ export default function PainelLayout() {
         </main>
       </div>
 
-      {/* Toasts globais (success/error/info) */}
-      <Toaster richColors position="top-right" closeButton theme={theme} />
+      {/* Toasts globais (success/error/info) — theme fixo evita re-render */}
+      <Toaster richColors position="top-right" closeButton />
     </div>
   )
 }
