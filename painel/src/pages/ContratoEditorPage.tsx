@@ -14,7 +14,10 @@ import type {
 import {
   TIPO_LABEL, STATUS_LABEL, STATUS_COR, GARANTIA_LABEL, INDICE_LABEL, PAPEL_LABEL,
   fmtMoeda, calcularPrazoMeses, calcularRepasse,
+  isLocacao, isCompraVenda, isCaptacao, isAdministracao,
+  isAssociacao, isTemporada, usaGarantia, usaReajuste,
 } from '@/lib/contratos'
+import { Home, Briefcase, FileCheck, Percent } from 'lucide-react'
 import { gerarPdfContrato, gerarPdfContratoBase64 } from '@/lib/contratoPdf'
 import { downloadPdfContratoFromMd, gerarPdfContratoBase64FromMd } from '@/lib/contratoPdfRender'
 import { mergeTemplate } from '@/lib/contratoMerge'
@@ -443,97 +446,263 @@ const ContratoEditorPage = () => {
         </div>
       </Section>
 
-      {/* Valores */}
-      <Section icon={<DollarSign size={16} />} title="Valores">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div>
-            <label className={labelCls}>Aluguel (mensal)</label>
-            <input type="number" step="0.01" className={inputCls} value={contrato.valor_aluguel || ''} onChange={(e) => setC('valor_aluguel', Number(e.target.value))} />
-          </div>
-          <div>
-            <label className={labelCls}>Condomínio</label>
-            <input type="number" step="0.01" className={inputCls} value={contrato.valor_condominio || ''} onChange={(e) => setC('valor_condominio', Number(e.target.value))} />
-          </div>
-          <div>
-            <label className={labelCls}>IPTU</label>
-            <input type="number" step="0.01" className={inputCls} value={contrato.valor_iptu || ''} onChange={(e) => setC('valor_iptu', Number(e.target.value))} />
-          </div>
-          <div>
-            <label className={labelCls}>Outros (água/gás/etc.)</label>
-            <input type="number" step="0.01" className={inputCls} value={contrato.valor_outros || ''} onChange={(e) => setC('valor_outros', Number(e.target.value))} />
-          </div>
-          <div>
-            <label className={labelCls}>Taxa de administração (%)</label>
-            <input type="number" step="0.01" className={inputCls} value={contrato.taxa_admin_pct ?? ''} onChange={(e) => setC('taxa_admin_pct', Number(e.target.value))} />
-          </div>
-          <div>
-            <label className={labelCls}>Taxa adm mínima (R$)</label>
-            <input type="number" step="0.01" className={inputCls} value={contrato.taxa_admin_minima ?? ''} onChange={(e) => setC('taxa_admin_minima', Number(e.target.value))} />
-          </div>
-        </div>
-
-        {/* Resumo */}
-        <div className="mt-4 grid grid-cols-3 gap-3 rounded-lg bg-gray-50 p-4 text-sm dark:bg-gray-700/30">
-          <div>
-            <p className="text-xs text-gray-500">Total recebido/mês</p>
-            <p className="font-semibold text-gray-800 dark:text-gray-100">{fmtMoeda(repasse.totalRecebido)}</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500">Taxa de adm.</p>
-            <p className="font-semibold text-amber-700 dark:text-amber-400">- {fmtMoeda(repasse.taxa)}</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500">Repasse ao proprietário</p>
-            <p className="font-semibold text-green-700 dark:text-green-400">{fmtMoeda(repasse.repasse)}</p>
-          </div>
-        </div>
-      </Section>
-
-      {/* Garantia */}
-      <Section icon={<Shield size={16} />} title="Garantia">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label className={labelCls}>Tipo de garantia</label>
-            <select className={inputCls} value={contrato.garantia_tipo} onChange={(e) => setC('garantia_tipo', e.target.value as ContratoGarantia)}>
-              {Object.entries(GARANTIA_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-            </select>
-          </div>
-          {contrato.garantia_tipo !== 'sem_garantia' && contrato.garantia_tipo !== 'fiador' && (
+      {/* Valores — Locação (mensal/temporada) */}
+      {contrato.tipo && isLocacao(contrato.tipo) && (
+        <Section icon={<DollarSign size={16} />} title={contrato.tipo && isTemporada(contrato.tipo) ? 'Valores · Temporada' : 'Valores · Locação'}>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {contrato.tipo && isTemporada(contrato.tipo) ? (
+              <>
+                <div>
+                  <label className={labelCls}>Diária (R$)</label>
+                  <input type="number" step="0.01" className={inputCls} value={contrato.valor_diaria || ''} onChange={(e) => setC('valor_diaria', Number(e.target.value))} />
+                </div>
+                <div>
+                  <label className={labelCls}>Mínimo de diárias</label>
+                  <input type="number" className={inputCls} value={contrato.diaria_minima || ''} onChange={(e) => setC('diaria_minima', Number(e.target.value))} />
+                </div>
+                <div>
+                  <label className={labelCls}>Caução (R$)</label>
+                  <input type="number" step="0.01" className={inputCls} value={contrato.garantia_valor || ''} onChange={(e) => setC('garantia_valor', Number(e.target.value))} />
+                </div>
+                <div>
+                  <label className={labelCls}>Alta temporada — início</label>
+                  <input type="date" className={inputCls} value={contrato.alta_temporada_inicio || ''} onChange={(e) => setC('alta_temporada_inicio', e.target.value)} />
+                </div>
+                <div>
+                  <label className={labelCls}>Alta temporada — fim</label>
+                  <input type="date" className={inputCls} value={contrato.alta_temporada_fim || ''} onChange={(e) => setC('alta_temporada_fim', e.target.value)} />
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <label className={labelCls}>Aluguel (mensal)</label>
+                  <input type="number" step="0.01" className={inputCls} value={contrato.valor_aluguel || ''} onChange={(e) => setC('valor_aluguel', Number(e.target.value))} />
+                </div>
+                <div>
+                  <label className={labelCls}>Condomínio</label>
+                  <input type="number" step="0.01" className={inputCls} value={contrato.valor_condominio || ''} onChange={(e) => setC('valor_condominio', Number(e.target.value))} />
+                </div>
+                <div>
+                  <label className={labelCls}>IPTU</label>
+                  <input type="number" step="0.01" className={inputCls} value={contrato.valor_iptu || ''} onChange={(e) => setC('valor_iptu', Number(e.target.value))} />
+                </div>
+                <div>
+                  <label className={labelCls}>Outros (água/gás/etc.)</label>
+                  <input type="number" step="0.01" className={inputCls} value={contrato.valor_outros || ''} onChange={(e) => setC('valor_outros', Number(e.target.value))} />
+                </div>
+              </>
+            )}
             <div>
-              <label className={labelCls}>Valor da garantia</label>
-              <input type="number" step="0.01" className={inputCls} value={contrato.garantia_valor || ''} onChange={(e) => setC('garantia_valor', Number(e.target.value))} />
+              <label className={labelCls}>Taxa de administração (%)</label>
+              <input type="number" step="0.01" className={inputCls} value={contrato.taxa_admin_pct ?? ''} onChange={(e) => setC('taxa_admin_pct', Number(e.target.value))} />
+            </div>
+            <div>
+              <label className={labelCls}>Taxa adm mínima (R$)</label>
+              <input type="number" step="0.01" className={inputCls} value={contrato.taxa_admin_minima ?? ''} onChange={(e) => setC('taxa_admin_minima', Number(e.target.value))} />
+            </div>
+          </div>
+
+          {!contrato.tipo && isTemporada(contrato.tipo) && (
+            <div className="mt-4 grid grid-cols-3 gap-3 rounded-lg bg-gray-50 p-4 text-sm dark:bg-gray-700/30">
+              <div>
+                <p className="text-xs text-gray-500">Total recebido/mês</p>
+                <p className="font-semibold text-gray-800 dark:text-gray-100">{fmtMoeda(repasse.totalRecebido)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Taxa de adm.</p>
+                <p className="font-semibold text-amber-700 dark:text-amber-400">- {fmtMoeda(repasse.taxa)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Repasse ao proprietário</p>
+                <p className="font-semibold text-green-700 dark:text-green-400">{fmtMoeda(repasse.repasse)}</p>
+              </div>
             </div>
           )}
-          <div className="sm:col-span-2">
-            <label className={labelCls}>Observações da garantia</label>
-            <textarea rows={2} className={inputCls} value={contrato.garantia_observacoes || ''} onChange={(e) => setC('garantia_observacoes', e.target.value)} />
-          </div>
-        </div>
-      </Section>
+        </Section>
+      )}
 
-      {/* Reajuste e penalidades */}
-      <Section icon={<Calendar size={16} />} title="Reajuste e Penalidades">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div>
-            <label className={labelCls}>Índice de reajuste</label>
-            <select className={inputCls} value={contrato.indice_reajuste} onChange={(e) => setC('indice_reajuste', e.target.value as ContratoIndice)}>
-              {Object.entries(INDICE_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-            </select>
+      {/* Compra e Venda */}
+      {contrato.tipo && isCompraVenda(contrato.tipo) && (
+        <Section icon={<Home size={16} />} title="Valores · Compra e Venda">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div>
+              <label className={labelCls}>Valor da venda</label>
+              <input type="number" step="0.01" className={inputCls} value={contrato.valor_venda || ''} onChange={(e) => setC('valor_venda', Number(e.target.value))} />
+            </div>
+            <div>
+              <label className={labelCls}>Sinal/entrada</label>
+              <input type="number" step="0.01" className={inputCls} value={contrato.valor_sinal || ''} onChange={(e) => setC('valor_sinal', Number(e.target.value))} />
+            </div>
+            <div>
+              <label className={labelCls}>Valor financiado</label>
+              <input type="number" step="0.01" className={inputCls} value={contrato.valor_financiado || ''} onChange={(e) => setC('valor_financiado', Number(e.target.value))} />
+            </div>
+            <div>
+              <label className={labelCls}>Banco do financiamento</label>
+              <input className={inputCls} value={contrato.banco_financiamento || ''} onChange={(e) => setC('banco_financiamento', e.target.value)} placeholder="Caixa, Bradesco, Itaú..." />
+            </div>
+            <div>
+              <label className={labelCls}>Parcelas (qtd)</label>
+              <input type="number" className={inputCls} value={contrato.parcelas_qtd || ''} onChange={(e) => setC('parcelas_qtd', Number(e.target.value))} />
+            </div>
+            <div>
+              <label className={labelCls}>ITBI (R$)</label>
+              <input type="number" step="0.01" className={inputCls} value={contrato.valor_itbi || ''} onChange={(e) => setC('valor_itbi', Number(e.target.value))} />
+            </div>
+            <div>
+              <label className={labelCls}>Cartório (R$)</label>
+              <input type="number" step="0.01" className={inputCls} value={contrato.valor_cartorio || ''} onChange={(e) => setC('valor_cartorio', Number(e.target.value))} />
+            </div>
+            <div>
+              <label className={labelCls}>Data da escritura</label>
+              <input type="date" className={inputCls} value={contrato.data_escritura || ''} onChange={(e) => setC('data_escritura', e.target.value)} />
+            </div>
+            <div>
+              <label className={labelCls}>Data do registro</label>
+              <input type="date" className={inputCls} value={contrato.data_registro || ''} onChange={(e) => setC('data_registro', e.target.value)} />
+            </div>
+            <div>
+              <label className={labelCls}>Comissão (%)</label>
+              <input type="number" step="0.01" className={inputCls} value={contrato.comissao_pct ?? ''} onChange={(e) => setC('comissao_pct', Number(e.target.value))} placeholder="6" />
+            </div>
           </div>
-          <div>
-            <label className={labelCls}>Multa por atraso (%)</label>
-            <input type="number" step="0.01" className={inputCls} value={contrato.multa_atraso_pct ?? ''} onChange={(e) => setC('multa_atraso_pct', Number(e.target.value))} />
+        </Section>
+      )}
+
+      {/* Captação Exclusiva */}
+      {contrato.tipo && isCaptacao(contrato.tipo) && (
+        <Section icon={<FileCheck size={16} />} title="Termos da Captação Exclusiva">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div>
+              <label className={labelCls}>Comissão acordada (%)</label>
+              <input type="number" step="0.01" className={inputCls} value={contrato.comissao_pct ?? ''} onChange={(e) => setC('comissao_pct', Number(e.target.value))} placeholder="6" />
+            </div>
+            <div>
+              <label className={labelCls}>Prazo de exclusividade (meses)</label>
+              <input type="number" className={inputCls} value={contrato.prazo_exclusividade_meses || ''} onChange={(e) => setC('prazo_exclusividade_meses', Number(e.target.value))} placeholder="6" />
+            </div>
+            <div>
+              <label className={labelCls}>Valor de venda pretendido</label>
+              <input type="number" step="0.01" className={inputCls} value={contrato.valor_venda || ''} onChange={(e) => setC('valor_venda', Number(e.target.value))} />
+            </div>
+            <div className="flex items-center gap-2 sm:col-span-3">
+              <label className="inline-flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={!!contrato.placa_autorizada} onChange={(e) => setC('placa_autorizada', e.target.checked)} />
+                Placa autorizada no imóvel
+              </label>
+              <label className="inline-flex items-center gap-2 text-sm ml-4">
+                <input type="checkbox" checked={contrato.divulgacao_autorizada !== false} onChange={(e) => setC('divulgacao_autorizada', e.target.checked)} />
+                Divulgação autorizada (portais e redes)
+              </label>
+            </div>
           </div>
-          <div>
-            <label className={labelCls}>Juros ao dia (%)</label>
-            <input type="number" step="0.001" className={inputCls} value={contrato.juros_dia_pct ?? ''} onChange={(e) => setC('juros_dia_pct', Number(e.target.value))} />
+        </Section>
+      )}
+
+      {/* Administração */}
+      {contrato.tipo && isAdministracao(contrato.tipo) && (
+        <Section icon={<Briefcase size={16} />} title="Termos de Administração">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div>
+              <label className={labelCls}>Taxa de administração (%)</label>
+              <input type="number" step="0.01" className={inputCls} value={contrato.taxa_admin_pct ?? ''} onChange={(e) => setC('taxa_admin_pct', Number(e.target.value))} placeholder="10" />
+            </div>
+            <div>
+              <label className={labelCls}>Taxa mínima (R$/mês)</label>
+              <input type="number" step="0.01" className={inputCls} value={contrato.taxa_admin_minima ?? ''} onChange={(e) => setC('taxa_admin_minima', Number(e.target.value))} />
+            </div>
+            <div>
+              <label className={labelCls}>Repasse ao proprietário (dia)</label>
+              <input type="number" min={1} max={28} className={inputCls} value={contrato.repasse_dia || 10} onChange={(e) => setC('repasse_dia', Number(e.target.value))} />
+            </div>
+            <div className="flex items-center gap-2 sm:col-span-3">
+              <label className="inline-flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={contrato.inclui_cobranca !== false} onChange={(e) => setC('inclui_cobranca', e.target.checked)} />
+                Inclui gestão de cobranças
+              </label>
+              <label className="inline-flex items-center gap-2 text-sm ml-4">
+                <input type="checkbox" checked={!!contrato.inclui_vistoria} onChange={(e) => setC('inclui_vistoria', e.target.checked)} />
+                Inclui vistoria periódica
+              </label>
+            </div>
           </div>
-          <div>
-            <label className={labelCls}>Multa rescisão (meses)</label>
-            <input type="number" step="0.5" className={inputCls} value={contrato.multa_rescisao_meses ?? ''} onChange={(e) => setC('multa_rescisao_meses', Number(e.target.value))} />
+        </Section>
+      )}
+
+      {/* Associação com Corretor */}
+      {contrato.tipo && isAssociacao(contrato.tipo) && (
+        <Section icon={<Percent size={16} />} title="Split da Associação">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div>
+              <label className={labelCls}>Corretor parceiro</label>
+              <input className={inputCls} value={contrato.corretor_parceiro_id || ''} onChange={(e) => setC('corretor_parceiro_id', e.target.value)} placeholder="Nome do corretor parceiro" />
+            </div>
+            <div>
+              <label className={labelCls}>% Moradda</label>
+              <input type="number" step="0.01" className={inputCls} value={contrato.split_moradda_pct ?? ''} onChange={(e) => setC('split_moradda_pct', Number(e.target.value))} placeholder="50" />
+            </div>
+            <div>
+              <label className={labelCls}>% Corretor</label>
+              <input type="number" step="0.01" className={inputCls} value={contrato.split_corretor_pct ?? ''} onChange={(e) => setC('split_corretor_pct', Number(e.target.value))} placeholder="50" />
+            </div>
+            <div>
+              <label className={labelCls}>Comissão total (%)</label>
+              <input type="number" step="0.01" className={inputCls} value={contrato.comissao_pct ?? ''} onChange={(e) => setC('comissao_pct', Number(e.target.value))} placeholder="6" />
+            </div>
           </div>
-        </div>
-      </Section>
+        </Section>
+      )}
+
+      {/* Garantia — só locação mensal */}
+      {contrato.tipo && usaGarantia(contrato.tipo) && (
+        <Section icon={<Shield size={16} />} title="Garantia">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label className={labelCls}>Tipo de garantia</label>
+              <select className={inputCls} value={contrato.garantia_tipo || 'sem_garantia'} onChange={(e) => setC('garantia_tipo', e.target.value as ContratoGarantia)}>
+                {Object.entries(GARANTIA_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+            </div>
+            {contrato.garantia_tipo !== 'sem_garantia' && contrato.garantia_tipo !== 'fiador' && (
+              <div>
+                <label className={labelCls}>Valor da garantia</label>
+                <input type="number" step="0.01" className={inputCls} value={contrato.garantia_valor || ''} onChange={(e) => setC('garantia_valor', Number(e.target.value))} />
+              </div>
+            )}
+            <div className="sm:col-span-2">
+              <label className={labelCls}>Observações da garantia</label>
+              <textarea rows={2} className={inputCls} value={contrato.garantia_observacoes || ''} onChange={(e) => setC('garantia_observacoes', e.target.value)} />
+            </div>
+          </div>
+        </Section>
+      )}
+
+      {/* Reajuste e penalidades — só locação mensal */}
+      {contrato.tipo && usaReajuste(contrato.tipo) && (
+        <Section icon={<Calendar size={16} />} title="Reajuste e Penalidades">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div>
+              <label className={labelCls}>Índice de reajuste</label>
+              <select className={inputCls} value={contrato.indice_reajuste || 'igpm'} onChange={(e) => setC('indice_reajuste', e.target.value as ContratoIndice)}>
+                {Object.entries(INDICE_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={labelCls}>Multa por atraso (%)</label>
+              <input type="number" step="0.01" className={inputCls} value={contrato.multa_atraso_pct ?? ''} onChange={(e) => setC('multa_atraso_pct', Number(e.target.value))} />
+            </div>
+            <div>
+              <label className={labelCls}>Juros ao dia (%)</label>
+              <input type="number" step="0.001" className={inputCls} value={contrato.juros_dia_pct ?? ''} onChange={(e) => setC('juros_dia_pct', Number(e.target.value))} />
+            </div>
+            <div>
+              <label className={labelCls}>Multa rescisão (meses)</label>
+              <input type="number" step="0.5" className={inputCls} value={contrato.multa_rescisao_meses ?? ''} onChange={(e) => setC('multa_rescisao_meses', Number(e.target.value))} />
+            </div>
+          </div>
+        </Section>
+      )}
 
       {/* Partes */}
       <Section icon={<User size={16} />} title="Partes do Contrato">

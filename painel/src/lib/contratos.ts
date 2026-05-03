@@ -136,7 +136,46 @@ export interface ContratoLocacao {
   updated_at: string
   ativado_em?: string | null
   encerrado_em?: string | null
+  // Compra e Venda
+  valor_venda?: number | null
+  valor_sinal?: number | null
+  valor_financiado?: number | null
+  banco_financiamento?: string | null
+  parcelas_qtd?: number | null
+  valor_itbi?: number | null
+  valor_cartorio?: number | null
+  data_escritura?: string | null
+  data_registro?: string | null
+  // Captação Exclusiva
+  comissao_pct?: number | null
+  prazo_exclusividade_meses?: number | null
+  placa_autorizada?: boolean | null
+  divulgacao_autorizada?: boolean | null
+  // Administração
+  inclui_cobranca?: boolean | null
+  inclui_vistoria?: boolean | null
+  // Associação com Corretor
+  corretor_parceiro_id?: string | null
+  split_moradda_pct?: number | null
+  split_corretor_pct?: number | null
+  // Temporada
+  valor_diaria?: number | null
+  diaria_minima?: number | null
+  alta_temporada_inicio?: string | null
+  alta_temporada_fim?: string | null
 }
+
+// Helpers para identificar grupos de tipos
+export const isLocacaoMensal = (t: ContratoTipo) => t === 'locacao_residencial' || t === 'locacao_comercial'
+export const isLocacao = (t: ContratoTipo) => isLocacaoMensal(t) || t === 'temporada'
+export const isCompraVenda = (t: ContratoTipo) => t === 'compra_venda'
+export const isCaptacao = (t: ContratoTipo) => t === 'captacao_exclusiva'
+export const isAdministracao = (t: ContratoTipo) => t === 'administracao'
+export const isAssociacao = (t: ContratoTipo) => t === 'associacao_corretor'
+export const isTemporada = (t: ContratoTipo) => t === 'temporada'
+export const usaGarantia = (t: ContratoTipo) => isLocacaoMensal(t)
+export const usaReajuste = (t: ContratoTipo) => isLocacaoMensal(t)
+export const usaTaxaAdmin = (t: ContratoTipo) => isLocacao(t) || t === 'administracao'
 
 export interface ContratoParte {
   id: string
