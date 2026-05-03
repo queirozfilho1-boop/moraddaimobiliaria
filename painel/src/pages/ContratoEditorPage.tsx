@@ -16,7 +16,7 @@ import {
   papeisPorTipo, MORADDA_DADOS,
   fmtMoeda, calcularPrazoMeses, calcularRepasse,
   isLocacao, isCompraVenda, isCaptacao, isAdministracao,
-  isAssociacao, isTemporada, usaGarantia, usaReajuste,
+  isAssociacao, isTemporada, usaGarantia, usaReajuste, usaVigencia, usaCobrancaMensal,
 } from '@/lib/contratos'
 import { Home, Briefcase, FileCheck, Percent } from 'lucide-react'
 import { gerarPdfContrato, gerarPdfContratoBase64 } from '@/lib/contratoPdf'
@@ -447,31 +447,41 @@ const ContratoEditorPage = () => {
         </div>
       </Section>
 
-      {/* Vigência */}
-      <Section icon={<Calendar size={16} />} title="Vigência">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div>
-            <label className={labelCls}>Data de início</label>
-            <input type="date" className={inputCls} value={contrato.data_inicio || ''} onChange={(e) => setC('data_inicio', e.target.value)} />
+      {/* Vigência — não aparece em Compra e Venda */}
+      {contrato.tipo && usaVigencia(contrato.tipo) && (
+        <Section icon={<Calendar size={16} />} title={
+          contrato.tipo === 'temporada' ? 'Período da Estadia' :
+          contrato.tipo === 'captacao_exclusiva' ? 'Vigência da Exclusividade' :
+          'Vigência'
+        }>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div>
+              <label className={labelCls}>Data de início</label>
+              <input type="date" className={inputCls} value={contrato.data_inicio || ''} onChange={(e) => setC('data_inicio', e.target.value)} />
+            </div>
+            <div>
+              <label className={labelCls}>Data de término</label>
+              <input type="date" className={inputCls} value={contrato.data_fim || ''} onChange={(e) => setC('data_fim', e.target.value)} />
+            </div>
+            <div>
+              <label className={labelCls}>{contrato.tipo === 'temporada' ? 'Diárias' : 'Prazo (meses)'}</label>
+              <input type="number" readOnly className={`${inputCls} bg-gray-100 dark:bg-gray-800`} value={contrato.prazo_meses || 0} />
+            </div>
+            {usaCobrancaMensal(contrato.tipo) && (
+              <>
+                <div>
+                  <label className={labelCls}>Dia do vencimento (cobrança)</label>
+                  <input type="number" min={1} max={28} className={inputCls} value={contrato.dia_vencimento || 5} onChange={(e) => setC('dia_vencimento', Number(e.target.value))} />
+                </div>
+                <div>
+                  <label className={labelCls}>Dia do repasse ao proprietário</label>
+                  <input type="number" min={1} max={28} className={inputCls} value={contrato.repasse_dia || 10} onChange={(e) => setC('repasse_dia', Number(e.target.value))} />
+                </div>
+              </>
+            )}
           </div>
-          <div>
-            <label className={labelCls}>Data de término</label>
-            <input type="date" className={inputCls} value={contrato.data_fim || ''} onChange={(e) => setC('data_fim', e.target.value)} />
-          </div>
-          <div>
-            <label className={labelCls}>Prazo (meses)</label>
-            <input type="number" readOnly className={`${inputCls} bg-gray-100 dark:bg-gray-800`} value={contrato.prazo_meses || 0} />
-          </div>
-          <div>
-            <label className={labelCls}>Dia do vencimento (cobrança)</label>
-            <input type="number" min={1} max={28} className={inputCls} value={contrato.dia_vencimento || 5} onChange={(e) => setC('dia_vencimento', Number(e.target.value))} />
-          </div>
-          <div>
-            <label className={labelCls}>Dia do repasse ao proprietário</label>
-            <input type="number" min={1} max={28} className={inputCls} value={contrato.repasse_dia || 10} onChange={(e) => setC('repasse_dia', Number(e.target.value))} />
-          </div>
-        </div>
-      </Section>
+        </Section>
+      )}
 
       {/* Valores — Locação (mensal/temporada) */}
       {contrato.tipo && isLocacao(contrato.tipo) && (

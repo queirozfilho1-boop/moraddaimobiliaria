@@ -251,6 +251,10 @@ export const isTemporada = (t: ContratoTipo) => t === 'temporada'
 export const usaGarantia = (t: ContratoTipo) => isLocacaoMensal(t)
 export const usaReajuste = (t: ContratoTipo) => isLocacaoMensal(t)
 export const usaTaxaAdmin = (t: ContratoTipo) => isLocacao(t) || t === 'administracao'
+// Compra e Venda não tem "vigência" — tem datas-chave (escritura/registro) na própria seção
+export const usaVigencia = (t: ContratoTipo) => t !== 'compra_venda'
+// Só locação mensal e administração têm cobrança recorrente
+export const usaCobrancaMensal = (t: ContratoTipo) => isLocacaoMensal(t) || t === 'administracao'
 
 export interface ContratoParte {
   id: string
