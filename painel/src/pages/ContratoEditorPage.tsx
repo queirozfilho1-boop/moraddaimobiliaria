@@ -100,6 +100,7 @@ const ContratoEditorPage = () => {
   ])
   const [imoveis, setImoveis] = useState<ImovelLite[]>([])
   const [imovelSelecionado, setImovelSelecionado] = useState<ImovelLite | null>(null)
+  const [corretores, setCorretores] = useState<{ id: string; nome: string; creci?: string | null }[]>([])
 
   // Carregar imóveis
   useEffect(() => {
@@ -109,6 +110,19 @@ const ContratoEditorPage = () => {
         .select('id, codigo, titulo, preco, preco_condominio, preco_iptu')
         .order('codigo')
       setImoveis((data || []) as ImovelLite[])
+    })()
+  }, [])
+
+  // Carregar corretores (pra dropdowns de captador/parceiro/etc)
+  useEffect(() => {
+    ;(async () => {
+      const { data } = await supabase
+        .from('users_profiles')
+        .select('id, nome, creci')
+        .eq('is_corretor', true)
+        .eq('ativo', true)
+        .order('nome')
+      setCorretores((data || []) as any)
     })()
   }, [])
 
@@ -705,7 +719,18 @@ const ContratoEditorPage = () => {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="lg:col-span-1">
               <label className={labelCls}>Corretor parceiro</label>
-              <input className={inputCls} value={contrato.corretor_parceiro_id || ''} onChange={(e) => setC('corretor_parceiro_id', e.target.value)} placeholder="Nome" />
+              <select
+                className={inputCls}
+                value={contrato.corretor_parceiro_id || ''}
+                onChange={(e) => setC('corretor_parceiro_id', e.target.value || null)}
+              >
+                <option value="">Selecione...</option>
+                {corretores.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nome}{c.creci ? ` · CRECI ${c.creci}` : ''}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <label className={labelCls}>% sobre imóvel captado</label>
