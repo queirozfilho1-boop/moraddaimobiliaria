@@ -16,6 +16,7 @@ import {
 } from '@/lib/vistorias'
 import { printVistoria, gerarPdfBase64Vistoria, type VistoriaPdfData } from '@/lib/vistoriaPrint'
 import { fmtData } from '@/lib/contratos'
+import VistoriaFotosSection from '@/components/VistoriaFotosSection'
 
 const SUPA_FN = `${import.meta.env.VITE_SUPABASE_URL || 'https://mvzjqktgnwjwuinnxxcc.supabase.co'}/functions/v1`
 
@@ -1119,6 +1120,9 @@ export const VistoriaEditorPage = () => {
           </ul>
         </div>
       )}
+
+      {/* Galeria de fotos da vistoria (gerais, não da checklist) */}
+      {!isNew && id && <VistoriaFotosSection vistoriaId={id} />}
 
       {/* Checklist */}
       <Section icon={<ClipboardCheck size={16} />} title="Checklist por Cômodo" right={
