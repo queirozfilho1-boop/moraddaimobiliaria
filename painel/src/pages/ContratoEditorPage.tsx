@@ -367,7 +367,7 @@ const ContratoEditorPage = () => {
         await gerarPdfContrato({
           contrato: contrato as ContratoLocacao,
           partes: partes as ContratoParte[],
-          imovel: imovelSelecionado,
+          imovel: imovelSelecionado as any,
         })
       }
       toast.success('PDF gerado')
