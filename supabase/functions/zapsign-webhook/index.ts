@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
           zapsign_status: 'completed',
           status: 'ativo',
           ativado_em: new Date().toISOString(),
-          pdf_url: doc.signed_file || doc.original_file || null,
+          pdf_signed_url: doc.signed_file || null,
         }),
       })
       await sb(`/rest/v1/contratos_eventos`, {

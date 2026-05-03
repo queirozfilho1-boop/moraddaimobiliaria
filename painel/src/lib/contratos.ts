@@ -179,6 +179,7 @@ export interface ContratoLocacao {
   multa_rescisao_meses: number
   cobranca_modo?: 'desativada' | 'manual' | 'automatica'
   pdf_url?: string | null
+  pdf_signed_url?: string | null
   zapsign_doc_id?: string | null
   zapsign_status?: string | null
   zapsign_url?: string | null

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Plus, Search, FileSignature, Loader2, Pencil, Trash2, Eye, Upload, Send, FileCheck2 } from 'lucide-react'
+import { Plus, Search, FileSignature, Loader2, Pencil, Trash2, Eye, Upload, Send, FileCheck2, Download, Award } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import type { ContratoLocacao } from '@/lib/contratos'
@@ -84,7 +84,7 @@ const ContratosPage = () => {
       .from('contratos_locacao')
       .select(`
         id, numero, tipo, status, valor_aluguel, data_inicio, data_fim, dia_vencimento,
-        taxa_admin_pct, garantia_tipo, indice_reajuste, created_at, pdf_url, zapsign_doc_id,
+        taxa_admin_pct, garantia_tipo, indice_reajuste, created_at, pdf_url, pdf_signed_url, zapsign_doc_id,
         imoveis(codigo, titulo),
         contratos_partes(nome, papel, zapsign_signed_at)
       `)
@@ -265,6 +265,34 @@ const ContratosPage = () => {
                       >
                         <Eye size={15} />
                       </Link>
+
+                      {/* Baixar documento original */}
+                      <a
+                        href={r.pdf_url || '#'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => { if (!r.pdf_url) { e.preventDefault(); toast.info('Nenhum PDF anexado ainda') } }}
+                        title={r.pdf_url ? 'Baixar documento original' : 'Documento original (anexe primeiro)'}
+                        className={`rounded-lg p-2 ${r.pdf_url
+                          ? 'text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20'
+                          : 'text-gray-300 cursor-not-allowed dark:text-gray-600'}`}
+                      >
+                        <Download size={15} />
+                      </a>
+
+                      {/* Baixar documento assinado */}
+                      <a
+                        href={r.pdf_signed_url || '#'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => { if (!r.pdf_signed_url) { e.preventDefault(); toast.info('Documento ainda não foi assinado por todos') } }}
+                        title={r.pdf_signed_url ? 'Baixar documento assinado' : 'Documento assinado (após assinaturas)'}
+                        className={`rounded-lg p-2 ${r.pdf_signed_url
+                          ? 'text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20'
+                          : 'text-gray-300 cursor-not-allowed dark:text-gray-600'}`}
+                      >
+                        <Award size={15} />
+                      </a>
 
                       {/* Anexar PDF */}
                       <label
