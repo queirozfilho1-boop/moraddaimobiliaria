@@ -31,9 +31,26 @@ interface ImovelLite {
   id: string
   codigo?: string | null
   titulo?: string | null
+  tipo?: string | null
   preco?: number | null
   preco_condominio?: number | null
   preco_iptu?: number | null
+  endereco?: string | null
+  numero?: string | null
+  complemento?: string | null
+  bairro_nome?: string | null
+  cidade?: string | null
+  estado?: string | null
+  cep?: string | null
+  area_total?: number | null
+  area_construida?: number | null
+  quartos?: number | null
+  suites?: number | null
+  banheiros?: number | null
+  vagas_garagem?: number | null
+  matricula?: string | null
+  cartorio?: string | null
+  inscricao_iptu?: string | null
 }
 
 const partePadrao = (papel: PartePapel): Omit<ContratoParte, 'id' | 'contrato_id'> => ({
@@ -108,9 +125,14 @@ const ContratoEditorPage = () => {
     ;(async () => {
       const { data } = await supabase
         .from('imoveis')
-        .select('id, codigo, titulo, preco, preco_condominio, preco_iptu')
+        .select('id, codigo, titulo, tipo, preco, preco_condominio, preco_iptu, endereco, numero, complemento, cidade, estado, cep, area_total, area_construida, quartos, suites, banheiros, vagas_garagem, matricula, cartorio, inscricao_iptu, bairros(nome)')
         .order('codigo')
-      setImoveis((data || []) as ImovelLite[])
+      // Achata bairros(nome) → bairro_nome em cada item
+      const flatten = (data || []).map((i: any) => {
+        const { bairros: br, ...rest } = i
+        return { ...rest, bairro_nome: br?.nome || null }
+      })
+      setImoveis(flatten as ImovelLite[])
     })()
   }, [])
 
@@ -134,7 +156,7 @@ const ContratoEditorPage = () => {
       setLoading(true)
       const { data, error } = await supabase
         .from('contratos_locacao')
-        .select('*, imoveis(id, codigo, titulo, preco, preco_condominio, preco_iptu)')
+        .select('*, imoveis(id, codigo, titulo, tipo, preco, preco_condominio, preco_iptu, endereco, numero, complemento, cidade, estado, cep, area_total, area_construida, quartos, suites, banheiros, vagas_garagem, matricula, cartorio, inscricao_iptu, bairros(nome))')
         .eq('id', id)
         .single()
       if (error || !data) {
@@ -144,7 +166,13 @@ const ContratoEditorPage = () => {
       }
       const { imoveis: im, ...resto } = data as any
       setContrato(resto)
-      setImovelSelecionado(im)
+      // Achata bairros(nome) → bairro_nome
+      if (im) {
+        const { bairros: br, ...imRest } = im as any
+        setImovelSelecionado({ ...(imRest as any), bairro_nome: br?.nome || null })
+      } else {
+        setImovelSelecionado(null)
+      }
 
       const { data: ptsData } = await supabase
         .from('contratos_partes')

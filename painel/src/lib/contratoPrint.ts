@@ -11,6 +11,38 @@ function escapeHtml(s: string): string {
     .replace(/>/g, '&gt;')
 }
 
+// Whitelist de tags HTML simples permitidas dentro do markdown — preservadas
+// durante o escape pra que cheguem intactas ao DOM final.
+// Estratégia: substituir cada match por placeholder \x00N\x00, fazer o
+// escape geral, depois restaurar os placeholders pelas tags originais.
+const ALLOWED_TAG_RE = new RegExp(
+  [
+    '<br\\s*/?>',
+    '<hr\\s*/?>',
+    '</?strong>',
+    '</?em>',
+    '</?b>',
+    '</?i>',
+    '</?u>',
+    '<div\\s+class="[^"<>]*"\\s*>',
+    '</div>',
+    '<span\\s+class="[^"<>]*"\\s*>',
+    '</span>',
+  ].join('|'),
+  'gi'
+)
+
+function escapeHtmlPreservandoTags(s: string): string {
+  const guardadas: string[] = []
+  const comGuardas = s.replace(ALLOWED_TAG_RE, (m) => {
+    const idx = guardadas.length
+    guardadas.push(m)
+    return `\x00TAG${idx}\x00`
+  })
+  const escapado = escapeHtml(comGuardas)
+  return escapado.replace(/\x00TAG(\d+)\x00/g, (_, n) => guardadas[Number(n)] || '')
+}
+
 function inlineFmt(s: string): string {
   // **bold** e *italic* (após escape HTML básico)
   // Como o markdown pode ter ** dentro de cláusulas, processo greedy mas pareado.
@@ -32,7 +64,7 @@ function mdToHtml(md: string): string {
   const flushP = () => {
     if (pBuffer.length === 0) return
     const text = pBuffer.join(' ').trim()
-    if (text) out.push(`<p>${inlineFmt(escapeHtml(text))}</p>`)
+    if (text) out.push(`<p>${inlineFmt(escapeHtmlPreservandoTags(text))}</p>`)
     pBuffer = []
   }
   const flushList = () => {
@@ -43,14 +75,14 @@ function mdToHtml(md: string): string {
     out.push('<table>')
     if (tableHeader.length) {
       out.push('<thead><tr>')
-      for (const h of tableHeader) out.push(`<th>${inlineFmt(escapeHtml(h.trim()))}</th>`)
+      for (const h of tableHeader) out.push(`<th>${inlineFmt(escapeHtmlPreservandoTags(h.trim()))}</th>`)
       out.push('</tr></thead>')
     }
     if (tableRows.length) {
       out.push('<tbody>')
       for (const row of tableRows) {
         out.push('<tr>')
-        for (const cell of row) out.push(`<td>${inlineFmt(escapeHtml(cell.trim()))}</td>`)
+        for (const cell of row) out.push(`<td>${inlineFmt(escapeHtmlPreservandoTags(cell.trim()))}</td>`)
         out.push('</tr>')
       }
       out.push('</tbody>')
@@ -103,24 +135,24 @@ function mdToHtml(md: string): string {
     // Headings
     if (line.startsWith('### ')) {
       flushP(); flushList()
-      out.push(`<h3>${inlineFmt(escapeHtml(line.slice(4)))}</h3>`)
+      out.push(`<h3>${inlineFmt(escapeHtmlPreservandoTags(line.slice(4)))}</h3>`)
       continue
     }
     if (line.startsWith('## ')) {
       flushP(); flushList()
-      out.push(`<h2>${inlineFmt(escapeHtml(line.slice(3)))}</h2>`)
+      out.push(`<h2>${inlineFmt(escapeHtmlPreservandoTags(line.slice(3)))}</h2>`)
       continue
     }
     if (line.startsWith('# ')) {
       flushP(); flushList()
-      out.push(`<h1>${inlineFmt(escapeHtml(line.slice(2)))}</h1>`)
+      out.push(`<h1>${inlineFmt(escapeHtmlPreservandoTags(line.slice(2)))}</h1>`)
       continue
     }
     // Lista
     if (/^[-*]\s+/.test(line.trim())) {
       flushP()
       if (!inList) { out.push('<ul>'); inList = true }
-      out.push(`<li>${inlineFmt(escapeHtml(line.trim().replace(/^[-*]\s+/, '')))}</li>`)
+      out.push(`<li>${inlineFmt(escapeHtmlPreservandoTags(line.trim().replace(/^[-*]\s+/, '')))}</li>`)
       continue
     }
     // Linha de assinatura ___________

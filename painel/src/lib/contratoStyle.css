@@ -28,11 +28,9 @@
         vertical-align: bottom;
     }
     @top-right {
-        content: "Contrato de Associação Profissional";
-        font-family: 'Georgia', serif;
-        font-size: 9pt;
-        color: #555;
-        font-style: italic;
+        /* Subtítulo do tipo de contrato vai no h2 do markdown (dinâmico).
+           Mantemos o @top-right só com a borda dourada pra fechar o cabeçalho. */
+        content: "";
         padding-bottom: 8pt;
         border-bottom: 2pt solid #c9a961;
         vertical-align: bottom;

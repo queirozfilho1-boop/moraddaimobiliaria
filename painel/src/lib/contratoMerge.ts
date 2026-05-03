@@ -93,6 +93,31 @@ function diasPorExtenso(dias?: number | null): string {
   return map[dias] || String(dias)
 }
 
+function fmtMoedaSemPrefixo(v?: number | null): string {
+  if (v == null) return '0,00'
+  return Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+function formatarTelefone(t?: string | null): string {
+  if (!t) return ''
+  const d = String(t).replace(/\D/g, '')
+  if (d.length === 11) {
+    return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`
+  }
+  if (d.length === 10) {
+    return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`
+  }
+  // não bate com formato esperado — retorna como veio (preserva input do usuário)
+  return String(t).trim()
+}
+
+function formatarCep(c?: string | null): string {
+  if (!c) return ''
+  const d = String(c).replace(/\D/g, '')
+  if (d.length === 8) return `${d.slice(0, 5)}-${d.slice(5)}`
+  return String(c).trim()
+}
+
 function enderecoCompleto(o: any): string {
   if (!o) return ''
   const parts: string[] = []
@@ -102,13 +127,18 @@ function enderecoCompleto(o: any): string {
   if (o.bairro || o.bairro_nome) parts.push(`bairro ${o.bairro_nome || o.bairro}`)
   if (o.cidade) parts.push(o.cidade)
   if (o.estado) parts.push(`/${o.estado}`)
-  if (o.cep) parts.push(`CEP ${o.cep}`)
+  if (o.cep) parts.push(`CEP ${formatarCep(o.cep)}`)
   return parts.join(', ')
 }
 
 function buildContexto(args: MergeArgs): Record<string, any> {
   const { contrato, partes, imovel } = args
-  const imobiliaria = { ...IMOBILIARIA_DEFAULT, ...(args.imobiliaria || {}) }
+  const imobiliariaRaw = { ...IMOBILIARIA_DEFAULT, ...(args.imobiliaria || {}) }
+  // Normaliza telefone da imobiliária (caso override venha em formato cru)
+  const imobiliaria = {
+    ...imobiliariaRaw,
+    telefone: formatarTelefone((imobiliariaRaw as any).telefone) || (imobiliariaRaw as any).telefone || '',
+  }
   const locador = partes.find((p) => p.papel === 'locador')
   const locatario = partes.find((p) => p.papel === 'locatario')
   const fiador = partes.find((p) => p.papel === 'fiador')
@@ -132,14 +162,14 @@ function buildContexto(args: MergeArgs): Record<string, any> {
     estado_civil: p.estado_civil || '',
     profissao: p.profissao || '',
     email: p.email || '',
-    telefone: p.telefone || '',
+    telefone: formatarTelefone(p.telefone),
     endereco: p.endereco || '',
     numero: p.numero || '',
     complemento: p.complemento || '',
     bairro: p.bairro || '',
     cidade: p.cidade || '',
     estado: p.estado || '',
-    cep: p.cep || '',
+    cep: formatarCep(p.cep),
     endereco_completo: enderecoCompleto(p),
   }) : null
 
@@ -162,7 +192,7 @@ function buildContexto(args: MergeArgs): Record<string, any> {
     data_termino: fmtData(contrato.data_fim), // alias
     prazo_meses: contrato.prazo_meses || 0,
     prazo_extenso: prazoPorExtenso(contrato.prazo_meses),
-    valor_aluguel: contrato.valor_aluguel?.toFixed(2) || '0,00',
+    valor_aluguel: fmtMoedaSemPrefixo(contrato.valor_aluguel),
     valor_aluguel_fmt: fmtMoeda(contrato.valor_aluguel),
     valor_aluguel_extenso: valorPorExtenso(contrato.valor_aluguel),
     dia_vencimento: contrato.dia_vencimento || 5,
@@ -181,15 +211,15 @@ function buildContexto(args: MergeArgs): Record<string, any> {
     aviso_previo_dias: (contrato as any).aviso_previo_dias ?? 30,
     multa_lgpd_valor: ((contrato as any).multa_lgpd_valor ?? 10000).toLocaleString('pt-BR', { minimumFractionDigits: 2 }),
     // Compra e Venda — nomenclatura unificada (tudo em contrato.*)
-    valor_venda: valorVenda ? Number(valorVenda).toFixed(2) : '',
+    valor_venda: valorVenda ? fmtMoedaSemPrefixo(Number(valorVenda)) : '',
     valor_venda_fmt: valorVenda ? fmtMoeda(valorVenda) : '',
     valor_venda_extenso: valorVenda ? valorPorExtenso(valorVenda) : '',
-    valor_sinal: valorSinal ? Number(valorSinal).toFixed(2) : '',
+    valor_sinal: valorSinal ? fmtMoedaSemPrefixo(Number(valorSinal)) : '',
     valor_sinal_fmt: valorSinal ? fmtMoeda(valorSinal) : '',
     valor_sinal_extenso: valorSinal ? valorPorExtenso(valorSinal) : '',
-    valor_saldo: valorSaldo ? valorSaldo.toFixed(2) : '',
+    valor_saldo: valorSaldo ? fmtMoedaSemPrefixo(valorSaldo) : '',
     valor_saldo_fmt: valorSaldo ? fmtMoeda(valorSaldo) : '',
-    valor_financiado: valorFinanciado ? Number(valorFinanciado).toFixed(2) : '',
+    valor_financiado: valorFinanciado ? fmtMoedaSemPrefixo(Number(valorFinanciado)) : '',
     valor_financiado_fmt: valorFinanciado ? fmtMoeda(valorFinanciado) : '',
     banco_financiamento: (contrato as any).banco_financiamento || '',
     parcelas_qtd: (contrato as any).parcelas_qtd || '',
@@ -237,9 +267,9 @@ function buildContexto(args: MergeArgs): Record<string, any> {
   // Captação — bloco isolado (mantém compat com placeholders {{captacao.*}})
   const captacaoCtx: Record<string, any> = {
     modalidade: (contrato as any).modalidade_captacao || 'VENDA',
-    valor_venda: valorVenda ? Number(valorVenda).toFixed(2) : '',
+    valor_venda: valorVenda ? fmtMoedaSemPrefixo(Number(valorVenda)) : '',
     valor_venda_extenso: valorVenda ? valorPorExtenso(valorVenda) : '',
-    valor_locacao: contrato.valor_aluguel?.toFixed(2) || '0,00',
+    valor_locacao: fmtMoedaSemPrefixo(contrato.valor_aluguel),
     margem_negociacao_percentual: (contrato as any).margem_negociacao_percentual ?? 5,
     numero_minimo_fotos: (contrato as any).numero_minimo_fotos ?? 15,
     taxa_devolucao_material: ((contrato as any).taxa_devolucao_material ?? 200).toLocaleString('pt-BR', { minimumFractionDigits: 2 }),
@@ -295,11 +325,16 @@ function buildContexto(args: MergeArgs): Record<string, any> {
       bairro: imovel?.bairro_nome || '',
       cidade: imovel?.cidade || '',
       estado: imovel?.estado || '',
-      cep: imovel?.cep || '',
+      cep: formatarCep(imovel?.cep),
       endereco_completo: imovel ? enderecoCompleto(imovel) : '',
+      // Áreas com sufixo m² (uso direto em template)
       area_total: imovel?.area_total ? `${imovel.area_total} m²` : '',
       area_construida: imovel?.area_construida ? `${imovel.area_construida} m²` : '',
       area_privativa: imovel?.area_construida ? `${imovel.area_construida} m²` : '',
+      // Versões numéricas sem sufixo (caso o template já escreva " m²" depois)
+      area_total_num: imovel?.area_total != null ? String(imovel.area_total) : '',
+      area_construida_num: imovel?.area_construida != null ? String(imovel.area_construida) : '',
+      area_privativa_num: imovel?.area_construida != null ? String(imovel.area_construida) : '',
       quartos: imovel?.quartos || 0,
       suites: imovel?.suites || 0,
       banheiros: imovel?.banheiros || 0,
@@ -328,7 +363,43 @@ function getValue(ctx: Record<string, any>, path: string): string {
   return cur == null ? '' : String(cur)
 }
 
+// Remove linhas que ficaram só com fragmentos órfãos depois do merge — heurística:
+// - se a linha (após substituição) ficar com markup vazio claro (ex.: "**, série **", "()", "( ),"),
+//   ou for um label puro do tipo "**Algo:**" / "**Algo:** ." sem conteúdo, descarta.
+// - preserva linhas com qualquer conteúdo informativo.
+function limparLinhasOrfas(texto: string): string {
+  const linhas = texto.split('\n')
+  const out: string[] = []
+  for (const linha of linhas) {
+    const t = linha.trim()
+    if (t === '') { out.push(linha); continue }
+
+    // Padrões de "label vazio" — variações comuns nos templates
+    // ex.: "**Cônjuge** , CPF nº" → vira "Cônjuge , CPF nº" (sem dado)
+    // ex.: "Inscrição imobiliária (IPTU): " (sem valor após ":")
+    // ex.: "**Características**: " ou "Características: ,"
+    const padraoLabelVazio = [
+      // "**X:**" ou "**X**:" sem nada útil depois
+      /^\*\*[^*]+:?\*\*:?\s*[.,;]?\s*$/,
+      // "X: " (texto curto seguido só de pontuação/vazio)
+      /^[A-Za-zÀ-ú()/ —–-]{1,40}:\s*[.,;]?\s*$/,
+      // "**, série **" ou similar (só asteriscos e vírgulas/espaços)
+      /^[*\s,.;:—–-]+$/,
+      // "( )" ou "()" sozinho
+      /^\(\s*\)\s*[.,;]?\s*$/,
+    ]
+    if (padraoLabelVazio.some((re) => re.test(t))) continue
+
+    // "Cônjuge , CPF" — começa com label seguido imediatamente de vírgula sem dado entre eles
+    if (/^\*?\*?[A-Za-zÀ-ú()/ ]+\*?\*?\s*,\s*(CPF|RG)\s*(nº|n°|n)?\s*[,.]?\s*$/i.test(t)) continue
+
+    out.push(linha)
+  }
+  return out.join('\n')
+}
+
 export function mergeTemplate(template: string, args: MergeArgs): string {
   const ctx = buildContexto(args)
-  return template.replace(/\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g, (_, path) => getValue(ctx, path))
+  const merged = template.replace(/\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g, (_, path) => getValue(ctx, path))
+  return limparLinhasOrfas(merged)
 }

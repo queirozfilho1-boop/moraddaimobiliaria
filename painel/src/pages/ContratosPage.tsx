@@ -83,13 +83,17 @@ const ContratosPage = () => {
 
   async function handleGerarOriginal(row: Row) {
     try {
-      // Busca dados completos do contrato (partes + imóvel)
+      // Busca dados completos do contrato (partes + imóvel + bairro)
       const [{ data: c }, { data: ps }, { data: modeloPadrao }] = await Promise.all([
-        supabase.from('contratos_locacao').select('*, imoveis(*)').eq('id', row.id).single(),
+        supabase.from('contratos_locacao').select('*, imoveis(*, bairros(nome))').eq('id', row.id).single(),
         supabase.from('contratos_partes').select('*').eq('contrato_id', row.id).order('ordem'),
         supabase.from('contratos_modelos').select('conteudo').eq('tipo', row.tipo).eq('padrao', true).eq('ativo', true).limit(1).maybeSingle(),
       ])
       if (!c) { toast.error('Contrato não encontrado'); return }
+      // Achata bairros(nome) → bairro_nome no imóvel
+      if ((c as any).imoveis && (c as any).imoveis.bairros) {
+        ;(c as any).imoveis.bairro_nome = (c as any).imoveis.bairros.nome
+      }
 
       let md: string | null = (c as any).modelo_id
         ? (await supabase.from('contratos_modelos').select('conteudo').eq('id', (c as any).modelo_id).single()).data?.conteudo

@@ -38,13 +38,13 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 ## CLÁUSULA 3ª — DO PREÇO E FORMA DE PAGAMENTO
 
-**3.1.** O preço total e definitivo da presente compra e venda é de **R$ {{contrato.valor_venda_fmt}} ({{contrato.valor_venda_extenso}})**, a ser pago pelo COMPRADOR na seguinte forma:
+**3.1.** O preço total e definitivo da presente compra e venda é de **{{contrato.valor_venda_fmt}} ({{contrato.valor_venda_extenso}})**, a ser pago pelo COMPRADOR na seguinte forma:
 
-**3.1.1.** **Sinal e princípio de pagamento:** **R$ {{contrato.valor_sinal_fmt}}**, neste ato, mediante **{{contrato.forma_sinal}}**;
+**3.1.1.** **Sinal e princípio de pagamento:** **{{contrato.valor_sinal_fmt}}**, neste ato, mediante **{{contrato.forma_sinal}}**;
 
-**3.1.2.** **Saldo:** **R$ {{contrato.valor_saldo_fmt}}**, na seguinte forma: **{{contrato.forma_saldo}}**.
+**3.1.2.** **Saldo:** **{{contrato.valor_saldo_fmt}}**, na seguinte forma: **{{contrato.forma_saldo}}**.
 
-**3.2.** Em havendo financiamento bancário, este será obtido pelo COMPRADOR junto à instituição **{{contrato.banco_financiamento}}**, no valor de **R$ {{contrato.valor_financiado_fmt}}**, em **{{contrato.parcelas_qtd}} parcelas**, sendo a aprovação do crédito **condição suspensiva** deste contrato.
+**3.2.** Em havendo financiamento bancário, este será obtido pelo COMPRADOR junto à instituição **{{contrato.banco_financiamento}}**, no valor de **{{contrato.valor_financiado_fmt}}**, em **{{contrato.parcelas_qtd}} parcelas**, sendo a aprovação do crédito **condição suspensiva** deste contrato.
 
 **3.3.** Todos os pagamentos serão efetuados por meio de **boleto bancário, PIX ou transferência eletrônica** disponibilizados pela {{imobiliaria.nome}}, valendo o respectivo comprovante como recibo de quitação.
 
@@ -134,7 +134,7 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 **10.1.** O presente negócio jurídico foi intermediado pela **{{imobiliaria.nome}}**, mediante autorização de venda outorgada pelo VENDEDOR.
 
-**10.2.** A **comissão de corretagem** de **{{contrato.comissao_total_pct}}%** sobre o valor total da venda, equivalente a **R$ {{contrato.comissao_total_valor_fmt}}**, é devida pelo **{{contrato.comissao_pago_por}}** à intermediadora, e será paga **{{contrato.condicao_comissao}}**.
+**10.2.** A **comissão de corretagem** de **{{contrato.comissao_total_pct}}%** sobre o valor total da venda, equivalente a **{{contrato.comissao_total_valor_fmt}}**, é devida pelo **{{contrato.comissao_pago_por}}** à intermediadora, e será paga **{{contrato.condicao_comissao}}**.
 
 **10.3.** As partes reconhecem que a comissão é devida ainda que, após a aceitação da proposta, qualquer das partes se arrependa, nos termos do **art. 725 do Código Civil**.
 
