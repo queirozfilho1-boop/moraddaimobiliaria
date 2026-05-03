@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Plus, Search, FileSignature, Loader2, Pencil, Trash2, Eye, Upload, Send, FileCheck2, Download, Award } from 'lucide-react'
+import { Plus, Search, FileSignature, Loader2, Pencil, Trash2, Eye, Upload, Send, FileCheck2, Download, Award, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import type { ContratoLocacao } from '@/lib/contratos'
@@ -30,6 +30,32 @@ const ContratosPage = () => {
   const [deleting, setDeleting] = useState(false)
   const [uploadingId, setUploadingId] = useState<string | null>(null)
   const [sendingId, setSendingId] = useState<string | null>(null)
+  const [syncingId, setSyncingId] = useState<string | null>(null)
+
+  async function handleSyncStatus(row: Row) {
+    if (!(row as any).zapsign_doc_id) {
+      toast.info('Contrato ainda não foi enviado pra ZapSign')
+      return
+    }
+    setSyncingId(row.id)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const SUPA_FN = `${import.meta.env.VITE_SUPABASE_URL || 'https://mvzjqktgnwjwuinnxxcc.supabase.co'}/functions/v1`
+      const res = await fetch(`${SUPA_FN}/zapsign-sync`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token || ''}` },
+        body: JSON.stringify({ contrato_id: row.id }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
+      toast.success(`${data.assinados}/${data.total} assinaram · status: ${data.status}`)
+      await load()
+    } catch (e: any) {
+      toast.error('Erro: ' + (e.message || ''))
+    } finally {
+      setSyncingId(null)
+    }
+  }
 
   async function handleUploadPdf(row: Row, file: File) {
     setUploadingId(row.id)
@@ -355,6 +381,16 @@ const ContratosPage = () => {
                         className="rounded-lg p-2 text-amber-600 hover:bg-amber-50 disabled:opacity-30 disabled:cursor-not-allowed dark:text-amber-400 dark:hover:bg-amber-900/20"
                       >
                         {sendingId === r.id ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
+                      </button>
+
+                      {/* Sincronizar status do ZapSign */}
+                      <button
+                        disabled={!(r as any).zapsign_doc_id || syncingId === r.id}
+                        onClick={() => handleSyncStatus(r)}
+                        title={(r as any).zapsign_doc_id ? 'Atualizar status (busca na ZapSign)' : 'Envie pra ZapSign primeiro'}
+                        className="rounded-lg p-2 text-purple-600 hover:bg-purple-50 disabled:opacity-30 disabled:cursor-not-allowed dark:text-purple-400 dark:hover:bg-purple-900/20"
+                      >
+                        {syncingId === r.id ? <Loader2 size={15} className="animate-spin" /> : <RefreshCw size={15} />}
                       </button>
 
                       <Link

@@ -84,16 +84,10 @@ Deno.serve(async (req) => {
     // Criar documento no ZapSign — sandbox=true permite testar sem plano
     // de produção. Tire essa flag quando contratar plano API.
     const ZAPSIGN_SANDBOX = (Deno.env.get('ZAPSIGN_SANDBOX') ?? 'true') === 'true'
-    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
-    const webhookUrl = `${SUPABASE_URL}/functions/v1/zapsign-webhook`
     const zapPayload: Record<string, unknown> = {
       name: `Contrato ${contrato.numero || ''}`.trim(),
       sandbox: ZAPSIGN_SANDBOX,
       base64_pdf: pdf_base64,
-      // Webhook automático — ZapSign chama essa URL em todos os eventos
-      // (assinatura, recusa, expiração, etc). Sem precisar configurar
-      // manualmente no painel ZapSign.
-      created_by_doc_webhook: webhookUrl,
       signers: signersInput.map((s: any) => ({
         name: s.name,
         email: s.email,
