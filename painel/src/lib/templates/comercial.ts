@@ -535,9 +535,9 @@ CNPJ: {{imobiliaria.cnpj}} · CRECI: {{imobiliaria.creci}}
 ### TESTEMUNHAS
 
 **1.** _________________________________________
-Nome: {{testemunha1.nome}} · CPF: {{testemunha1.cpf_cnpj}}
+Nome: {{testemunha1.nome}}{{#if testemunha1.cpf_cnpj}} · CPF: {{testemunha1.cpf_cnpj}}{{/if}}
 
 
 **2.** _________________________________________
-Nome: {{testemunha2.nome}} · CPF: {{testemunha2.cpf_cnpj}}
+Nome: {{testemunha2.nome}}{{#if testemunha2.cpf_cnpj}} · CPF: {{testemunha2.cpf_cnpj}}{{/if}}
 `
