@@ -51,6 +51,14 @@ const groups: NavGroup[] = [
     ],
   },
   {
+    label: 'Cadastros',
+    items: [
+      { label: 'Imóveis',        path: '/painel/imoveis',        icon: <Home size={18} /> },
+      { label: 'Proprietários',  path: '/painel/proprietarios',  icon: <Wallet size={18} /> },
+      { label: 'Corretores',     path: '/painel/corretores',     icon: <Briefcase size={18} /> },
+    ],
+  },
+  {
     label: 'Comercial',
     items: [
       { label: 'CRM',            path: '/painel/crm',             icon: <Briefcase size={18} />, socioOnly: true },
@@ -69,14 +77,6 @@ const groups: NavGroup[] = [
       { label: 'Locações',         path: '/painel/locacoes',          icon: <Home size={18} /> },
       { label: 'Vistorias',        path: '/painel/vistorias',         icon: <ClipboardCheck size={18} /> },
       { label: 'Modelos Contrato', path: '/painel/modelos-contrato',  icon: <FileSignature size={18} /> },
-    ],
-  },
-  {
-    label: 'Cadastros',
-    items: [
-      { label: 'Imóveis',        path: '/painel/imoveis',        icon: <Home size={18} /> },
-      { label: 'Proprietários',  path: '/painel/proprietarios',  icon: <Wallet size={18} /> },
-      { label: 'Corretores',     path: '/painel/corretores',     icon: <Briefcase size={18} /> },
     ],
   },
   {
