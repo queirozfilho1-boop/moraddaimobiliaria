@@ -22,6 +22,9 @@ interface ImovelMerge {
   suites?: number | null
   banheiros?: number | null
   vagas_garagem?: number | null
+  matricula?: string | null
+  cartorio?: string | null
+  inscricao_iptu?: string | null
 }
 
 interface MergeArgs {
@@ -48,6 +51,8 @@ const IMOBILIARIA_DEFAULT = {
   telefone: '(24) 99857-1528',
   email_dpo: 'contato@moraddaimobiliaria.com.br',
   dpo_nome: 'Sebastião Queiroz',
+  responsavel_tecnico: 'Sebastião Queiroz',
+  responsavel_creci: 'RJ 10404-F',
   foro: 'Resende-RJ',
 }
 
@@ -67,6 +72,25 @@ function prazoPorExtenso(meses?: number | null): string {
     24: 'vinte e quatro', 30: 'trinta', 36: 'trinta e seis', 48: 'quarenta e oito', 60: 'sessenta',
   }
   return map[meses] || String(meses)
+}
+
+// Conversão "dias → extenso" cobrindo os marcos típicos de tail period e
+// proteção pós-contratual (15, 30, 60, 90, 180, 365).
+function diasPorExtenso(dias?: number | null): string {
+  if (!dias) return 'zero'
+  const map: Record<number, string> = {
+    7: 'sete',
+    15: 'quinze',
+    30: 'trinta',
+    45: 'quarenta e cinco',
+    60: 'sessenta',
+    90: 'noventa',
+    120: 'cento e vinte',
+    150: 'cento e cinquenta',
+    180: 'cento e oitenta',
+    365: 'trezentos e sessenta e cinco',
+  }
+  return map[dias] || String(dias)
 }
 
 function enderecoCompleto(o: any): string {
@@ -101,6 +125,7 @@ function buildContexto(args: MergeArgs): Record<string, any> {
     nome: p.nome || '',
     cpf: p.cpf_cnpj || '',
     cpf_cnpj: p.cpf_cnpj || '',
+    cnpj: p.cpf_cnpj || '', // alias para PJ
     rg: p.rg || '',
     creci: (p as any).creci || '',
     nacionalidade: p.nacionalidade || 'brasileiro(a)',
@@ -118,45 +143,138 @@ function buildContexto(args: MergeArgs): Record<string, any> {
     endereco_completo: enderecoCompleto(p),
   }) : null
 
+  // Contrato — bloco unificado
+  const valorVenda = (contrato as any).valor_venda
+  const valorSinal = (contrato as any).valor_sinal
+  const valorFinanciado = (contrato as any).valor_financiado
+  const valorSaldo = valorVenda && valorSinal ? Number(valorVenda) - Number(valorSinal) : null
+  const prazoExclusividadeMeses = (contrato as any).prazo_exclusividade_meses ?? 6
+  const prazoExclusividadeDias = prazoExclusividadeMeses * 30
+  const prazoProtecaoDias = (contrato as any).prazo_protecao_dias ?? 180
+  const iptuResp = ((contrato as any).iptu_responsavel || 'LOCATÁRIO').toUpperCase()
+
+  const contratoCtx: Record<string, any> = {
+    numero: contrato.numero || '',
+    data_emissao: fmtData(new Date().toISOString()),
+    data_assinatura: fmtData(new Date().toISOString()), // alias
+    data_inicio: fmtData(contrato.data_inicio),
+    data_fim: fmtData(contrato.data_fim),
+    data_termino: fmtData(contrato.data_fim), // alias
+    prazo_meses: contrato.prazo_meses || 0,
+    prazo_extenso: prazoPorExtenso(contrato.prazo_meses),
+    valor_aluguel: contrato.valor_aluguel?.toFixed(2) || '0,00',
+    valor_aluguel_fmt: fmtMoeda(contrato.valor_aluguel),
+    valor_aluguel_extenso: valorPorExtenso(contrato.valor_aluguel),
+    dia_vencimento: contrato.dia_vencimento || 5,
+    valor_condominio: contrato.valor_condominio?.toFixed(2) || '0,00',
+    valor_iptu: contrato.valor_iptu?.toFixed(2) || '0,00',
+    valor_outros: contrato.valor_outros?.toFixed(2) || '0,00',
+    indice_reajuste: (contrato.indice_reajuste || 'IGPM').toUpperCase().replace('_', '-'),
+    multa_atraso_pct: contrato.multa_atraso_pct ?? 2,
+    juros_dia_pct: contrato.juros_dia_pct ?? 0.033,
+    multa_rescisao_meses: contrato.multa_rescisao_meses ?? 3,
+    ramo_atividade: (contrato as any).ramo_atividade || '',
+    // Campos da Associação com Corretor + outros tipos
+    comissao_venda_pct: (contrato as any).comissao_venda_pct ?? (contrato as any).comissao_pct ?? 6,
+    comissao_temporada_pct: (contrato as any).comissao_temporada_pct ?? 30,
+    dia_pagamento_comissao: (contrato as any).dia_pagamento_comissao ?? 10,
+    aviso_previo_dias: (contrato as any).aviso_previo_dias ?? 30,
+    multa_lgpd_valor: ((contrato as any).multa_lgpd_valor ?? 10000).toLocaleString('pt-BR', { minimumFractionDigits: 2 }),
+    // Compra e Venda — nomenclatura unificada (tudo em contrato.*)
+    valor_venda: valorVenda ? Number(valorVenda).toFixed(2) : '',
+    valor_venda_fmt: valorVenda ? fmtMoeda(valorVenda) : '',
+    valor_venda_extenso: valorVenda ? valorPorExtenso(valorVenda) : '',
+    valor_sinal: valorSinal ? Number(valorSinal).toFixed(2) : '',
+    valor_sinal_fmt: valorSinal ? fmtMoeda(valorSinal) : '',
+    valor_sinal_extenso: valorSinal ? valorPorExtenso(valorSinal) : '',
+    valor_saldo: valorSaldo ? valorSaldo.toFixed(2) : '',
+    valor_saldo_fmt: valorSaldo ? fmtMoeda(valorSaldo) : '',
+    valor_financiado: valorFinanciado ? Number(valorFinanciado).toFixed(2) : '',
+    valor_financiado_fmt: valorFinanciado ? fmtMoeda(valorFinanciado) : '',
+    banco_financiamento: (contrato as any).banco_financiamento || '',
+    parcelas_qtd: (contrato as any).parcelas_qtd || '',
+    valor_itbi: (contrato as any).valor_itbi ? fmtMoeda((contrato as any).valor_itbi) : '',
+    valor_cartorio: (contrato as any).valor_cartorio ? fmtMoeda((contrato as any).valor_cartorio) : '',
+    data_escritura: fmtData((contrato as any).data_escritura),
+    data_registro: fmtData((contrato as any).data_registro),
+    data_imissao: fmtData((contrato as any).data_imissao),
+    forma_sinal: (contrato as any).forma_sinal || '',
+    forma_saldo: (contrato as any).forma_saldo || '',
+    comissao_total_pct: (contrato as any).comissao_total_pct ?? (contrato as any).comissao_pct ?? 6,
+    comissao_total_valor_fmt: (contrato as any).comissao_total_valor
+      ? fmtMoeda((contrato as any).comissao_total_valor)
+      : (valorVenda ? fmtMoeda(Number(valorVenda) * (((contrato as any).comissao_total_pct ?? 6) / 100)) : ''),
+    comissao_pago_por: (contrato as any).comissao_pago_por || 'VENDEDOR',
+    condicao_comissao: (contrato as any).condicao_comissao || 'no ato da assinatura da escritura',
+    arras_natureza: (contrato as any).arras_natureza || 'confirmatórias',
+    averbacao: (contrato as any).averbacao || 'averbam',
+    chave_pix: (contrato as any).chave_pix || '',
+    camara_arbitral: (contrato as any).camara_arbitral || 'CAMARB / CCBC ou outra de comum acordo',
+    // Captação Exclusiva
+    prazo_exclusividade_meses: prazoExclusividadeMeses,
+    prazo_exclusividade_extenso: prazoPorExtenso(prazoExclusividadeMeses),
+    prazo_exclusividade_dias: prazoExclusividadeDias,
+    prazo_protecao_dias: prazoProtecaoDias,
+    prazo_protecao_extenso: diasPorExtenso(prazoProtecaoDias),
+  }
+
+  // Locação — parâmetros operacionais (apenas para locacao_residencial / comercial / temporada)
+  const locacaoCtx: Record<string, any> = {
+    iptu_responsavel: iptuResp,
+    indice_reajuste: contratoCtx.indice_reajuste,
+    multa_atraso_pct: contrato.multa_atraso_pct ?? 10,
+    juros_dia_pct: contrato.juros_dia_pct ?? 0.033,
+    multa_rescisao_meses: contrato.multa_rescisao_meses ?? 3,
+    avcb_status: (contrato as any).avcb_status || 'dispensado',
+    seguro_rc_status: (contrato as any).seguro_rc_status || 'não contratado',
+    fianca: (contrato as any).garantia_tipo === 'fiador' ? 'X' : ' ',
+    caucao: (contrato as any).garantia_tipo === 'caucao' ? 'X' : ' ',
+    seguro: (contrato as any).garantia_tipo === 'seguro_fianca' ? 'X' : ' ',
+    capitalizacao: (contrato as any).garantia_tipo === 'capitalizacao' ? 'X' : ' ',
+    fianca_bancaria: (contrato as any).garantia_tipo === 'fianca_bancaria' ? 'X' : ' ',
+  }
+
+  // Captação — bloco isolado (mantém compat com placeholders {{captacao.*}})
+  const captacaoCtx: Record<string, any> = {
+    modalidade: (contrato as any).modalidade_captacao || 'VENDA',
+    valor_venda: valorVenda ? Number(valorVenda).toFixed(2) : '',
+    valor_venda_extenso: valorVenda ? valorPorExtenso(valorVenda) : '',
+    valor_locacao: contrato.valor_aluguel?.toFixed(2) || '0,00',
+    margem_negociacao_percentual: (contrato as any).margem_negociacao_percentual ?? 5,
+    numero_minimo_fotos: (contrato as any).numero_minimo_fotos ?? 15,
+    taxa_devolucao_material: ((contrato as any).taxa_devolucao_material ?? 200).toLocaleString('pt-BR', { minimumFractionDigits: 2 }),
+    multa_quebra_percentual: (contrato as any).multa_quebra_percentual ?? 30,
+    prazo_protecao_dias: prazoProtecaoDias,
+    prazo_protecao_extenso: diasPorExtenso(prazoProtecaoDias),
+    prazo_exclusividade_meses: prazoExclusividadeMeses,
+    prazo_exclusividade_extenso: prazoPorExtenso(prazoExclusividadeMeses),
+  }
+
+  // Aliases reversos (venda.* → contrato.*) para compat com contratos antigos
+  const vendaAlias: Record<string, any> = {
+    numero: contratoCtx.numero,
+    data_assinatura: contratoCtx.data_emissao,
+    valor_venda_fmt: contratoCtx.valor_venda_fmt,
+    valor_venda_extenso: contratoCtx.valor_venda_extenso,
+    valor_sinal_fmt: contratoCtx.valor_sinal_fmt,
+    valor_saldo_fmt: contratoCtx.valor_saldo_fmt,
+    valor_financiado_fmt: contratoCtx.valor_financiado_fmt,
+    banco_financiamento: contratoCtx.banco_financiamento,
+    parcelas_qtd: contratoCtx.parcelas_qtd,
+    data_imissao: contratoCtx.data_imissao,
+    forma_sinal: contratoCtx.forma_sinal,
+    forma_saldo: contratoCtx.forma_saldo,
+    comissao_total_pct: contratoCtx.comissao_total_pct,
+    comissao_total_valor_fmt: contratoCtx.comissao_total_valor_fmt,
+    comissao_pago_por: contratoCtx.comissao_pago_por,
+    condicao_comissao: contratoCtx.condicao_comissao,
+  }
+
   return {
-    contrato: {
-      numero: contrato.numero || '',
-      data_emissao: fmtData(new Date().toISOString()),
-      data_inicio: fmtData(contrato.data_inicio),
-      data_fim: fmtData(contrato.data_fim),
-      prazo_meses: contrato.prazo_meses || 0,
-      prazo_extenso: prazoPorExtenso(contrato.prazo_meses),
-      valor_aluguel: contrato.valor_aluguel?.toFixed(2) || '0,00',
-      valor_aluguel_fmt: fmtMoeda(contrato.valor_aluguel),
-      valor_aluguel_extenso: valorPorExtenso(contrato.valor_aluguel),
-      dia_vencimento: contrato.dia_vencimento || 5,
-      valor_condominio: contrato.valor_condominio?.toFixed(2) || '0,00',
-      valor_iptu: contrato.valor_iptu?.toFixed(2) || '0,00',
-      valor_outros: contrato.valor_outros?.toFixed(2) || '0,00',
-      indice_reajuste: (contrato.indice_reajuste || 'IGPM').toUpperCase().replace('_', '-'),
-      multa_atraso_pct: contrato.multa_atraso_pct ?? 2,
-      juros_dia_pct: contrato.juros_dia_pct ?? 0.033,
-      multa_rescisao_meses: contrato.multa_rescisao_meses ?? 3,
-      ramo_atividade: '',
-      // Campos da Associação com Corretor + outros tipos
-      comissao_venda_pct: (contrato as any).comissao_venda_pct ?? (contrato as any).comissao_pct ?? 6,
-      comissao_temporada_pct: (contrato as any).comissao_temporada_pct ?? 30,
-      dia_pagamento_comissao: (contrato as any).dia_pagamento_comissao ?? 10,
-      aviso_previo_dias: (contrato as any).aviso_previo_dias ?? 30,
-      multa_lgpd_valor: ((contrato as any).multa_lgpd_valor ?? 10000).toLocaleString('pt-BR', { minimumFractionDigits: 2 }),
-      // Compra e Venda
-      valor_venda: (contrato as any).valor_venda ? fmtMoeda((contrato as any).valor_venda) : '',
-      valor_sinal: (contrato as any).valor_sinal ? fmtMoeda((contrato as any).valor_sinal) : '',
-      valor_financiado: (contrato as any).valor_financiado ? fmtMoeda((contrato as any).valor_financiado) : '',
-      banco_financiamento: (contrato as any).banco_financiamento || '',
-      parcelas_qtd: (contrato as any).parcelas_qtd || '',
-      valor_itbi: (contrato as any).valor_itbi ? fmtMoeda((contrato as any).valor_itbi) : '',
-      valor_cartorio: (contrato as any).valor_cartorio ? fmtMoeda((contrato as any).valor_cartorio) : '',
-      data_escritura: fmtData((contrato as any).data_escritura),
-      data_registro: fmtData((contrato as any).data_registro),
-      // Captação Exclusiva
-      prazo_exclusividade_meses: (contrato as any).prazo_exclusividade_meses || 6,
-    },
+    contrato: contratoCtx,
+    locacao: locacaoCtx,
+    captacao: captacaoCtx,
+    venda: vendaAlias, // alias reverso
     locador: parteCtx(locador) || parteCtx(undefined),
     locatario: parteCtx(locatario) || parteCtx(undefined),
     fiador: parteCtx(fiador) || parteCtx(undefined),
@@ -181,15 +299,21 @@ function buildContexto(args: MergeArgs): Record<string, any> {
       endereco_completo: imovel ? enderecoCompleto(imovel) : '',
       area_total: imovel?.area_total ? `${imovel.area_total} m²` : '',
       area_construida: imovel?.area_construida ? `${imovel.area_construida} m²` : '',
+      area_privativa: imovel?.area_construida ? `${imovel.area_construida} m²` : '',
       quartos: imovel?.quartos || 0,
       suites: imovel?.suites || 0,
       banheiros: imovel?.banheiros || 0,
       vagas: imovel?.vagas_garagem || 0,
+      vagas_garagem: imovel?.vagas_garagem || 0,
+      matricula: imovel?.matricula || '',
+      cartorio: imovel?.cartorio || '',
+      inscricao_iptu: imovel?.inscricao_iptu || '',
+      iptu: imovel?.inscricao_iptu || '', // alias reverso
     },
     imobiliaria,
     cidade: { foro: imobiliaria.foro || '' },
     taxa_admin: { percentual: contrato.taxa_admin_pct ?? 10 },
-    comissao: { percentual: 6 },
+    comissao: { percentual: 6, percentual_venda: contratoCtx.comissao_venda_pct, percentual_venda_extenso: '' },
     plataforma_assinatura: 'ZapSign',
   }
 }
