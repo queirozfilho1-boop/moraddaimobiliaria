@@ -16,7 +16,7 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 **LOCATÁRIO(A) / HÓSPEDE TITULAR:** {{locatario.nome}}, {{locatario.nacionalidade}}, {{locatario.estado_civil}}, {{locatario.profissao}}, portador(a) do RG nº {{locatario.rg}}, inscrito(a) no CPF/CNPJ sob o nº {{locatario.cpf_cnpj}}, residente e domiciliado(a) em {{locatario.endereco_completo}}, e-mail {{locatario.email}}, telefone {{locatario.telefone}}.
 
-**FIADOR(A) — quando aplicável:** {{fiador.nome}}, {{fiador.nacionalidade}}, {{fiador.estado_civil}}, {{fiador.profissao}}, RG nº {{fiador.rg}}, CPF nº {{fiador.cpf_cnpj}}, residente em {{fiador.endereco_completo}}, e-mail {{fiador.email}}.
+{{#if fiador.nome}}**FIADOR(A):** {{fiador.nome}}, {{fiador.nacionalidade}}, {{fiador.estado_civil}}, {{fiador.profissao}}, RG nº {{fiador.rg}}, CPF nº {{fiador.cpf_cnpj}}, residente em {{fiador.endereco_completo}}{{#if fiador.email}}, e-mail {{fiador.email}}{{/if}}.{{/if}}
 
 ---
 
@@ -30,7 +30,7 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 **2.1.** Constitui objeto do presente contrato a **locação por temporada**, para fins exclusivamente residenciais transitórios, do imóvel de propriedade do(a) LOCADOR(A), assim descrito:
 
-**2.1.1.** Código interno: **{{imovel.codigo}}**; tipo: **{{imovel.tipo}}**; endereço completo: **{{imovel.endereco_completo}}**; matrícula nº **{{imovel.matricula}}** do Cartório de Registro de Imóveis de **{{imovel.cartorio}}**; inscrição imobiliária (IPTU) nº **{{imovel.inscricao_iptu}}**; área privativa **{{imovel.area_privativa}}**; vagas de garagem **{{imovel.vagas_garagem}}**.
+**2.1.1.** Código interno: **{{imovel.codigo}}**; tipo: **{{imovel.tipo}}**; endereço completo: **{{imovel.endereco_completo}}**{{#if imovel.matricula}}; matrícula nº **{{imovel.matricula}}** do Cartório de Registro de Imóveis de **{{imovel.cartorio}}**{{/if}}{{#if imovel.inscricao_iptu}}; inscrição imobiliária (IPTU) nº **{{imovel.inscricao_iptu}}**{{/if}}{{#if imovel.area_privativa}}; área privativa **{{imovel.area_privativa}}**{{/if}}{{#if imovel.vagas_garagem}}; vagas de garagem **{{imovel.vagas_garagem}}**{{/if}}.
 
 **2.2.** A locação destina-se à residência transitória do(a) LOCATÁRIO(A) e seus acompanhantes nominalmente identificados no **Anexo I — Termo de Hóspedes**, em decorrência de fato transitório (lazer, tratamento de saúde, curso, reforma de imóvel próprio ou outro motivo análogo), nos exatos termos do art. 48 da Lei nº 8.245/1991.
 
@@ -50,7 +50,7 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 ## CLÁUSULA 4ª — DO VALOR E DA FORMA DE PAGAMENTO
 
-**4.1.** O valor total da locação por temporada é de **R$ {{contrato.valor_aluguel}} ({{contrato.valor_aluguel_extenso}})**.
+**4.1.** O valor total da locação por temporada é de **{{contrato.valor_aluguel_fmt}} ({{contrato.valor_aluguel_extenso}})**.
 
 **4.2.** O pagamento será efetuado da seguinte forma, conforme faculta o art. 49 da Lei nº 8.245/1991, que autoriza o recebimento de uma única vez e antecipadamente:
 
@@ -216,13 +216,15 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 ---
 
-## CLÁUSULA 13 — DO FIADOR (SE HOUVER)
+{{#if fiador.nome}}## CLÁUSULA 13 — DO FIADOR
 
 **13.1.** Figura como **FIADOR(A) e PRINCIPAL PAGADOR(A)**, solidariamente responsável por todas as obrigações deste contrato, inclusive eventual prorrogação legal: {{fiador.nome}}, qualificado(a) no preâmbulo.
 
 **13.2.** O(A) FIADOR(A) renuncia expressamente aos benefícios de ordem, divisão e excussão, nos termos dos arts. 827 e 828 do Código Civil, respondendo até a efetiva entrega das chaves.
 
 ---
+
+{{/if}}
 
 ## CLÁUSULA 14 — DA PROTEÇÃO DE DADOS (LGPD)
 
@@ -289,12 +291,12 @@ _________________________________________
 CPF/CNPJ: {{locatario.cpf_cnpj}}
 
 
-_________________________________________
+{{#if fiador.nome}}_________________________________________
 **FIADOR(A):** {{fiador.nome}}
 CPF/CNPJ: {{fiador.cpf_cnpj}}
 
 
-_________________________________________
+{{/if}}_________________________________________
 **ADMINISTRADORA:** {{imobiliaria.nome}}
 CNPJ: {{imobiliaria.cnpj}} · CRECI-PJ: {{imobiliaria.creci}}
 

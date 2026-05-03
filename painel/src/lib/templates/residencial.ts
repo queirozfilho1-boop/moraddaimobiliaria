@@ -16,7 +16,7 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 **LOCATÁRIO(A):** {{locatario.nome}}, {{locatario.nacionalidade}}, {{locatario.estado_civil}}, {{locatario.profissao}}, portador(a) do RG nº {{locatario.rg}}, inscrito(a) no CPF/CNPJ sob o nº {{locatario.cpf_cnpj}}, residente e domiciliado(a) em {{locatario.endereco_completo}}, e-mail {{locatario.email}}, telefone {{locatario.telefone}}.
 
-**FIADOR(A) — quando aplicável:** {{fiador.nome}}, {{fiador.nacionalidade}}, {{fiador.estado_civil}}, {{fiador.profissao}}, RG nº {{fiador.rg}}, CPF nº {{fiador.cpf_cnpj}}, residente em {{fiador.endereco_completo}}, e-mail {{fiador.email}}, telefone {{fiador.telefone}}.
+{{#if fiador.nome}}**FIADOR(A):** {{fiador.nome}}, {{fiador.nacionalidade}}, {{fiador.estado_civil}}, {{fiador.profissao}}, RG nº {{fiador.rg}}, CPF nº {{fiador.cpf_cnpj}}, residente em {{fiador.endereco_completo}}{{#if fiador.email}}, e-mail {{fiador.email}}{{/if}}{{#if fiador.telefone}}, telefone {{fiador.telefone}}{{/if}}.{{/if}}
 
 **INTERMEDIÁRIA / ADMINISTRADORA:** **{{imobiliaria.nome}}**, pessoa jurídica de direito privado, CNPJ nº {{imobiliaria.cnpj}}, **CRECI-PJ nº {{imobiliaria.creci}}**, com sede em {{imobiliaria.endereco_completo}}, e-mail {{imobiliaria.email}}, telefone {{imobiliaria.telefone}}.
 
@@ -60,9 +60,9 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 ## CLÁUSULA 5ª — DO VALOR DO ALUGUEL E FORMA DE PAGAMENTO
 
-**5.1.** O valor mensal do aluguel é de **R$ {{contrato.valor_aluguel}} ({{contrato.valor_aluguel_extenso}})**, a ser pago **até o dia {{contrato.dia_vencimento}}** de cada mês subsequente ao vencido.
+**5.1.** O valor mensal do aluguel é de **{{contrato.valor_aluguel_fmt}} ({{contrato.valor_aluguel_extenso}})**, a ser pago **até o dia {{contrato.dia_vencimento}}** de cada mês subsequente ao vencido.
 
-**5.2.** O pagamento será efetuado mediante **boleto bancário** emitido pela {{imobiliaria.nome}} em favor do LOCADOR, ou via **PIX** na chave **{{contrato.chave_pix}}**.
+**5.2.** O pagamento será efetuado mediante **boleto bancário** emitido pela {{imobiliaria.nome}} em favor do LOCADOR{{#if contrato.chave_pix}}, ou via **PIX** na chave **{{contrato.chave_pix}}**{{/if}}.
 
 **5.3.** O pagamento somente será considerado quitado mediante comprovante bancário ou recibo expedido pela imobiliária, não se admitindo quitação verbal.
 
@@ -423,12 +423,12 @@ _________________________________________
 CPF/CNPJ: {{locatario.cpf_cnpj}}
 
 
-_________________________________________
+{{#if fiador.nome}}_________________________________________
 **FIADOR(A):** {{fiador.nome}}
 CPF/CNPJ: {{fiador.cpf_cnpj}}
 
 
-_________________________________________
+{{/if}}_________________________________________
 **INTERMEDIÁRIA:** {{imobiliaria.nome}}
 CNPJ: {{imobiliaria.cnpj}} · CRECI: {{imobiliaria.creci}}
 

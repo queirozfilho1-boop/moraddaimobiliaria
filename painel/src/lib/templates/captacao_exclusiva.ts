@@ -14,7 +14,7 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 ## DAS PARTES
 
-**PROPRIETÁRIO(A) / CONTRATANTE:** {{proprietario.nome}}, {{proprietario.nacionalidade}}, {{proprietario.estado_civil}}, {{proprietario.profissao}}, portador(a) do RG nº {{proprietario.rg}}, inscrito(a) no CPF/CNPJ sob o nº {{proprietario.cpf_cnpj}}, residente e domiciliado(a) em {{proprietario.endereco_completo}}, e-mail {{proprietario.email}}, telefone {{proprietario.telefone}}; e cônjuge {{proprietario.conjuge_nome}}, CPF nº {{proprietario.conjuge_cpf}}, quando exigida outorga conjugal nos termos do art. 1.647 do Código Civil.
+**PROPRIETÁRIO(A) / CONTRATANTE:** {{proprietario.nome}}, {{proprietario.nacionalidade}}, {{proprietario.estado_civil}}, {{proprietario.profissao}}, portador(a) do RG nº {{proprietario.rg}}, inscrito(a) no CPF/CNPJ sob o nº {{proprietario.cpf_cnpj}}, residente e domiciliado(a) em {{proprietario.endereco_completo}}, e-mail {{proprietario.email}}, telefone {{proprietario.telefone}}{{#if proprietario.conjuge_nome}}; e cônjuge **{{proprietario.conjuge_nome}}**, CPF nº {{proprietario.conjuge_cpf}}, na forma da outorga conjugal exigida pelo art. 1.647 do Código Civil{{/if}}.
 
 **IMOBILIÁRIA / CONTRATADA:** **{{imobiliaria.nome}}**, pessoa jurídica de direito privado, CNPJ nº {{imobiliaria.cnpj}}, **CRECI-PJ nº {{imobiliaria.creci}}**, sediada em {{imobiliaria.endereco_completo}}, e-mail {{imobiliaria.email}}, telefone {{imobiliaria.telefone}}, neste ato representada por **{{imobiliaria.responsavel_tecnico}}**, **CRECI-F nº {{imobiliaria.responsavel_creci}}**.
 
@@ -30,15 +30,13 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 **2.1.** O(A) PROPRIETÁRIO(A), por sua livre e exclusiva vontade, **autoriza a IMOBILIÁRIA**, em caráter de **EXCLUSIVIDADE**, a promover a **{{captacao.modalidade}}** do imóvel adiante descrito, conferindo-lhe os poderes necessários à plena divulgação, intermediação e negociação:
 
-**2.1.1.** Código interno: **{{imovel.codigo}}**; tipo: **{{imovel.tipo}}**; endereço completo: **{{imovel.endereco_completo}}**; matrícula nº **{{imovel.matricula}}** do Cartório de Registro de Imóveis de **{{imovel.cartorio}}**; inscrição imobiliária (IPTU) nº **{{imovel.inscricao_iptu}}**; área privativa **{{imovel.area_privativa}}**; vagas de garagem **{{imovel.vagas_garagem}}**.
+**2.1.1.** Código interno: **{{imovel.codigo}}**; tipo: **{{imovel.tipo}}**; endereço completo: **{{imovel.endereco_completo}}**{{#if imovel.matricula}}; matrícula nº **{{imovel.matricula}}** do Cartório de Registro de Imóveis de **{{imovel.cartorio}}**{{/if}}{{#if imovel.inscricao_iptu}}; inscrição imobiliária (IPTU) nº **{{imovel.inscricao_iptu}}**{{/if}}{{#if imovel.area_privativa}}; área privativa **{{imovel.area_privativa}}**{{/if}}{{#if imovel.vagas_garagem}}; vagas de garagem **{{imovel.vagas_garagem}}**{{/if}}.
 
 **2.2. Valores autorizados de oferta:**
 
-**2.2.1.** Valor de venda: **R$ {{captacao.valor_venda}} ({{captacao.valor_venda_extenso}})**;
-
-**2.2.2.** Valor de locação mensal: **R$ {{captacao.valor_locacao}}**;
-
-**2.2.3.** Margem de negociação autorizada: até **{{captacao.margem_negociacao_percentual}}%** sobre os valores de oferta.
+{{#if captacao.valor_venda}}**2.2.1.** Valor de venda: **R$ {{captacao.valor_venda}} ({{captacao.valor_venda_extenso}})**;
+{{/if}}{{#if contrato.valor_aluguel}}**2.2.2.** Valor de locação mensal: **{{contrato.valor_aluguel_fmt}}**;
+{{/if}}**2.2.3.** Margem de negociação autorizada: até **{{captacao.margem_negociacao_percentual}}%** sobre os valores de oferta.
 
 **2.3.** A cláusula de exclusividade é firmada de forma **livre, voluntária e facultativa**, em conformidade com o **Termo de Compromisso de Cessação de Prática firmado entre o CADE e o COFECI em 14/03/2018**, sendo expressamente reconhecida pelas partes como medida adequada à eficiência da intermediação.
 
@@ -58,11 +56,11 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 **4.1.** Pela intermediação bem-sucedida, será devida à IMOBILIÁRIA, a título de comissão:
 
-**4.1.1.** **Em caso de VENDA:** **{{contrato.comissao_venda_pct}}%** sobre o valor efetivo da transação, observado o piso da tabela CRECI da respectiva região;
+**4.1.1.** **Em caso de VENDA:** **{{contrato.comissao_venda_pct}}% ({{contrato.comissao_venda_pct_extenso}})** sobre o valor efetivo da transação, observado o piso da tabela CRECI da respectiva região;
 
 **4.1.2.** **Em caso de LOCAÇÃO:** o equivalente a **1 (um) aluguel mensal**, sem prejuízo da taxa de administração se contratada em separado a gestão da locação;
 
-**4.1.3.** **Em caso de PERMUTA:** **{{contrato.comissao_venda_pct}}%** sobre o valor de cada bem permutado, devida por cada parte à respectiva imobiliária intermediadora.
+**4.1.3.** **Em caso de PERMUTA:** **{{contrato.comissao_venda_pct}}% ({{contrato.comissao_venda_pct_extenso}})** sobre o valor de cada bem permutado, devida por cada parte à respectiva imobiliária intermediadora.
 
 **4.2.** A comissão será paga pelo(a) PROPRIETÁRIO(A) à IMOBILIÁRIA da seguinte forma:
 
@@ -254,13 +252,13 @@ _________________________________________
 CPF/CNPJ: {{proprietario.cpf_cnpj}}
 
 
-_________________________________________
+{{#if proprietario.conjuge_nome}}_________________________________________
 **CÔNJUGE:** {{proprietario.conjuge_nome}}
 CPF: {{proprietario.conjuge_cpf}}
-*(quando exigida outorga conjugal — art. 1.647 do CC)*
+*(outorga conjugal — art. 1.647 do CC)*
 
 
-_________________________________________
+{{/if}}_________________________________________
 **IMOBILIÁRIA:** {{imobiliaria.nome}}
 CNPJ: {{imobiliaria.cnpj}} · CRECI-PJ: {{imobiliaria.creci}}
 Resp. Téc.: {{imobiliaria.responsavel_tecnico}} · CRECI-F: {{imobiliaria.responsavel_creci}}

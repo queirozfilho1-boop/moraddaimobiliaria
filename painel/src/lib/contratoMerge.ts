@@ -56,13 +56,87 @@ const IMOBILIARIA_DEFAULT = {
   foro: 'Resende-RJ',
 }
 
+// Conversão monetária para extenso completo (até bilhões), em português.
+// Cobre os casos típicos de contratos imobiliários: aluguéis (centenas-milhares),
+// vendas (milhões-dezenas de milhões) e taxas/multas pequenas. Sem dependência externa.
+function _numeroPorExtenso(n: number): string {
+  if (n === 0) return 'zero'
+  const unidades = ['', 'um', 'dois', 'três', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove']
+  const especiais = ['dez', 'onze', 'doze', 'treze', 'quatorze', 'quinze', 'dezesseis', 'dezessete', 'dezoito', 'dezenove']
+  const dezenas = ['', '', 'vinte', 'trinta', 'quarenta', 'cinquenta', 'sessenta', 'setenta', 'oitenta', 'noventa']
+  const centenas = ['', 'cento', 'duzentos', 'trezentos', 'quatrocentos', 'quinhentos', 'seiscentos', 'setecentos', 'oitocentos', 'novecentos']
+
+  function ate999(n: number): string {
+    if (n === 0) return ''
+    if (n === 100) return 'cem'
+    const c = Math.floor(n / 100)
+    const resto = n % 100
+    const partes: string[] = []
+    if (c > 0) partes.push(centenas[c])
+    if (resto > 0) {
+      if (resto < 10) partes.push(unidades[resto])
+      else if (resto < 20) partes.push(especiais[resto - 10])
+      else {
+        const d = Math.floor(resto / 10)
+        const u = resto % 10
+        if (u === 0) partes.push(dezenas[d])
+        else partes.push(`${dezenas[d]} e ${unidades[u]}`)
+      }
+    }
+    return partes.join(' e ')
+  }
+
+  if (n < 0) return `menos ${_numeroPorExtenso(-n)}`
+  if (n < 1000) return ate999(n)
+
+  const partes: string[] = []
+  const escalas = [
+    { div: 1_000_000_000, sing: 'bilhão', plur: 'bilhões' },
+    { div: 1_000_000, sing: 'milhão', plur: 'milhões' },
+    { div: 1_000, sing: 'mil', plur: 'mil' },
+  ]
+  let resto = Math.floor(n)
+  for (const { div, sing, plur } of escalas) {
+    const q = Math.floor(resto / div)
+    if (q > 0) {
+      if (div === 1000 && q === 1) partes.push('mil')
+      else partes.push(`${ate999(q)} ${q === 1 ? sing : plur}`.trim())
+      resto = resto % div
+    }
+  }
+  if (resto > 0) {
+    // Conector "e" entre escalas e resto, exceto quando o resto for 1xx-9xx redondo
+    partes.push(ate999(resto))
+  }
+  return partes.join(' e ')
+}
+
 function valorPorExtenso(v?: number | null): string {
   if (!v) return 'zero reais'
-  // Implementação simples; poderia usar lib `extenso` mas aqui basta o display
   const reais = Math.floor(v)
   const cents = Math.round((v - reais) * 100)
-  if (cents === 0) return `R$ ${reais.toLocaleString('pt-BR')} reais`
-  return `R$ ${reais.toLocaleString('pt-BR')} reais e ${cents} centavos`
+  const extenso = _numeroPorExtenso(reais)
+  const sufixo = reais === 1 ? 'real' : 'reais'
+  if (cents === 0) return `${extenso} ${sufixo}`
+  const cExt = _numeroPorExtenso(cents)
+  const cSuf = cents === 1 ? 'centavo' : 'centavos'
+  return `${extenso} ${sufixo} e ${cExt} ${cSuf}`
+}
+
+// Percentual em extenso para os casos comuns (1% a 100%, e .5).
+// Usado nos templates para "6% (seis por cento)", "10% (dez por cento)" etc.
+function percentualPorExtenso(p?: number | null): string {
+  if (p == null || isNaN(Number(p))) return ''
+  const v = Number(p)
+  const inteiro = Math.floor(v)
+  const frac = Math.round((v - inteiro) * 100)
+  const baseExt = _numeroPorExtenso(inteiro)
+  let resultado = `${baseExt} por cento`
+  if (frac > 0) {
+    if (frac === 50) resultado = `${baseExt} e meio por cento`
+    else resultado = `${baseExt} vírgula ${_numeroPorExtenso(frac)} por cento`
+  }
+  return resultado
 }
 
 function prazoPorExtenso(meses?: number | null): string {
@@ -121,14 +195,34 @@ function formatarCep(c?: string | null): string {
 function enderecoCompleto(o: any): string {
   if (!o) return ''
   const parts: string[] = []
-  if (o.endereco) parts.push(o.endereco)
-  if (o.numero) parts.push(`nº ${o.numero}`)
+  // "Rua X, nº 123" no mesmo bloco — evita "Rua X, nº 123" virar duas partes com vírgula
+  if (o.endereco) {
+    parts.push(o.numero ? `${o.endereco}, nº ${o.numero}` : o.endereco)
+  } else if (o.numero) {
+    parts.push(`nº ${o.numero}`)
+  }
   if (o.complemento) parts.push(o.complemento)
-  if (o.bairro || o.bairro_nome) parts.push(`bairro ${o.bairro_nome || o.bairro}`)
-  if (o.cidade) parts.push(o.cidade)
-  if (o.estado) parts.push(`/${o.estado}`)
+  const bairro = o.bairro_nome || o.bairro
+  if (bairro) parts.push(`bairro ${bairro}`)
+  // Cidade/Estado no mesmo bloco — só renderiza se houver pelo menos um;
+  // join('/') aplicado após filtrar Boolean para nunca produzir "/RJ" órfão
+  // ou "Resende/" pendurado.
+  const cidEstado = [o.cidade, o.estado].filter(Boolean).join('/')
+  if (cidEstado) parts.push(cidEstado)
   if (o.cep) parts.push(`CEP ${formatarCep(o.cep)}`)
-  return parts.join(', ')
+  return parts.filter(Boolean).join(', ')
+}
+
+// Calcula meses entre duas datas ISO, arredondando para o inteiro mais próximo.
+// Usado como fallback quando contrato.prazo_meses não foi calculado/persistido.
+function _diffMeses(inicioISO?: string | null, fimISO?: string | null): number | null {
+  if (!inicioISO || !fimISO) return null
+  const i = new Date(inicioISO)
+  const f = new Date(fimISO)
+  if (isNaN(i.getTime()) || isNaN(f.getTime())) return null
+  const meses = (f.getFullYear() - i.getFullYear()) * 12 + (f.getMonth() - i.getMonth())
+  // Ajuste de dia: se o dia final for menor que o inicial, ainda está no mês anterior
+  return f.getDate() < i.getDate() ? Math.max(0, meses - 1) : meses
 }
 
 function buildContexto(args: MergeArgs): Record<string, any> {
@@ -171,6 +265,18 @@ function buildContexto(args: MergeArgs): Record<string, any> {
     estado: p.estado || '',
     cep: formatarCep(p.cep),
     endereco_completo: enderecoCompleto(p),
+    // Cônjuge — campos opcionais usados em {{#if X.conjuge_nome}}
+    conjuge_nome: (p as any).conjuge_nome || '',
+    conjuge_cpf: (p as any).conjuge_cpf || '',
+    // Razão social / fantasia / IE / IM / CNAE / representante (PJ comercial)
+    razao_social: (p as any).razao_social || p.nome || '',
+    nome_fantasia: (p as any).nome_fantasia || '',
+    ie: (p as any).ie || '',
+    im: (p as any).im || '',
+    cnae: (p as any).cnae || '',
+    representante: (p as any).representante || '',
+    representante_cpf: (p as any).representante_cpf || '',
+    representante_cargo: (p as any).representante_cargo || '',
   }) : null
 
   // Contrato — bloco unificado
@@ -190,8 +296,16 @@ function buildContexto(args: MergeArgs): Record<string, any> {
     data_inicio: fmtData(contrato.data_inicio),
     data_fim: fmtData(contrato.data_fim),
     data_termino: fmtData(contrato.data_fim), // alias
-    prazo_meses: contrato.prazo_meses || 0,
-    prazo_extenso: prazoPorExtenso(contrato.prazo_meses),
+    // prazo_meses: prefere o valor persistido; se ausente/zero, calcula da diferença
+    // entre data_inicio e data_fim. Evita o bug de "12 meses, 2026 → 2028".
+    prazo_meses: (contrato.prazo_meses && contrato.prazo_meses > 0)
+      ? contrato.prazo_meses
+      : (_diffMeses(contrato.data_inicio, contrato.data_fim) ?? 0),
+    prazo_extenso: prazoPorExtenso(
+      (contrato.prazo_meses && contrato.prazo_meses > 0)
+        ? contrato.prazo_meses
+        : (_diffMeses(contrato.data_inicio, contrato.data_fim) ?? 0)
+    ),
     valor_aluguel: fmtMoedaSemPrefixo(contrato.valor_aluguel),
     valor_aluguel_fmt: fmtMoeda(contrato.valor_aluguel),
     valor_aluguel_extenso: valorPorExtenso(contrato.valor_aluguel),
@@ -206,7 +320,13 @@ function buildContexto(args: MergeArgs): Record<string, any> {
     ramo_atividade: (contrato as any).ramo_atividade || '',
     // Campos da Associação com Corretor + outros tipos
     comissao_venda_pct: (contrato as any).comissao_venda_pct ?? (contrato as any).comissao_pct ?? 6,
+    comissao_venda_pct_extenso: percentualPorExtenso(
+      (contrato as any).comissao_venda_pct ?? (contrato as any).comissao_pct ?? 6
+    ),
     comissao_temporada_pct: (contrato as any).comissao_temporada_pct ?? 30,
+    comissao_temporada_pct_extenso: percentualPorExtenso(
+      (contrato as any).comissao_temporada_pct ?? 30
+    ),
     dia_pagamento_comissao: (contrato as any).dia_pagamento_comissao ?? 10,
     aviso_previo_dias: (contrato as any).aviso_previo_dias ?? 30,
     multa_lgpd_valor: ((contrato as any).multa_lgpd_valor ?? 10000).toLocaleString('pt-BR', { minimumFractionDigits: 2 }),
@@ -231,6 +351,9 @@ function buildContexto(args: MergeArgs): Record<string, any> {
     forma_sinal: (contrato as any).forma_sinal || '',
     forma_saldo: (contrato as any).forma_saldo || '',
     comissao_total_pct: (contrato as any).comissao_total_pct ?? (contrato as any).comissao_pct ?? 6,
+    comissao_total_pct_extenso: percentualPorExtenso(
+      (contrato as any).comissao_total_pct ?? (contrato as any).comissao_pct ?? 6
+    ),
     comissao_total_valor_fmt: (contrato as any).comissao_total_valor
       ? fmtMoeda((contrato as any).comissao_total_valor)
       : (valorVenda ? fmtMoeda(Number(valorVenda) * (((contrato as any).comissao_total_pct ?? 6) / 100)) : ''),
@@ -347,8 +470,16 @@ function buildContexto(args: MergeArgs): Record<string, any> {
     },
     imobiliaria,
     cidade: { foro: imobiliaria.foro || '' },
-    taxa_admin: { percentual: contrato.taxa_admin_pct ?? 10 },
-    comissao: { percentual: 6, percentual_venda: contratoCtx.comissao_venda_pct, percentual_venda_extenso: '' },
+    taxa_admin: {
+      percentual: contrato.taxa_admin_pct ?? 10,
+      percentual_extenso: percentualPorExtenso(contrato.taxa_admin_pct ?? 10),
+    },
+    comissao: {
+      percentual: 6,
+      percentual_extenso: percentualPorExtenso(6),
+      percentual_venda: contratoCtx.comissao_venda_pct,
+      percentual_venda_extenso: percentualPorExtenso(contratoCtx.comissao_venda_pct),
+    },
     plataforma_assinatura: 'ZapSign',
   }
 }
@@ -363,43 +494,122 @@ function getValue(ctx: Record<string, any>, path: string): string {
   return cur == null ? '' : String(cur)
 }
 
+// Verifica truthiness de um path no contexto, levando em conta strings vazias,
+// 0/null/undefined e placeholders típicos como '****'.
+function _isTruthyPath(ctx: Record<string, any>, path: string): boolean {
+  const parts = path.trim().split('.')
+  let cur: any = ctx
+  for (const p of parts) {
+    if (cur == null) return false
+    cur = cur[p]
+  }
+  if (cur == null) return false
+  if (typeof cur === 'string') {
+    const t = cur.trim()
+    if (t === '') return false
+    if (/^\*+$/.test(t)) return false // ****
+    return true
+  }
+  if (typeof cur === 'number') return cur !== 0
+  return Boolean(cur)
+}
+
+// Suporte mínimo a Mustache/Handlebars {{#if path}}...{{/if}} com aninhamento.
+// Estratégia: encontrar o bloco {{#if}} mais interno (sem outro {{#if}} dentro)
+// e processar; repetir até não haver mais. Trim agressivo de linhas em branco
+// remanescentes evita parágrafos vazios após bloco condicional ausente.
+function _processarCondicionais(template: string, ctx: Record<string, any>): string {
+  const blocoInterno = /\{\{#if\s+([\w.]+)\s*\}\}((?:(?!\{\{#if\s)[\s\S])*?)\{\{\/if\}\}/
+  let out = template
+  let safety = 0
+  while (blocoInterno.test(out) && safety < 1000) {
+    out = out.replace(blocoInterno, (_match, path: string, conteudo: string) => {
+      if (_isTruthyPath(ctx, path)) {
+        return conteudo
+      }
+      return ''
+    })
+    safety++
+  }
+  return out
+}
+
 // Remove linhas que ficaram só com fragmentos órfãos depois do merge — heurística:
 // - se a linha (após substituição) ficar com markup vazio claro (ex.: "**, série **", "()", "( ),"),
 //   ou for um label puro do tipo "**Algo:**" / "**Algo:** ." sem conteúdo, descarta.
 // - preserva linhas com qualquer conteúdo informativo.
 function limparLinhasOrfas(texto: string): string {
-  const linhas = texto.split('\n')
+  // Primeira passada: remove fragmentos inline e parênteses vazios DENTRO de cada linha
+  // antes de avaliar se a linha como um todo deve ser descartada.
+  const limpoInline = texto
+    .split('\n')
+    .map((l) => {
+      let s = l
+      // " ()" e "()" deixados por placeholders extenso vazios — sempre supérfluos.
+      s = s.replace(/\s*\(\s*\)/g, '')
+      // "R$ ()" → "R$" — se o valor está vazio mas o "R$" sobrou, removemos depois.
+      // "**** (...)" → remove "****" isolados (placeholder não substituído).
+      s = s.replace(/\s*\*{4,}\s*/g, ' ')
+      // ", ," → "," (vírgulas duplas após bloco condicional removido)
+      s = s.replace(/,\s*,/g, ',')
+      // Espaços duplos
+      s = s.replace(/[ \t]+/g, ' ')
+      // Vírgula antes de "/" do estado: ", /RJ" (defesa em profundidade)
+      s = s.replace(/,\s*\/([A-Z]{2})/g, '/$1')
+      // " ," ou " ." remanescentes no fim
+      s = s.replace(/\s+([,.;])/g, '$1')
+      return s
+    })
+    .join('\n')
+
+  const linhas = limpoInline.split('\n')
   const out: string[] = []
   for (const linha of linhas) {
     const t = linha.trim()
     if (t === '') { out.push(linha); continue }
 
     // Padrões de "label vazio" — variações comuns nos templates
-    // ex.: "**Cônjuge** , CPF nº" → vira "Cônjuge , CPF nº" (sem dado)
-    // ex.: "Inscrição imobiliária (IPTU): " (sem valor após ":")
-    // ex.: "**Características**: " ou "Características: ,"
     const padraoLabelVazio = [
       // "**X:**" ou "**X**:" sem nada útil depois
       /^\*\*[^*]+:?\*\*:?\s*[.,;]?\s*$/,
       // "X: " (texto curto seguido só de pontuação/vazio)
       /^[A-Za-zÀ-ú()/ —–-]{1,40}:\s*[.,;]?\s*$/,
-      // "**, série **" ou similar (só asteriscos e vírgulas/espaços)
+      // só asteriscos/vírgulas/pontuação/espaços
       /^[*\s,.;:—–-]+$/,
       // "( )" ou "()" sozinho
       /^\(\s*\)\s*[.,;]?\s*$/,
+      // "R$" sozinho (placeholder de valor vazio)
+      /^R\$\s*[.,;]?\s*$/,
+      // ":" sozinho
+      /^:\s*$/,
     ]
     if (padraoLabelVazio.some((re) => re.test(t))) continue
 
     // "Cônjuge , CPF" — começa com label seguido imediatamente de vírgula sem dado entre eles
     if (/^\*?\*?[A-Za-zÀ-ú()/ ]+\*?\*?\s*,\s*(CPF|RG)\s*(nº|n°|n)?\s*[,.]?\s*$/i.test(t)) continue
 
+    // "PIX na chave " (sem valor após "chave")
+    if (/(PIX\s+na\s+chave|chave\s+PIX|PIX\s+na\s+chave\s+\*+)\s*[.,;]?\s*$/i.test(t)) continue
+
+    // "apólice nº" sem número
+    if (/^ap[óo]lice\s+n[º°o.]?\s*\*+\s*[.,;]?\s*$/i.test(t)) continue
+
     out.push(linha)
   }
-  return out.join('\n')
+
+  // Colapsa blocos de mais de 2 linhas em branco em apenas uma — evita
+  // espaços verticais excessivos onde blocos {{#if}} foram removidos.
+  return out.join('\n').replace(/\n{3,}/g, '\n\n')
 }
 
 export function mergeTemplate(template: string, args: MergeArgs): string {
   const ctx = buildContexto(args)
-  const merged = template.replace(/\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g, (_, path) => getValue(ctx, path))
+  // 1) Processa blocos condicionais ANTES da substituição de placeholders.
+  //    Isso permite remover seções inteiras quando dados opcionais
+  //    (cônjuge, fiador, complemento) estão ausentes.
+  const condicionado = _processarCondicionais(template, ctx)
+  // 2) Substitui placeholders {{x.y}}.
+  const merged = condicionado.replace(/\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g, (_, path) => getValue(ctx, path))
+  // 3) Remove linhas órfãs / fragmentos (vírgulas penduradas, asteriscos vazios).
   return limparLinhasOrfas(merged)
 }

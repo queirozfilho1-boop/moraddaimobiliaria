@@ -28,7 +28,7 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 **2.1.** Constitui objeto deste contrato a **prestação dos serviços de administração imobiliária**, pela ADMINISTRADORA, do imóvel adiante descrito, de propriedade do(a) CONTRATANTE:
 
-**2.1.1.** Código interno: **{{imovel.codigo}}**; tipo: **{{imovel.tipo}}** (residencial / comercial); endereço completo: **{{imovel.endereco_completo}}**; matrícula nº **{{imovel.matricula}}** do Cartório de Registro de Imóveis de **{{imovel.cartorio}}**; inscrição imobiliária (IPTU) nº **{{imovel.inscricao_iptu}}**; área privativa **{{imovel.area_privativa}}**.
+**2.1.1.** Código interno: **{{imovel.codigo}}**; tipo: **{{imovel.tipo}}**; endereço completo: **{{imovel.endereco_completo}}**{{#if imovel.matricula}}; matrícula nº **{{imovel.matricula}}** do Cartório de Registro de Imóveis de **{{imovel.cartorio}}**{{/if}}{{#if imovel.inscricao_iptu}}; inscrição imobiliária (IPTU) nº **{{imovel.inscricao_iptu}}**{{/if}}{{#if imovel.area_privativa}}; área privativa **{{imovel.area_privativa}}**{{/if}}.
 
 **2.2.** A administração compreende as atividades descritas na Cláusula 4ª, executadas em nome e por conta do(a) PROPRIETÁRIO(A), mediante outorga dos poderes constantes da Cláusula 3ª.
 
@@ -94,7 +94,7 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 **5.1.** A ADMINISTRADORA fica autorizada a celebrar contratos de locação observados, no mínimo, os seguintes parâmetros, sem prejuízo de ajustes pontuais aprovados pelo PROPRIETÁRIO:
 
-**5.1.1.** **Valor mínimo do aluguel:** R$ {{contrato.valor_aluguel}};
+**5.1.1.** **Valor mínimo do aluguel:** {{contrato.valor_aluguel_fmt}};
 
 **5.1.2.** **Reajuste anual** pelo **{{locacao.indice_reajuste}}** (IGP-M / IPCA);
 
@@ -110,7 +110,7 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 **6.1.** Pela administração, a ADMINISTRADORA fará jus aos seguintes honorários:
 
-**6.1.1. Taxa de administração mensal:** **{{taxa_admin.percentual}}%** sobre o valor bruto do aluguel efetivamente recebido, observado valor mínimo mensal pactuado em proposta;
+**6.1.1. Taxa de administração mensal:** **{{taxa_admin.percentual}}% ({{taxa_admin.percentual_extenso}})** sobre o valor bruto do aluguel efetivamente recebido, observado valor mínimo mensal pactuado em proposta;
 
 **6.1.2. Comissão de intermediação locatícia (captação):** equivalente ao valor de **1 (um) aluguel**, retida do primeiro pagamento efetuado pelo locatário, conforme Resolução COFECI nº 1.504/2023;
 
@@ -210,7 +210,7 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 ## CLÁUSULA 12 — DO PRAZO E DA RENOVAÇÃO
 
-**12.1.** O presente contrato vigora pelo prazo de **12 (doze) meses**, com início em **{{contrato.data_inicio}}** e término em **{{contrato.data_fim}}**, **renovando-se automaticamente** por iguais e sucessivos períodos, salvo manifestação em contrário de qualquer das partes na forma da Cláusula 13.
+**12.1.** O presente contrato vigora pelo prazo de **{{contrato.prazo_meses}} ({{contrato.prazo_extenso}}) meses**, com início em **{{contrato.data_inicio}}** e término em **{{contrato.data_fim}}**, **renovando-se automaticamente** por iguais e sucessivos períodos, salvo manifestação em contrário de qualquer das partes na forma da Cláusula 13.
 
 **12.2.** Os contratos de locação celebrados durante a vigência deste instrumento permanecem regidos pelos honorários ora pactuados **até o seu término**, ainda que ocorra rescisão deste contrato de administração no curso da locação.
 

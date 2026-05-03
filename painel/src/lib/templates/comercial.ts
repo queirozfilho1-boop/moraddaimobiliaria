@@ -14,9 +14,9 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 **LOCADOR(A):** {{locador.nome}}, {{locador.nacionalidade}}, {{locador.estado_civil}}, {{locador.profissao}}, portador(a) do RG nº {{locador.rg}}, inscrito(a) no CPF/CNPJ sob o nº {{locador.cpf_cnpj}}, residente e domiciliado(a) em {{locador.endereco_completo}}, e-mail {{locador.email}}, telefone {{locador.telefone}}.
 
-**LOCATÁRIO(A) — PESSOA JURÍDICA:** **{{locatario.razao_social}}** (nome fantasia: {{locatario.nome_fantasia}}), pessoa jurídica de direito privado, inscrita no CNPJ sob o nº {{locatario.cpf_cnpj}}, inscrição estadual {{locatario.ie}}, inscrição municipal {{locatario.im}}, atividade principal sob CNAE {{locatario.cnae}}, com sede em {{locatario.endereco_completo}}, e-mail {{locatario.email}}, telefone {{locatario.telefone}}, neste ato representada por {{locatario.representante}}, CPF nº {{locatario.representante_cpf}}, na qualidade de {{locatario.representante_cargo}}.
+**LOCATÁRIO(A) — PESSOA JURÍDICA:** **{{locatario.razao_social}}**{{#if locatario.nome_fantasia}} (nome fantasia: {{locatario.nome_fantasia}}){{/if}}, pessoa jurídica de direito privado, inscrita no CNPJ sob o nº {{locatario.cpf_cnpj}}{{#if locatario.ie}}, inscrição estadual {{locatario.ie}}{{/if}}{{#if locatario.im}}, inscrição municipal {{locatario.im}}{{/if}}{{#if locatario.cnae}}, atividade principal sob CNAE {{locatario.cnae}}{{/if}}, com sede em {{locatario.endereco_completo}}, e-mail {{locatario.email}}, telefone {{locatario.telefone}}{{#if locatario.representante}}, neste ato representada por {{locatario.representante}}, CPF nº {{locatario.representante_cpf}}, na qualidade de {{locatario.representante_cargo}}{{/if}}.
 
-**FIADOR(A) — quando aplicável:** {{fiador.nome}}, {{fiador.nacionalidade}}, {{fiador.estado_civil}}, {{fiador.profissao}}, RG nº {{fiador.rg}}, CPF/CNPJ nº {{fiador.cpf_cnpj}}, residente em {{fiador.endereco_completo}}, e-mail {{fiador.email}}, telefone {{fiador.telefone}}.
+{{#if fiador.nome}}**FIADOR(A):** {{fiador.nome}}, {{fiador.nacionalidade}}, {{fiador.estado_civil}}, {{fiador.profissao}}, RG nº {{fiador.rg}}, CPF/CNPJ nº {{fiador.cpf_cnpj}}, residente em {{fiador.endereco_completo}}{{#if fiador.email}}, e-mail {{fiador.email}}{{/if}}{{#if fiador.telefone}}, telefone {{fiador.telefone}}{{/if}}.{{/if}}
 
 **INTERMEDIÁRIA / ADMINISTRADORA:** **{{imobiliaria.nome}}**, CNPJ nº {{imobiliaria.cnpj}}, **CRECI-PJ nº {{imobiliaria.creci}}**, com sede em {{imobiliaria.endereco_completo}}, e-mail {{imobiliaria.email}}, telefone {{imobiliaria.telefone}}.
 
@@ -32,7 +32,7 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 **2.1.** O LOCADOR dá em locação ao LOCATÁRIO o imóvel **não-residencial** assim descrito:
 
-**2.1.1.** Código interno: **{{imovel.codigo}}**; tipo: **{{imovel.tipo}}**; endereço: **{{imovel.endereco_completo}}**; matrícula nº **{{imovel.matricula}}** do Cartório de Registro de Imóveis de **{{imovel.cartorio}}**; inscrição imobiliária (IPTU) nº **{{imovel.inscricao_iptu}}**; área construída **{{imovel.area_construida}}**; área total **{{imovel.area_total}}**.
+**2.1.1.** Código interno: **{{imovel.codigo}}**; tipo: **{{imovel.tipo}}**; endereço: **{{imovel.endereco_completo}}**{{#if imovel.matricula}}; matrícula nº **{{imovel.matricula}}** do Cartório de Registro de Imóveis de **{{imovel.cartorio}}**{{/if}}{{#if imovel.inscricao_iptu}}; inscrição imobiliária (IPTU) nº **{{imovel.inscricao_iptu}}**{{/if}}{{#if imovel.area_construida}}; área construída **{{imovel.area_construida}}**{{/if}}{{#if imovel.area_total}}; área total **{{imovel.area_total}}**{{/if}}.
 
 **2.2.** Acompanham o imóvel vagas de garagem, depósito, equipamentos fixos e mobiliário descritos no **Termo de Vistoria de Entrada (Anexo I)**.
 
@@ -42,7 +42,7 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 ## CLÁUSULA 3ª — DA DESTINAÇÃO E DO RAMO DE ATIVIDADE
 
-**3.1.** O imóvel destina-se **EXCLUSIVAMENTE** ao exercício do seguinte ramo de atividade: **{{contrato.ramo_atividade}}**, sob CNAE **{{locatario.cnae}}**, sendo **vedado** seu uso para fim diverso, residencial, ou para atividades incompatíveis com a destinação comercial.
+**3.1.** O imóvel destina-se **EXCLUSIVAMENTE** ao exercício do seguinte ramo de atividade: **{{contrato.ramo_atividade}}**{{#if locatario.cnae}}, sob CNAE **{{locatario.cnae}}**{{/if}}, sendo **vedado** seu uso para fim diverso, residencial, ou para atividades incompatíveis com a destinação comercial.
 
 **3.2.** Eventual alteração do ramo de atividade ou ampliação para atividades correlatas dependerá de **prévia anuência por escrito** do LOCADOR, que poderá negá-la motivadamente, especialmente se a nova atividade implicar maior risco, ônus tributário ou desvalorização do imóvel.
 
@@ -88,9 +88,9 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 ## CLÁUSULA 6ª — DO VALOR DO ALUGUEL
 
-**6.1.** O aluguel mensal é de **R$ {{contrato.valor_aluguel}} ({{contrato.valor_aluguel_extenso}})**, pago **até o dia {{contrato.dia_vencimento}}** de cada mês subsequente.
+**6.1.** O aluguel mensal é de **{{contrato.valor_aluguel_fmt}} ({{contrato.valor_aluguel_extenso}})**, pago **até o dia {{contrato.dia_vencimento}}** de cada mês subsequente.
 
-**6.2.** Pagamento via boleto bancário emitido pela {{imobiliaria.nome}} ou PIX na chave **{{contrato.chave_pix}}**, sendo válido apenas mediante comprovante.
+**6.2.** Pagamento via boleto bancário emitido pela {{imobiliaria.nome}}{{#if contrato.chave_pix}} ou PIX na chave **{{contrato.chave_pix}}**{{/if}}, sendo válido apenas mediante comprovante.
 
 **6.3.** Em caso de **aluguel percentual sobre faturamento** (locação em shopping center ou modalidade mista), serão observadas as regras dos arts. 52 e 54 da Lei nº 8.245/1991, com cláusula específica em aditivo.
 
@@ -519,15 +519,15 @@ CPF/CNPJ: {{locador.cpf_cnpj}}
 _________________________________________
 **LOCATÁRIO(A) — PESSOA JURÍDICA:** {{locatario.razao_social}}
 CNPJ: {{locatario.cpf_cnpj}}
-Por: {{locatario.representante}} · CPF: {{locatario.representante_cpf}} · Cargo: {{locatario.representante_cargo}}
+{{#if locatario.representante}}Por: {{locatario.representante}} · CPF: {{locatario.representante_cpf}} · Cargo: {{locatario.representante_cargo}}{{/if}}
 
 
-_________________________________________
+{{#if fiador.nome}}_________________________________________
 **FIADOR(A):** {{fiador.nome}}
 CPF/CNPJ: {{fiador.cpf_cnpj}}
 
 
-_________________________________________
+{{/if}}_________________________________________
 **INTERMEDIÁRIA:** {{imobiliaria.nome}}
 CNPJ: {{imobiliaria.cnpj}} · CRECI: {{imobiliaria.creci}}
 

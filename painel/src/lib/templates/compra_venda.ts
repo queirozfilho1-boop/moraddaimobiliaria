@@ -28,9 +28,9 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 ## CLÁUSULA 2ª — DO OBJETO
 
-**2.1.** O VENDEDOR vende ao COMPRADOR, que adquire, livre e desembaraçado de quaisquer ônus, gravames, dívidas, hipotecas ou alienações fiduciárias, o imóvel cadastrado sob o código **{{imovel.codigo}}** ("**{{imovel.titulo}}**"), tipo **{{imovel.tipo}}**, situado em **{{imovel.endereco_completo}}**, com área total **{{imovel.area_total}}** e área construída **{{imovel.area_construida}}**, contendo **{{imovel.quartos}}** quartos, **{{imovel.banheiros}}** banheiros e **{{imovel.vagas}}** vagas de garagem.
+**2.1.** O VENDEDOR vende ao COMPRADOR, que adquire, livre e desembaraçado de quaisquer ônus, gravames, dívidas, hipotecas ou alienações fiduciárias, o imóvel cadastrado sob o código **{{imovel.codigo}}**{{#if imovel.titulo}} ("**{{imovel.titulo}}**"){{/if}}, tipo **{{imovel.tipo}}**, situado em **{{imovel.endereco_completo}}**{{#if imovel.area_total}}, com área total **{{imovel.area_total}}**{{/if}}{{#if imovel.area_construida}} e área construída **{{imovel.area_construida}}**{{/if}}{{#if imovel.quartos}}, contendo **{{imovel.quartos}}** quartos{{/if}}{{#if imovel.banheiros}}, **{{imovel.banheiros}}** banheiros{{/if}}{{#if imovel.vagas}} e **{{imovel.vagas}}** vagas de garagem{{/if}}.
 
-**2.2.** O imóvel objeto deste contrato encontra-se devidamente registrado na **Matrícula nº {{imovel.matricula}}** do Cartório de Registro de Imóveis de **{{imovel.cartorio}}**, com inscrição imobiliária (IPTU) nº **{{imovel.inscricao_iptu}}**.
+{{#if imovel.matricula}}**2.2.** O imóvel objeto deste contrato encontra-se devidamente registrado na **Matrícula nº {{imovel.matricula}}**{{#if imovel.cartorio}} do Cartório de Registro de Imóveis de **{{imovel.cartorio}}**{{/if}}{{#if imovel.inscricao_iptu}}, com inscrição imobiliária (IPTU) nº **{{imovel.inscricao_iptu}}**{{/if}}.{{/if}}
 
 **2.3.** O VENDEDOR declara que o imóvel está quite de todos os tributos, taxas, condomínio e demais encargos até a data deste contrato, e se compromete a apresentar as respectivas certidões negativas de débitos.
 
@@ -40,11 +40,10 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 **3.1.** O preço total e definitivo da presente compra e venda é de **{{contrato.valor_venda_fmt}} ({{contrato.valor_venda_extenso}})**, a ser pago pelo COMPRADOR na seguinte forma:
 
-**3.1.1.** **Sinal e princípio de pagamento:** **{{contrato.valor_sinal_fmt}}**, neste ato, mediante **{{contrato.forma_sinal}}**;
-
-**3.1.2.** **Saldo:** **{{contrato.valor_saldo_fmt}}**, na seguinte forma: **{{contrato.forma_saldo}}**.
-
-**3.2.** Em havendo financiamento bancário, este será obtido pelo COMPRADOR junto à instituição **{{contrato.banco_financiamento}}**, no valor de **{{contrato.valor_financiado_fmt}}**, em **{{contrato.parcelas_qtd}} parcelas**, sendo a aprovação do crédito **condição suspensiva** deste contrato.
+{{#if contrato.valor_sinal_fmt}}**3.1.1.** **Sinal e princípio de pagamento:** **{{contrato.valor_sinal_fmt}}**{{#if contrato.forma_sinal}}, neste ato, mediante **{{contrato.forma_sinal}}**{{/if}};
+{{/if}}{{#if contrato.valor_saldo_fmt}}**3.1.2.** **Saldo:** **{{contrato.valor_saldo_fmt}}**{{#if contrato.forma_saldo}}, na seguinte forma: **{{contrato.forma_saldo}}**{{/if}}.
+{{/if}}
+{{#if contrato.banco_financiamento}}**3.2.** Em havendo financiamento bancário, este será obtido pelo COMPRADOR junto à instituição **{{contrato.banco_financiamento}}**{{#if contrato.valor_financiado_fmt}}, no valor de **{{contrato.valor_financiado_fmt}}**{{/if}}{{#if contrato.parcelas_qtd}}, em **{{contrato.parcelas_qtd}} parcelas**{{/if}}, sendo a aprovação do crédito **condição suspensiva** deste contrato.{{/if}}
 
 **3.3.** Todos os pagamentos serão efetuados por meio de **boleto bancário, PIX ou transferência eletrônica** disponibilizados pela {{imobiliaria.nome}}, valendo o respectivo comprovante como recibo de quitação.
 
@@ -74,7 +73,7 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 ## CLÁUSULA 5ª — DA POSSE E IMISSÃO
 
-**5.1.** A posse do imóvel será transmitida ao COMPRADOR na data de **{{contrato.data_imissao}}**, mediante a quitação integral do preço ou conforme previamente pactuado em adendo.
+**5.1.** A posse do imóvel será transmitida ao COMPRADOR{{#if contrato.data_imissao}} na data de **{{contrato.data_imissao}}**{{/if}}, mediante a quitação integral do preço ou conforme previamente pactuado em adendo.
 
 **5.2.** A partir da imissão na posse, todas as despesas relacionadas ao imóvel (IPTU, condomínio, consumos, conservação) passam a ser de responsabilidade do COMPRADOR.
 
@@ -82,9 +81,9 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 ## CLÁUSULA 6ª — DA ESCRITURA DEFINITIVA, REGISTRO E AVERBAÇÃO
 
-**6.1.** Quitado integralmente o preço, ou aprovado o financiamento bancário, o VENDEDOR obriga-se a outorgar ao COMPRADOR a **Escritura Pública de Compra e Venda** em até **30 (trinta) dias**, comparecendo em Tabelionato de Notas previamente acordado, na data prevista de **{{contrato.data_escritura}}**.
+**6.1.** Quitado integralmente o preço, ou aprovado o financiamento bancário, o VENDEDOR obriga-se a outorgar ao COMPRADOR a **Escritura Pública de Compra e Venda** em até **30 (trinta) dias**, comparecendo em Tabelionato de Notas previamente acordado{{#if contrato.data_escritura}}, na data prevista de **{{contrato.data_escritura}}**{{/if}}.
 
-**6.2.** Todas as despesas relativas à **Escritura, ITBI, Registro Imobiliário, Certidões e demais emolumentos** ficam a cargo do **COMPRADOR**, salvo disposição em contrário neste contrato. Estimativas: ITBI **{{contrato.valor_itbi}}**, Cartório **{{contrato.valor_cartorio}}**.
+**6.2.** Todas as despesas relativas à **Escritura, ITBI, Registro Imobiliário, Certidões e demais emolumentos** ficam a cargo do **COMPRADOR**, salvo disposição em contrário neste contrato.{{#if contrato.valor_itbi}} Estimativas: ITBI **{{contrato.valor_itbi}}**{{#if contrato.valor_cartorio}}, Cartório **{{contrato.valor_cartorio}}**{{/if}}.{{/if}}
 
 **6.3.** O COMPRADOR obriga-se a providenciar o **registro da Escritura** junto ao Cartório de Registro de Imóveis competente, em até **30 (trinta) dias** da assinatura do título translativo, sob pena de não produzir efeitos contra terceiros (art. 1.245 do CC).
 
@@ -134,7 +133,7 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 **10.1.** O presente negócio jurídico foi intermediado pela **{{imobiliaria.nome}}**, mediante autorização de venda outorgada pelo VENDEDOR.
 
-**10.2.** A **comissão de corretagem** de **{{contrato.comissao_total_pct}}%** sobre o valor total da venda, equivalente a **{{contrato.comissao_total_valor_fmt}}**, é devida pelo **{{contrato.comissao_pago_por}}** à intermediadora, e será paga **{{contrato.condicao_comissao}}**.
+**10.2.** A **comissão de corretagem** de **{{contrato.comissao_total_pct}}% ({{contrato.comissao_total_pct_extenso}})** sobre o valor total da venda, equivalente a **{{contrato.comissao_total_valor_fmt}}**, é devida pelo **{{contrato.comissao_pago_por}}** à intermediadora, e será paga **{{contrato.condicao_comissao}}**.
 
 **10.3.** As partes reconhecem que a comissão é devida ainda que, após a aceitação da proposta, qualquer das partes se arrependa, nos termos do **art. 725 do Código Civil**.
 

@@ -4,6 +4,13 @@
 
 import contratoCss from './contratoStyle.css?raw'
 
+// BOM UTF-8 (﻿) prefixado força browsers a interpretarem o blob
+// como UTF-8 mesmo quando o MIME charset não é respeitado, garantindo
+// que acentos vindos do banco (Acácias, Aliança, Petrópolis) renderizem
+// corretamente no PDF. Sem ele, alguns mecanismos de PDF caem em Latin-1
+// e produzem mojibake (Ac�cias, Alian�a).
+const UTF8_BOM = '﻿'
+
 function escapeHtml(s: string): string {
   return s
     .replace(/&/g, '&amp;')
@@ -199,7 +206,7 @@ export async function gerarPdfBase64FromMd(markdown: string, _numero?: string): 
   const jsPDF = (await import('jspdf')).default
 
   const bodyHtml = mdToHtml(markdown)
-  const fullHtml = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style>${contratoCss}</style></head><body><div class="content">${bodyHtml}</div></body></html>`
+  const fullHtml = `${UTF8_BOM}<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><style>${contratoCss}</style></head><body><div class="content">${bodyHtml}</div></body></html>`
 
   // Cria iframe escondido
   const iframe = document.createElement('iframe')
@@ -257,7 +264,7 @@ export function printContratoFromMd(markdown: string, numero?: string) {
   const bodyHtml = mdToHtml(markdown)
   const titulo = `Contrato ${numero || ''}`.trim()
 
-  const fullHtml = `<!DOCTYPE html>
+  const fullHtml = `${UTF8_BOM}<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
@@ -278,6 +285,7 @@ window.addEventListener('load', () => {
 
   // Cria Blob URL com o HTML completo. Isso funciona melhor que
   // document.write em janelas modernas (Edge/Chrome bloqueiam write em about:blank).
+  // Prefix BOM garantido + MIME com charset = pipeline UTF-8 100%.
   const blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' })
   const url = URL.createObjectURL(blob)
   const w = window.open(url, '_blank', 'width=900,height=1200')
