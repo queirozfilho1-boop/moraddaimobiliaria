@@ -85,12 +85,18 @@ interface UserProfile {
 
 async function syncCalendar(profile: UserProfile, accessToken: string): Promise<{
   processed: number
+  created: number
+  updated: number
+  cancelled: number
   newSyncToken: string | null
   errors: string[]
 }> {
   const calendarId = profile.gcal_calendar_id || 'primary'
   const errors: string[] = []
   let processed = 0
+  let created = 0
+  let updated = 0
+  let cancelled = 0
   let newSyncToken: string | null = null
   let pageToken: string | null = null
   let useSyncToken = profile.gcal_sync_token
@@ -135,8 +141,11 @@ async function syncCalendar(profile: UserProfile, accessToken: string): Promise<
 
     for (const ev of data.items || []) {
       try {
-        await processEvent(profile, ev)
+        const action = await processEvent(profile, ev)
         processed++
+        if (action === 'created') created++
+        else if (action === 'updated') updated++
+        else if (action === 'cancelled') cancelled++
       } catch (err) {
         errors.push(`event ${ev.id}: ${err instanceof Error ? err.message : 'erro'}`)
       }
@@ -150,22 +159,25 @@ async function syncCalendar(profile: UserProfile, accessToken: string): Promise<
     break
   }
 
-  return { processed, newSyncToken, errors }
+  return { processed, created, updated, cancelled, newSyncToken, errors }
 }
 
-async function processEvent(profile: UserProfile, ev: GoogleEvent): Promise<void> {
+type ProcessAction = 'skipped' | 'created' | 'updated' | 'cancelled'
+
+async function processEvent(profile: UserProfile, ev: GoogleEvent): Promise<ProcessAction> {
   // 1. Cancelamento -> marca visita correspondente como cancelada
   if (ev.status === 'cancelled') {
-    await sb(`/rest/v1/visitas?google_event_id=eq.${encodeURIComponent(ev.id)}`, {
+    const r = await sb(`/rest/v1/visitas?google_event_id=eq.${encodeURIComponent(ev.id)}`, {
       method: 'PATCH',
       body: JSON.stringify({ status: 'cancelada' }),
     })
-    return
+    // 204 com 0 rows quando nao tinha visita relacionada — conta como skipped
+    return r.ok ? 'cancelled' : 'skipped'
   }
 
   const startIso = ev.start?.dateTime || (ev.start?.date ? `${ev.start.date}T00:00:00-03:00` : null)
   const endIso = ev.end?.dateTime || (ev.end?.date ? `${ev.end.date}T23:59:59-03:00` : null)
-  if (!startIso) return
+  if (!startIso) return 'skipped'
 
   const duracaoMin = endIso
     ? Math.max(15, Math.round((new Date(endIso).getTime() - new Date(startIso).getTime()) / 60000))
@@ -177,7 +189,7 @@ async function processEvent(profile: UserProfile, ev: GoogleEvent): Promise<void
   // FAST PATH: evento SEM endereco e sem moradda_visita_id -> nao eh
   // visita, sai sem tocar no DB. Corta ~80% dos eventos no full sync.
   if (!hasLocation && !moraddaVisitaId) {
-    return
+    return 'skipped'
   }
 
   // Visita ja existe com esse google_event_id?
@@ -196,17 +208,17 @@ async function processEvent(profile: UserProfile, ev: GoogleEvent): Promise<void
         endereco_evento: ev.location || null,
       }),
     })
-    return
+    return 'updated'
   }
 
   // Evento criado pelo painel mas visita foi deletada (orphan) -> ignora
   if (moraddaVisitaId) {
-    return
+    return 'skipped'
   }
 
   // Evento externo SEM endereco -> nao eh visita, ignora
   if (!hasLocation) {
-    return
+    return 'skipped'
   }
 
   // 5. CRIA visita nova com flag precisa_revisao
@@ -231,9 +243,10 @@ async function processEvent(profile: UserProfile, ev: GoogleEvent): Promise<void
       precisa_revisao: true,
     }),
   })
+  return 'created'
 }
 
-async function syncForUser(userId: string): Promise<{ ok: boolean; processed?: number; errors?: string[]; reason?: string }> {
+async function syncForUser(userId: string): Promise<{ ok: boolean; processed?: number; created?: number; updated?: number; cancelled?: number; errors?: string[]; reason?: string }> {
   const pRes = await sb(`/rest/v1/users_profiles?id=eq.${userId}&select=id,nome,gcal_refresh_token,gcal_calendar_id,gcal_sync_token`)
   const pArr = await pRes.json() as UserProfile[]
   const profile = pArr?.[0]
@@ -253,7 +266,14 @@ async function syncForUser(userId: string): Promise<{ ok: boolean; processed?: n
     })
   }
 
-  return { ok: true, processed: result.processed, errors: result.errors }
+  return {
+    ok: true,
+    processed: result.processed,
+    created: result.created,
+    updated: result.updated,
+    cancelled: result.cancelled,
+    errors: result.errors,
+  }
 }
 
 Deno.serve(async (req) => {

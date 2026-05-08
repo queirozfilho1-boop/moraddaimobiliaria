@@ -217,11 +217,27 @@ const VisitasPage = () => {
         return
       }
       const processed = json?.sync?.processed ?? 0
-      if (processed > 0) {
-        toast.success(`${processed} evento(s) sincronizado(s) do Google`)
-        load()
+      const created = json?.sync?.created ?? 0
+      const updated = json?.sync?.updated ?? 0
+      const cancelled = json?.sync?.cancelled ?? 0
+      const changes = created + updated + cancelled
+
+      if (changes === 0) {
+        if (processed > 0) {
+          toast.success(
+            `${processed} evento(s) verificado(s) · 0 viraram visitas (eventos sem endereço são ignorados)`,
+            { duration: 6000 },
+          )
+        } else {
+          toast.success('Sincronizado · agenda Google sem novidades')
+        }
       } else {
-        toast.success('Sincronizado · nenhuma mudança')
+        const partes: string[] = []
+        if (created > 0) partes.push(`${created} nova(s)`)
+        if (updated > 0) partes.push(`${updated} atualizada(s)`)
+        if (cancelled > 0) partes.push(`${cancelled} cancelada(s)`)
+        toast.success(`Sincronizado · ${partes.join(' · ')}`)
+        load()
       }
     } catch (err) {
       if ((err as Error).name === 'AbortError') {
