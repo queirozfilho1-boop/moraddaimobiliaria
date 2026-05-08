@@ -34,7 +34,8 @@ interface NavItem {
   label: string
   path: string
   icon: ReactNode
-  socioOnly?: boolean
+  socioOnly?: boolean   // exclusivo de socio (Acessos)
+  gestao?: boolean      // socio OU gerente (CRM, etc)
   external?: boolean
 }
 
@@ -63,7 +64,7 @@ const groups: NavGroup[] = [
   {
     label: 'Comercial',
     items: [
-      { label: 'CRM',            path: '/painel/crm',             icon: <Briefcase size={18} />, socioOnly: true },
+      { label: 'CRM',            path: '/painel/crm',             icon: <Briefcase size={18} />, gestao: true },
       { label: 'Leads',          path: '/painel/leads',           icon: <Users size={18} /> },
       { label: 'Pipeline Leads', path: '/painel/leads/pipeline',  icon: <Kanban size={18} /> },
       { label: 'Visitas',        path: '/painel/visitas',         icon: <Calendar size={18} /> },
@@ -131,7 +132,11 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
 
   const filteredGroups = groups.map((g) => ({
     ...g,
-    items: g.items.filter((item) => !item.socioOnly || hasFuncao('socio')),
+    items: g.items.filter((item) => {
+      if (item.socioOnly) return hasFuncao('socio')
+      if (item.gestao) return hasFuncao('socio') || hasFuncao('gerente')
+      return true
+    }),
   })).filter((g) => g.items.length > 0)
 
   const sidebarWidth = collapsed ? 'w-16' : 'w-64'

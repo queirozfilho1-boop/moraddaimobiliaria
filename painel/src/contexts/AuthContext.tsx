@@ -9,7 +9,7 @@ import type { User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 
 export type UserRole = 'superadmin' | 'gestor' | 'corretor'
-export type Funcao = 'socio' | 'assistente' | 'corretor'
+export type Funcao = 'socio' | 'gerente' | 'assistente' | 'corretor'
 
 export interface UserProfile {
   id: string
@@ -19,6 +19,7 @@ export interface UserProfile {
   role: UserRole
   role_id: string
   is_socio: boolean
+  is_gerente: boolean
   is_assistente: boolean
   is_corretor: boolean
   avatar_url?: string | null
@@ -56,6 +57,7 @@ const DEV_MOCK_PROFILE: UserProfile = {
   role: 'superadmin',
   role_id: 'dev-role',
   is_socio: true,
+  is_gerente: true,
   is_assistente: true,
   is_corretor: true,
   avatar_url: null,
@@ -84,6 +86,7 @@ async function fetchProfile(userId: string): Promise<UserProfile | null> {
       ativo,
       role_id,
       is_socio,
+      is_gerente,
       is_assistente,
       is_corretor,
       gcal_email,
@@ -106,6 +109,7 @@ async function fetchProfile(userId: string): Promise<UserProfile | null> {
     role: roleName,
     role_id: data.role_id,
     is_socio: !!data.is_socio,
+    is_gerente: !!(data as any).is_gerente,
     is_assistente: !!data.is_assistente,
     is_corretor: !!data.is_corretor,
     avatar_url: data.avatar_url,
@@ -200,6 +204,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!profile) return false
     // Sócio = acesso total
     if (profile.is_socio) return true
+    // Gerente = como sócio, exceto rotas superadmin (Acessos)
+    if (profile.is_gerente && requiredRole !== 'superadmin') return true
     // Assistente = tudo exceto superadmin (Acessos, Configurações sensíveis)
     if (profile.is_assistente && requiredRole !== 'superadmin') return true
     // Corretor puro = só rotas de corretor
@@ -210,6 +216,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   function hasFuncao(funcao: Funcao): boolean {
     if (!profile) return false
     if (funcao === 'socio') return profile.is_socio
+    if (funcao === 'gerente') return profile.is_gerente
     if (funcao === 'assistente') return profile.is_assistente
     if (funcao === 'corretor') return profile.is_corretor
     return false

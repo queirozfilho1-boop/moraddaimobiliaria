@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { UserCog, UserPlus, Crown, Briefcase, Award, Loader2, Pencil, Trash2, X, Save, CheckCircle2 } from 'lucide-react'
+import { UserCog, UserPlus, Crown, ShieldCheck, Briefcase, Award, Loader2, Pencil, Trash2, X, Save, CheckCircle2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 
@@ -13,15 +13,17 @@ interface Usuario {
   slug: string
   ativo: boolean
   is_socio: boolean
+  is_gerente: boolean
   is_assistente: boolean
   is_corretor: boolean
   created_at: string
 }
 
-type Tab = 'todos' | 'socios' | 'assistentes' | 'corretores'
+type Tab = 'todos' | 'socios' | 'gerentes' | 'assistentes' | 'corretores'
 
 interface FuncoesForm {
   is_socio: boolean
+  is_gerente: boolean
   is_assistente: boolean
   is_corretor: boolean
 }
@@ -35,7 +37,7 @@ export default function AcessosPage() {
   const [showNovo, setShowNovo] = useState(false)
   const [novoForm, setNovoForm] = useState({
     nome: '', email: '', telefone: '', whatsapp: '', creci: '', senha: '',
-    is_socio: false, is_assistente: false, is_corretor: false,
+    is_socio: false, is_gerente: false, is_assistente: false, is_corretor: false,
   })
   const [salvando, setSalvando] = useState(false)
 
@@ -45,7 +47,7 @@ export default function AcessosPage() {
     nome: string; email: string; telefone: string; whatsapp: string; creci: string
   } & FuncoesForm>({
     nome: '', email: '', telefone: '', whatsapp: '', creci: '',
-    is_socio: false, is_assistente: false, is_corretor: false,
+    is_socio: false, is_gerente: false, is_assistente: false, is_corretor: false,
   })
   const [editSalvando, setEditSalvando] = useState(false)
 
@@ -61,7 +63,7 @@ export default function AcessosPage() {
     setLoading(true)
     const { data, error } = await supabase
       .from('users_profiles')
-      .select('id, nome, email, telefone, whatsapp, creci, slug, ativo, is_socio, is_assistente, is_corretor, created_at')
+      .select('id, nome, email, telefone, whatsapp, creci, slug, ativo, is_socio, is_gerente, is_assistente, is_corretor, created_at')
       .order('nome')
 
     if (error) {
@@ -86,7 +88,7 @@ export default function AcessosPage() {
       toast.error('Preencha nome, e-mail e senha')
       return
     }
-    if (!novoForm.is_socio && !novoForm.is_assistente && !novoForm.is_corretor) {
+    if (!novoForm.is_socio && !novoForm.is_gerente && !novoForm.is_assistente && !novoForm.is_corretor) {
       toast.error('Selecione ao menos uma função')
       return
     }
@@ -116,6 +118,7 @@ export default function AcessosPage() {
       creci: novoForm.creci || null,
       slug: slug + '-' + Date.now().toString(36),
       is_socio: novoForm.is_socio,
+      is_gerente: novoForm.is_gerente,
       is_assistente: novoForm.is_assistente,
       is_corretor: novoForm.is_corretor,
       ativo: true,
@@ -128,7 +131,7 @@ export default function AcessosPage() {
     }
 
     toast.success('Usuário criado!')
-    setNovoForm({ nome: '', email: '', telefone: '', whatsapp: '', creci: '', senha: '', is_socio: false, is_assistente: false, is_corretor: false })
+    setNovoForm({ nome: '', email: '', telefone: '', whatsapp: '', creci: '', senha: '', is_socio: false, is_gerente: false, is_assistente: false, is_corretor: false })
     setShowNovo(false)
     fetchUsuarios()
   }
@@ -137,13 +140,13 @@ export default function AcessosPage() {
     setEditId(u.id)
     setEditForm({
       nome: u.nome, email: u.email, telefone: u.telefone || '', whatsapp: u.whatsapp || '', creci: u.creci || '',
-      is_socio: u.is_socio, is_assistente: u.is_assistente, is_corretor: u.is_corretor,
+      is_socio: u.is_socio, is_gerente: u.is_gerente, is_assistente: u.is_assistente, is_corretor: u.is_corretor,
     })
   }
 
   async function salvarEdicao() {
     if (!editId || !editForm.nome) return
-    if (!editForm.is_socio && !editForm.is_assistente && !editForm.is_corretor) {
+    if (!editForm.is_socio && !editForm.is_gerente && !editForm.is_assistente && !editForm.is_corretor) {
       toast.error('Selecione ao menos uma função')
       return
     }
@@ -155,6 +158,7 @@ export default function AcessosPage() {
       whatsapp: editForm.whatsapp || null,
       creci: editForm.creci || null,
       is_socio: editForm.is_socio,
+      is_gerente: editForm.is_gerente,
       is_assistente: editForm.is_assistente,
       is_corretor: editForm.is_corretor,
     }).eq('id', editId)
@@ -190,6 +194,7 @@ export default function AcessosPage() {
   const filtroPorTab: Record<Tab, (u: Usuario) => boolean> = {
     todos: () => true,
     socios: (u) => u.is_socio,
+    gerentes: (u) => u.is_gerente,
     assistentes: (u) => u.is_assistente,
     corretores: (u) => u.is_corretor,
   }
@@ -198,6 +203,7 @@ export default function AcessosPage() {
   const counts = {
     todos: usuarios.length,
     socios: usuarios.filter(u => u.is_socio).length,
+    gerentes: usuarios.filter(u => u.is_gerente).length,
     assistentes: usuarios.filter(u => u.is_assistente).length,
     corretores: usuarios.filter(u => u.is_corretor).length,
   }
@@ -267,6 +273,7 @@ export default function AcessosPage() {
               <label className="mb-2 block text-xs font-medium text-gray-600 dark:text-gray-400">Funções *</label>
               <div className="flex flex-wrap gap-2">
                 <FuncaoCheckbox label="Sócio" desc="Acesso total" icon={<Crown size={14}/>} checked={novoForm.is_socio} onChange={(v: boolean) => setNovoForm(p => ({ ...p, is_socio: v }))} />
+                <FuncaoCheckbox label="Gerente" desc="Como sócio · sem Acessos" icon={<ShieldCheck size={14}/>} checked={novoForm.is_gerente} onChange={(v: boolean) => setNovoForm(p => ({ ...p, is_gerente: v }))} />
                 <FuncaoCheckbox label="Assistente Geral" desc="Operacional" icon={<Briefcase size={14}/>} checked={novoForm.is_assistente} onChange={(v: boolean) => setNovoForm(p => ({ ...p, is_assistente: v }))} />
                 <FuncaoCheckbox label="Corretor" desc="Vende e capta" icon={<Award size={14}/>} checked={novoForm.is_corretor} onChange={(v: boolean) => setNovoForm(p => ({ ...p, is_corretor: v }))} />
               </div>
@@ -291,6 +298,7 @@ export default function AcessosPage() {
         {([
           ['todos', 'Todos', null],
           ['socios', 'Sócios', <Crown size={14} key="c"/>],
+          ['gerentes', 'Gerentes', <ShieldCheck size={14} key="g"/>],
           ['assistentes', 'Assistentes', <Briefcase size={14} key="b"/>],
           ['corretores', 'Corretores', <Award size={14} key="a"/>],
         ] as const).map(([key, label, icon]) => (
@@ -336,6 +344,7 @@ export default function AcessosPage() {
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap gap-1">
                           <MiniCheck label="Sócio" checked={editForm.is_socio} onChange={(v: boolean) => setEditForm(f => ({ ...f, is_socio: v }))} />
+                          <MiniCheck label="Gerente" checked={editForm.is_gerente} onChange={(v: boolean) => setEditForm(f => ({ ...f, is_gerente: v }))} />
                           <MiniCheck label="Assist" checked={editForm.is_assistente} onChange={(v: boolean) => setEditForm(f => ({ ...f, is_assistente: v }))} />
                           <MiniCheck label="Corretor" checked={editForm.is_corretor} onChange={(v: boolean) => setEditForm(f => ({ ...f, is_corretor: v }))} />
                         </div>
@@ -364,6 +373,7 @@ export default function AcessosPage() {
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap gap-1">
                           {u.is_socio && <Badge color="amber" icon={<Crown size={10}/>}>Sócio</Badge>}
+                          {u.is_gerente && <Badge color="violet" icon={<ShieldCheck size={10}/>}>Gerente</Badge>}
                           {u.is_assistente && <Badge color="blue" icon={<Briefcase size={10}/>}>Assistente</Badge>}
                           {u.is_corretor && <Badge color="emerald" icon={<Award size={10}/>}>Corretor</Badge>}
                         </div>
@@ -452,6 +462,7 @@ const MiniCheck = ({ label, checked, onChange }: any) => (
 const Badge = ({ color, icon, children }: any) => {
   const cls: Record<string, string> = {
     amber: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+    violet: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',
     blue: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
     emerald: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
   }
