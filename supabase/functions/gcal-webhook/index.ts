@@ -100,14 +100,16 @@ async function syncCalendar(profile: UserProfile, accessToken: string): Promise<
     if (useSyncToken && !pageToken) {
       params.set('syncToken', useSyncToken)
     } else if (!useSyncToken) {
-      // Full sync inicial (ou apos 410): so eventos de 30 dias atras pra frente
-      const timeMin = new Date(Date.now() - 30 * 86400000).toISOString()
+      // Full sync inicial (ou apos 410): janela curta de 7 dias atras pra
+      // frente. Mantem a primeira sync rapida — sync_token sera salvo e a
+      // partir dai sao incrementais (so deltas).
+      const timeMin = new Date(Date.now() - 7 * 86400000).toISOString()
       params.set('timeMin', timeMin)
       params.set('singleEvents', 'true')
       params.set('orderBy', 'startTime')
     }
     if (pageToken) params.set('pageToken', pageToken)
-    params.set('maxResults', '250')
+    params.set('maxResults', '100')
 
     const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?${params.toString()}`
     const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } })
@@ -169,12 +171,19 @@ async function processEvent(profile: UserProfile, ev: GoogleEvent): Promise<void
     ? Math.max(15, Math.round((new Date(endIso).getTime() - new Date(startIso).getTime()) / 60000))
     : 60
 
-  // 2. Visita ja existe com esse google_event_id?
+  const moraddaVisitaId = ev.extendedProperties?.private?.moradda_visita_id
+  const hasLocation = !!(ev.location && ev.location.trim())
+
+  // FAST PATH: evento SEM endereco e sem moradda_visita_id -> nao eh
+  // visita, sai sem tocar no DB. Corta ~80% dos eventos no full sync.
+  if (!hasLocation && !moraddaVisitaId) {
+    return
+  }
+
+  // Visita ja existe com esse google_event_id?
   const findRes = await sb(`/rest/v1/visitas?google_event_id=eq.${encodeURIComponent(ev.id)}&select=id`)
   const findArr = await findRes.json() as Array<{ id: string }>
   const existing = findArr?.[0]
-
-  const moraddaVisitaId = ev.extendedProperties?.private?.moradda_visita_id
 
   if (existing) {
     // UPDATE - reflete edicao feita direto no Google
@@ -190,13 +199,13 @@ async function processEvent(profile: UserProfile, ev: GoogleEvent): Promise<void
     return
   }
 
-  // 3. Evento criado pelo painel mas visita foi deletada (orphan) -> ignora
+  // Evento criado pelo painel mas visita foi deletada (orphan) -> ignora
   if (moraddaVisitaId) {
     return
   }
 
-  // 4. Evento externo SEM endereco -> nao eh visita, ignora
-  if (!ev.location || !ev.location.trim()) {
+  // Evento externo SEM endereco -> nao eh visita, ignora
+  if (!hasLocation) {
     return
   }
 

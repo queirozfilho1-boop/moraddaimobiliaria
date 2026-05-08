@@ -197,18 +197,41 @@ const VisitasPage = () => {
   async function sincronizarGoogle() {
     if (syncing) return
     setSyncing(true)
-    const { res, json } = await callEdge('gcal-sync-now', {})
-    setSyncing(false)
-    if (!res.ok) {
-      toast.error(json?.error || 'Erro ao sincronizar')
-      return
-    }
-    const processed = json?.sync?.processed ?? 0
-    if (processed > 0) {
-      toast.success(`${processed} evento(s) sincronizado(s) do Google`)
-      load()
-    } else {
-      toast.success('Sincronizado · nenhuma mudança')
+    // Timeout client-side de 50s (Edge Function corta em 60s) — sempre
+    // libera o botao mesmo se Supabase travar
+    const ctrl = new AbortController()
+    const timeoutId = setTimeout(() => ctrl.abort(), 50000)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/gcal-sync-now`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({}),
+        signal: ctrl.signal,
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        toast.error(json?.error || `Erro ao sincronizar (${res.status})`)
+        return
+      }
+      const processed = json?.sync?.processed ?? 0
+      if (processed > 0) {
+        toast.success(`${processed} evento(s) sincronizado(s) do Google`)
+        load()
+      } else {
+        toast.success('Sincronizado · nenhuma mudança')
+      }
+    } catch (err) {
+      if ((err as Error).name === 'AbortError') {
+        toast.error('Tempo esgotado · primeira sync pode demorar, tente de novo em alguns segundos')
+      } else {
+        toast.error('Erro de rede: ' + ((err as Error).message || 'desconhecido'))
+      }
+    } finally {
+      clearTimeout(timeoutId)
+      setSyncing(false)
     }
   }
 
