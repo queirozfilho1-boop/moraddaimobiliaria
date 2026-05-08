@@ -40,6 +40,7 @@ export default function Tour360Viewer({ imovelId, height = '520px' }: Props) {
   const viewerRef = useRef<PannellumViewer | null>(null)
   const [cenas, setCenas] = useState<Cena[]>([])
   const [loading, setLoading] = useState(true)
+  const [currentSceneId, setCurrentSceneId] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -50,7 +51,12 @@ export default function Tour360Viewer({ imovelId, height = '520px' }: Props) {
         .eq('imovel_id', imovelId)
         .order('ordem')
       if (cancelled) return
-      setCenas((data as Cena[]) || [])
+      const list = (data as Cena[]) || []
+      setCenas(list)
+      if (list.length > 0) {
+        const inicial = list.find((c) => c.is_inicial) || list[0]
+        setCurrentSceneId(inicial.id)
+      }
       setLoading(false)
     })()
     return () => {
@@ -87,7 +93,7 @@ export default function Tour360Viewer({ imovelId, height = '520px' }: Props) {
         }
       }
 
-      viewerRef.current = pann.viewer(containerRef.current, {
+      const v = pann.viewer(containerRef.current, {
         default: {
           firstScene: inicial.id,
           sceneFadeDuration: 800,
@@ -95,6 +101,14 @@ export default function Tour360Viewer({ imovelId, height = '520px' }: Props) {
           showControls: true,
         },
         scenes: scenesConfig,
+      })
+      viewerRef.current = v
+
+      // Sync state quando o usuário navega via hotspot — assim a miniatura ativa
+      // sempre reflete a cena visível.
+      v.on('scenechange', (...args: unknown[]) => {
+        const sceneId = args[0]
+        if (typeof sceneId === 'string') setCurrentSceneId(sceneId)
       })
     })()
     return () => {
@@ -105,6 +119,13 @@ export default function Tour360Viewer({ imovelId, height = '520px' }: Props) {
       }
     }
   }, [loading, cenas])
+
+  function handleThumbClick(sceneId: string) {
+    if (!viewerRef.current) return
+    if (sceneId === currentSceneId) return
+    viewerRef.current.loadScene(sceneId)
+    setCurrentSceneId(sceneId)
+  }
 
   if (loading || cenas.length === 0) {
     // Render nada se não houver cenas — site não exibe seção vazia
@@ -123,13 +144,55 @@ export default function Tour360Viewer({ imovelId, height = '520px' }: Props) {
         </span>
       </div>
       <p className="mb-4 font-body text-sm text-gray-600">
-        Arraste para olhar em volta. Clique nos pontos brilhantes para navegar entre os ambientes.
+        Arraste para olhar em volta.
+        {cenas.length > 1
+          ? ' Use as miniaturas abaixo ou clique nos pontos brilhantes para trocar de ambiente.'
+          : ''}
       </p>
       <div
         ref={containerRef}
         className="overflow-hidden rounded-xl bg-black"
         style={{ height, width: '100%' }}
       />
+
+      {/* Barra de miniaturas — aparece só quando ha 2+ cenas */}
+      {cenas.length > 1 && (
+        <div className="mt-3 -mx-2 flex gap-2 overflow-x-auto px-2 pb-1">
+          {cenas.map((c) => {
+            const ativa = currentSceneId === c.id
+            return (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => handleThumbClick(c.id)}
+                title={c.nome}
+                className={`group relative shrink-0 overflow-hidden rounded-lg border-2 transition ${
+                  ativa
+                    ? 'border-moradda-gold-500 ring-2 ring-moradda-gold-500/30'
+                    : 'border-gray-200 hover:border-moradda-blue-400'
+                }`}
+              >
+                <img
+                  src={c.panorama_url}
+                  alt={c.nome}
+                  loading="lazy"
+                  className="h-16 w-28 object-cover sm:h-20 sm:w-36"
+                />
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-2 pt-3 pb-1">
+                  <span className="block truncate text-left text-[11px] font-medium text-white">
+                    {c.nome}
+                  </span>
+                </div>
+                {ativa && (
+                  <span className="absolute right-1 top-1 rounded-full bg-moradda-gold-500 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white">
+                    Aqui
+                  </span>
+                )}
+              </button>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

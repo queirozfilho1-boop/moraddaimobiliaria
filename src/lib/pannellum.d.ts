@@ -36,8 +36,10 @@ interface PannellumViewerConfig {
 interface PannellumViewer {
   destroy(): void
   loadScene(sceneId: string): void
+  getScene(): string
   getPitch(): number
   getYaw(): number
+  on(event: string, handler: (...args: unknown[]) => void): void
 }
 
 interface PannellumGlobal {
