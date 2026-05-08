@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Compass } from 'lucide-react'
+import { Compass, Maximize2, Minimize2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 interface CenaHotspot {
@@ -36,11 +36,13 @@ async function waitForPannellum(maxMs = 6000): Promise<PannellumGlobal | null> {
 }
 
 export default function Tour360Viewer({ imovelId, height = '520px' }: Props) {
+  const sectionRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const viewerRef = useRef<PannellumViewer | null>(null)
   const [cenas, setCenas] = useState<Cena[]>([])
   const [loading, setLoading] = useState(true)
   const [currentSceneId, setCurrentSceneId] = useState<string | null>(null)
+  const [isFullscreen, setIsFullscreen] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -104,8 +106,6 @@ export default function Tour360Viewer({ imovelId, height = '520px' }: Props) {
       })
       viewerRef.current = v
 
-      // Sync state quando o usuário navega via hotspot — assim a miniatura ativa
-      // sempre reflete a cena visível.
       v.on('scenechange', (...args: unknown[]) => {
         const sceneId = args[0]
         if (typeof sceneId === 'string') setCurrentSceneId(sceneId)
@@ -120,6 +120,15 @@ export default function Tour360Viewer({ imovelId, height = '520px' }: Props) {
     }
   }, [loading, cenas])
 
+  // Sincroniza estado isFullscreen com a API do navegador (ESC fecha sozinho)
+  useEffect(() => {
+    function handleFsChange() {
+      setIsFullscreen(!!document.fullscreenElement)
+    }
+    document.addEventListener('fullscreenchange', handleFsChange)
+    return () => document.removeEventListener('fullscreenchange', handleFsChange)
+  }, [])
+
   function handleThumbClick(sceneId: string) {
     if (!viewerRef.current) return
     if (sceneId === currentSceneId) return
@@ -127,37 +136,83 @@ export default function Tour360Viewer({ imovelId, height = '520px' }: Props) {
     setCurrentSceneId(sceneId)
   }
 
+  function toggleFullscreen() {
+    if (!sectionRef.current) return
+    if (document.fullscreenElement) {
+      document.exitFullscreen()
+    } else {
+      sectionRef.current.requestFullscreen()
+    }
+  }
+
   if (loading || cenas.length === 0) {
-    // Render nada se não houver cenas — site não exibe seção vazia
     return null
   }
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+    <div
+      ref={sectionRef}
+      className={
+        isFullscreen
+          ? 'flex h-screen w-screen flex-col bg-black p-4'
+          : 'rounded-2xl border border-gray-100 bg-white p-6 shadow-sm'
+      }
+    >
       <div className="mb-4 flex items-center gap-2">
-        <Compass className="h-5 w-5 text-moradda-blue-600" />
-        <h2 className="font-heading text-xl font-semibold text-moradda-blue-800">
+        <Compass
+          className={isFullscreen ? 'h-5 w-5 text-moradda-gold-400' : 'h-5 w-5 text-moradda-blue-600'}
+        />
+        <h2
+          className={`font-heading text-xl font-semibold ${
+            isFullscreen ? 'text-white' : 'text-moradda-blue-800'
+          }`}
+        >
           Tour Virtual 360°
         </h2>
-        <span className="ml-auto rounded-full bg-moradda-gold-100 px-3 py-1 text-xs font-medium text-moradda-gold-700">
+        <span className="rounded-full bg-moradda-gold-100 px-3 py-1 text-xs font-medium text-moradda-gold-700">
           {cenas.length} ambiente{cenas.length === 1 ? '' : 's'}
         </span>
+        <button
+          type="button"
+          onClick={toggleFullscreen}
+          title={isFullscreen ? 'Sair da tela cheia (ESC)' : 'Ver em tela cheia'}
+          className={`ml-auto inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition ${
+            isFullscreen
+              ? 'bg-white/10 text-white hover:bg-white/20'
+              : 'bg-moradda-blue-50 text-moradda-blue-700 hover:bg-moradda-blue-100'
+          }`}
+        >
+          {isFullscreen ? (
+            <>
+              <Minimize2 className="h-3.5 w-3.5" />
+              Sair
+            </>
+          ) : (
+            <>
+              <Maximize2 className="h-3.5 w-3.5" />
+              Tela cheia
+            </>
+          )}
+        </button>
       </div>
-      <p className="mb-4 font-body text-sm text-gray-600">
-        Arraste para olhar em volta.
-        {cenas.length > 1
-          ? ' Use as miniaturas abaixo ou clique nos pontos brilhantes para trocar de ambiente.'
-          : ''}
-      </p>
+
+      {!isFullscreen && (
+        <p className="mb-4 font-body text-sm text-gray-600">
+          Arraste para olhar em volta.
+          {cenas.length > 1
+            ? ' Use as miniaturas abaixo ou clique nos pontos brilhantes para trocar de ambiente.'
+            : ''}
+        </p>
+      )}
+
       <div
         ref={containerRef}
         className="overflow-hidden rounded-xl bg-black"
-        style={{ height, width: '100%' }}
+        style={isFullscreen ? { flex: '1 1 auto', minHeight: 0, width: '100%' } : { height, width: '100%' }}
       />
 
-      {/* Barra de miniaturas — aparece só quando ha 2+ cenas */}
       {cenas.length > 1 && (
-        <div className="mt-3 -mx-2 flex gap-2 overflow-x-auto px-2 pb-1">
+        <div className={`flex gap-2 overflow-x-auto pb-1 ${isFullscreen ? 'mt-3' : 'mt-3 -mx-2 px-2'}`}>
           {cenas.map((c) => {
             const ativa = currentSceneId === c.id
             return (
@@ -169,7 +224,9 @@ export default function Tour360Viewer({ imovelId, height = '520px' }: Props) {
                 className={`group relative shrink-0 overflow-hidden rounded-lg border-2 transition ${
                   ativa
                     ? 'border-moradda-gold-500 ring-2 ring-moradda-gold-500/30'
-                    : 'border-gray-200 hover:border-moradda-blue-400'
+                    : isFullscreen
+                      ? 'border-white/20 hover:border-moradda-gold-300'
+                      : 'border-gray-200 hover:border-moradda-blue-400'
                 }`}
               >
                 <img
