@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   Loader2, Plus, ChevronLeft, ChevronRight, MessageCircle, Phone, Mail, Trash2,
   CheckCircle2, X, Calendar as CalIcon, AlertTriangle, Handshake,
+  RefreshCw, Inbox,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
@@ -29,6 +30,9 @@ interface Visita {
   proximo_passo?: string | null
   gostou?: boolean | null
   google_event_id?: string | null
+  imported_from_google?: boolean | null
+  precisa_revisao?: boolean | null
+  endereco_evento?: string | null
   imoveis?: { codigo?: string; titulo?: string; endereco?: string } | null
   users_profiles?: { nome?: string } | null
 }
@@ -115,6 +119,9 @@ const VisitasPage = () => {
   // Slots
   const [slots, setSlots] = useState<Slot[]>([])
   const [slotsLoading, setSlotsLoading] = useState(false)
+
+  // Sync Google Calendar
+  const [syncing, setSyncing] = useState(false)
   const [gcalConnected, setGcalConnected] = useState<boolean | null>(null)
 
   // Edição pós-visita
@@ -185,6 +192,25 @@ const VisitasPage = () => {
     setLoading(false)
   }
   useEffect(() => { load() /* eslint-disable-next-line */ }, [range.ini.getTime(), range.fim.getTime(), filtroCorretor])
+
+  // ---------------- Sync Google ----------------
+  async function sincronizarGoogle() {
+    if (syncing) return
+    setSyncing(true)
+    const { res, json } = await callEdge('gcal-sync-now', {})
+    setSyncing(false)
+    if (!res.ok) {
+      toast.error(json?.error || 'Erro ao sincronizar')
+      return
+    }
+    const processed = json?.sync?.processed ?? 0
+    if (processed > 0) {
+      toast.success(`${processed} evento(s) sincronizado(s) do Google`)
+      load()
+    } else {
+      toast.success('Sincronizado · nenhuma mudança')
+    }
+  }
 
   // ---------------- Slots ----------------
   async function carregarSlots(corretor_id: string, dataYYYYMMDD: string) {
@@ -439,11 +465,75 @@ const VisitasPage = () => {
             ))}
           </div>
 
+          <button
+            onClick={sincronizarGoogle}
+            disabled={syncing}
+            title="Buscar eventos novos da agenda Google"
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+          >
+            {syncing ? <Loader2 size={15} className="animate-spin" /> : <RefreshCw size={15} />}
+            Sincronizar Google
+          </button>
+
           <button onClick={() => novaVisitaParaDia(new Date())} className="inline-flex items-center gap-2 rounded-lg bg-moradda-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-moradda-blue-600">
             <Plus size={15} /> Nova Visita
           </button>
         </div>
       </div>
+
+      {/* Visitas importadas do Google que precisam revisão */}
+      {(() => {
+        const pendentes = visitas.filter((v) => v.precisa_revisao)
+        if (pendentes.length === 0) return null
+        return (
+          <div className="mb-6 rounded-xl border border-amber-300 bg-amber-50 p-4 dark:border-amber-700/50 dark:bg-amber-900/20">
+            <div className="mb-2 flex items-center gap-2">
+              <Inbox className="h-4 w-4 text-amber-700 dark:text-amber-300" />
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-amber-800 dark:text-amber-200">
+                {pendentes.length} visita{pendentes.length === 1 ? '' : 's'} importada{pendentes.length === 1 ? '' : 's'} do Google · precisa{pendentes.length === 1 ? '' : 'm'} revisão
+              </h2>
+            </div>
+            <p className="mb-3 text-xs text-amber-700 dark:text-amber-300">
+              Eventos com endereço criados direto na agenda Google viraram visitas. Clique em &quot;Revisar&quot; pra vincular o cliente e o imóvel correspondentes (a flag de revisão limpa sozinha quando os dois estiverem preenchidos).
+            </p>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {pendentes.map((v) => (
+                <div key={v.id} className="rounded-lg bg-white p-3 dark:bg-gray-800">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="truncate text-sm font-medium text-gray-800 dark:text-gray-100">
+                      {v.cliente_nome || 'Sem cliente'}
+                    </p>
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                      Google
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">{fmt(new Date(v.data_hora))}</p>
+                  {v.endereco_evento && (
+                    <p className="mt-0.5 truncate text-[11px] text-gray-400" title={v.endereco_evento}>
+                      📍 {v.endereco_evento}
+                    </p>
+                  )}
+                  <div className="mt-2 flex items-center justify-end gap-2">
+                    <button
+                      onClick={() => remover(v)}
+                      className="rounded p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                      title="Não é visita · descartar"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                    <button
+                      onClick={() => abrirVisita(v)}
+                      className="rounded-md bg-moradda-blue-500 px-2.5 py-1 text-xs font-medium text-white hover:bg-moradda-blue-600"
+                    >
+                      Revisar
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Próximas */}
       {proximas.length > 0 && (

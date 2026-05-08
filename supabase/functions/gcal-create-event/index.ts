@@ -92,6 +92,14 @@ Deno.serve(async (req) => {
       location,
       start: { dateTime: start.toISOString(), timeZone: 'America/Sao_Paulo' },
       end:   { dateTime: end.toISOString(),   timeZone: 'America/Sao_Paulo' },
+      // Tag privada para o webhook saber que o evento veio do painel e
+      // evitar loop de re-importação na sync bidirecional.
+      extendedProperties: {
+        private: {
+          moradda_visita_id: visita_id,
+          moradda_origin: 'panel',
+        },
+      },
       reminders: {
         useDefault: false,
         overrides: [

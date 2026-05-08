@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
     const userInfo = await userInfoRes.json()
     const gcal_email = userInfo.email as string
 
-    // Atualiza users_profiles
+    // Atualiza users_profiles com tokens
     const upRes = await sb(`/rest/v1/users_profiles?id=eq.${stateData.upid}`, {
       method: 'PATCH',
       body: JSON.stringify({
@@ -112,6 +112,52 @@ Deno.serve(async (req) => {
       const txt = await upRes.text()
       console.error('Update profile falhou:', txt)
       return Response.redirect(`${PAINEL_URL}?gcal=error&reason=db_update`, 302)
+    }
+
+    // ========================================================
+    //  Registra events.watch para receber push notifications
+    //  quando eventos forem criados/alterados direto no Google
+    // ========================================================
+    try {
+      const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
+      const channelId = crypto.randomUUID()
+      const watchRes = await fetch(
+        'https://www.googleapis.com/calendar/v3/calendars/primary/events/watch',
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            id: channelId,
+            type: 'web_hook',
+            address: `${SUPABASE_URL}/functions/v1/gcal-webhook`,
+            // token opcional: identifica o user pra parear no webhook handler
+            token: stateData.upid,
+            // Validade maxima (7 dias) — cron renova antes
+            params: { ttl: '604800' },
+          }),
+        },
+      )
+      const watchData = await watchRes.json()
+      if (watchRes.ok && watchData.id && watchData.resourceId) {
+        await sb(`/rest/v1/users_profiles?id=eq.${stateData.upid}`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            gcal_channel_id: watchData.id,
+            gcal_resource_id: watchData.resourceId,
+            gcal_channel_expiration: watchData.expiration
+              ? new Date(parseInt(watchData.expiration, 10)).toISOString()
+              : null,
+          }),
+        })
+      } else {
+        console.error('events.watch falhou (nao critico):', watchData)
+      }
+    } catch (err) {
+      console.error('events.watch erro:', err)
+      // Falha do watch nao bloqueia conexao — usuario pode usar sync manual
     }
 
     return Response.redirect(`${PAINEL_URL}?gcal=connected`, 302)
