@@ -34,6 +34,7 @@ import ImovelProprietariosSection from '@/components/ImovelProprietariosSection'
 import ImovelClientesSection from '@/components/ImovelClientesSection'
 import ImovelLinksSection from '@/components/ImovelLinksSection'
 import ImovelLeadsRelacionados from '@/components/ImovelLeadsRelacionados'
+import Tour360EditorSection from '@/components/Tour360EditorSection'
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function generateSlug(text: string): string {
@@ -1860,6 +1861,13 @@ export default function EditarImovelPage() {
             </div>
           )}
         </SectionCard>
+
+        {/* Section 6.5: Tour Virtual 360° */}
+        {id && (
+          <SectionCard title="Tour Virtual 360°">
+            <Tour360EditorSection imovelId={id} />
+          </SectionCard>
+        )}
 
         {/* Section 7: Proprietário (interno) */}
         <SectionCard title="Proprietário do Imóvel">

@@ -9,6 +9,7 @@ import { getRealEstateListingSchema } from '@/data/seo'
 import { formatCurrency, formatArea, getTipoLabel, getFinalidadeLabel, generateWhatsAppLink } from '@/lib/utils'
 import { WHATSAPP_NUMBER } from '@/lib/constants'
 import { supabase } from '@/lib/supabase'
+import Tour360Viewer from '@/components/imoveis/Tour360Viewer'
 import type { Imovel, ImovelFoto } from '@/types'
 
 export default function ImovelDetalhePage() {
@@ -431,6 +432,9 @@ export default function ImovelDetalhePage() {
                   <span className="flex items-center gap-1"><Calendar className="h-4 w-4" /> Publicado em {new Date(imovel.created_at).toLocaleDateString('pt-BR')}</span>
                 </div>
               </div>
+
+              {/* Tour Virtual 360° (renderiza apenas se houver cenas cadastradas) */}
+              <Tour360Viewer imovelId={imovel.id} />
 
               {/* Specs */}
               <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">

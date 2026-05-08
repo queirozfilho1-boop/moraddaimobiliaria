@@ -1,4 +1,4 @@
-RewriteEngine On
+﻿RewriteEngine On
 RewriteBase /
 
 # Se o arquivo ou diretório existe, servir diretamente
@@ -8,9 +8,6 @@ RewriteRule ^ - [L]
 
 # Rotas do painel → painel/index.html
 RewriteRule ^painel(/.*)?$ painel/index.html [L]
-
-# Rotas do guia (mapamental) → mapamental/index.html
-RewriteRule ^mapamental(/.*)?$ mapamental/index.html [L]
 
 # Todas as outras rotas → index.html (SPA)
 RewriteRule ^ index.html [L]
