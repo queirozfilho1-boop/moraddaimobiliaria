@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Upload, Loader2, Trash2, Star, ArrowUp, ArrowDown, Crosshair, Save, Eye } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
+import { compressImage } from '@/lib/compressImage'
 
 interface CenaHotspot {
   id: string
@@ -122,22 +123,34 @@ export default function Tour360EditorSection({ imovelId }: Props) {
     setUploading(true)
     const startOrdem = cenas.length
     let inseridas = 0
+    let economiaBytes = 0
+    let originalBytes = 0
 
     for (let i = 0; i < files.length; i++) {
-      const file = files[i]
+      const original = files[i]
+      originalBytes += original.size
       try {
-        const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
-        const path = `${imovelId}/${Date.now()}_${i}.${ext}`
-        const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file, {
+        // Comprime para WebP mantendo 4096px no maior lado (preserva ratio 2:1
+        // do equirectangular). Quality 0.82 da boa qualidade visual com
+        // economia tipica de 60-75% vs JPEG original.
+        const comprimido = await compressImage(original, {
+          maxDimension: 4096,
+          quality: 0.82,
+          mimeType: 'image/webp',
+        })
+        economiaBytes += original.size - comprimido.size
+
+        const path = `${imovelId}/${Date.now()}_${i}.webp`
+        const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, comprimido, {
           upsert: false,
-          contentType: file.type || 'image/jpeg',
+          contentType: 'image/webp',
         })
         if (upErr) {
           toast.error(`Cena ${i + 1}: ${upErr.message}`)
           continue
         }
         const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path)
-        const nome = file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ').slice(0, 80)
+        const nome = original.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ').slice(0, 80)
         const { error: insErr } = await supabase.from('imoveis_tour_cenas').insert({
           imovel_id: imovelId,
           ordem: startOrdem + i,
@@ -160,7 +173,9 @@ export default function Tour360EditorSection({ imovelId }: Props) {
     setUploading(false)
     if (inputFileRef.current) inputFileRef.current.value = ''
     if (inseridas > 0) {
-      toast.success(`${inseridas} cena(s) enviada(s)`)
+      const origMb = (originalBytes / 1024 / 1024).toFixed(1)
+      const econMb = (economiaBytes / 1024 / 1024).toFixed(1)
+      toast.success(`${inseridas} cena(s) enviada(s) · ${origMb}MB original → economizou ${econMb}MB com WebP`)
       load()
     }
   }
