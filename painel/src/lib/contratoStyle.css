@@ -1,65 +1,60 @@
 /* ============================================================
    MORADDA IMOBILIÁRIA — Estilo do Contrato
+   Design editorial sóbrio: navy #1a3a5c + dourado #c9a961 como
+   detalhe fino de régua. Sem ornamentos, glifos ou gradientes —
+   tipografia e espaço em branco fazem a sofisticação.
    ============================================================ */
 
 @page {
     size: A4;
-    margin: 2.4cm 1.8cm 2.4cm 1.8cm;
-    border-top: 4pt solid #1a3a5c;
-    border-bottom: 1pt solid #c9a961;
+    margin: 2.4cm 2cm 2.4cm 2cm;
 
     @top-left {
         content: "MORADDA IMOBILIÁRIA";
         font-family: 'Georgia', serif;
-        font-size: 10pt;
+        font-size: 9pt;
         font-weight: bold;
         color: #1a3a5c;
-        letter-spacing: 2px;
+        letter-spacing: 2.5px;
         padding-bottom: 8pt;
-        border-bottom: 2pt solid #c9a961;
+        border-bottom: 1pt solid #c9a961;
         vertical-align: bottom;
     }
     @top-center {
-        content: "❖";
-        color: #c9a961;
-        font-size: 12pt;
+        content: "";
         padding-bottom: 8pt;
-        border-bottom: 2pt solid #c9a961;
+        border-bottom: 1pt solid #c9a961;
         vertical-align: bottom;
     }
     @top-right {
-        /* Subtítulo do tipo de contrato vai no h2 do markdown (dinâmico).
-           Mantemos o @top-right só com a borda dourada pra fechar o cabeçalho. */
         content: "";
         padding-bottom: 8pt;
-        border-bottom: 2pt solid #c9a961;
+        border-bottom: 1pt solid #c9a961;
         vertical-align: bottom;
     }
 
     @bottom-left {
         content: "moraddaimobiliaria.com.br";
         font-family: 'Georgia', serif;
-        font-size: 8.5pt;
-        color: #1a3a5c;
-        font-weight: bold;
-        border-top: 1pt solid #c9a961;
+        font-size: 8pt;
+        color: #6b7280;
+        border-top: 0.5pt solid #d1d5db;
         padding-top: 6pt;
     }
     @bottom-center {
         content: "Rubrica: ____________________";
         font-family: 'Georgia', serif;
-        font-size: 8.5pt;
-        color: #888;
-        border-top: 1pt solid #c9a961;
+        font-size: 8pt;
+        color: #9ca3af;
+        border-top: 0.5pt solid #d1d5db;
         padding-top: 6pt;
     }
     @bottom-right {
-        content: "Pág. " counter(page) " / " counter(pages);
+        content: "Página " counter(page) " de " counter(pages);
         font-family: 'Georgia', serif;
-        font-size: 8.5pt;
+        font-size: 8pt;
         color: #1a3a5c;
-        font-weight: bold;
-        border-top: 1pt solid #c9a961;
+        border-top: 0.5pt solid #d1d5db;
         padding-top: 6pt;
     }
 }
@@ -67,130 +62,151 @@
 html, body {
     font-family: 'Georgia', 'Times New Roman', serif;
     font-size: 10.5pt;
-    line-height: 1.6;
-    color: #2c3e50;
+    line-height: 1.62;
+    color: #1f2937;
     text-align: justify;
     hyphens: auto;
 }
 
 /* ============ TÍTULO PRINCIPAL ============ */
 h1 {
-    font-size: 20pt;
+    font-size: 17pt;
     text-align: center;
     color: #1a3a5c;
-    margin: 0.3cm 0 0.05cm 0;
-    letter-spacing: 1px;
-    line-height: 1.15;
+    margin: 0.4cm 0 0.1cm 0;
+    letter-spacing: 2px;
+    line-height: 1.25;
     font-weight: bold;
     text-transform: uppercase;
-}
-
-h1::after {
-    content: "❖";
-    display: block;
-    color: #c9a961;
-    font-size: 14pt;
-    margin: 0.2cm 0 0.1cm 0;
-    font-weight: normal;
 }
 
 h1 + h2 {
     text-align: center;
     border: none;
     padding: 0;
-    margin: 0 0 0.3cm 0;
-    color: #c9a961;
-    font-size: 13pt;
+    margin: 0.05cm 0 0.35cm 0;
+    color: #6b7280;
+    font-size: 10.5pt;
     text-transform: uppercase;
-    letter-spacing: 4px;
+    letter-spacing: 3px;
     font-weight: normal;
     background: none;
 }
 
 h1 + h2::before, h1 + h2::after { content: none; }
 
+/* Número do contrato: discreto, entre réguas finas douradas */
 h1 + h2 + p {
     text-align: center;
-    margin: 0.1cm auto 0.5cm auto;
-    padding: 6pt 0;
-    border-top: 1pt solid #c9a961;
-    border-bottom: 1pt solid #c9a961;
-    width: 60%;
-    font-size: 11pt;
-    letter-spacing: 1px;
+    margin: 0 auto 0.6cm auto;
+    padding: 5pt 0;
+    border-top: 0.75pt solid #c9a961;
+    border-bottom: 0.75pt solid #c9a961;
+    width: 46%;
+    font-size: 10pt;
+    letter-spacing: 1.5px;
+    color: #1a3a5c;
 }
 
 /* ============ CABEÇALHOS DE CLÁUSULA ============ */
 h2.clause-heading {
     page-break-after: avoid;
-    margin: 0.7cm 0 0.3cm 0;
-    padding: 0;
-    display: block;
-    overflow: hidden;
-    color: #1a3a5c;
-    font-size: 12pt;
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-    border: none;
-    line-height: 1.3;
-    position: relative;
     page-break-inside: avoid;
+    margin: 0.75cm 0 0.28cm 0;
+    padding: 0 0 5pt 0;
+    color: #1a3a5c;
+    font-size: 11.5pt;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    line-height: 1.3;
+    border-bottom: 0.75pt solid #e5e7eb;
+    position: relative;
+}
+
+/* Traço dourado curto ancorando o título — único acento da cláusula */
+h2.clause-heading::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -0.75pt;
+    width: 2cm;
+    border-bottom: 1.5pt solid #c9a961;
 }
 
 h2.clause-heading .clause-num {
-    display: inline-block;
-    background: linear-gradient(135deg, #1a3a5c 0%, #2d5a8a 100%);
-    color: #ffffff;
-    font-size: 14pt;
+    display: inline;
+    background: none;
+    color: #c9a961;
+    font-size: 11.5pt;
     font-weight: bold;
-    width: 1cm;
-    height: 1cm;
-    line-height: 1cm;
-    text-align: center;
-    border-radius: 50%;
-    margin-right: 10pt;
-    vertical-align: middle;
-    box-shadow: 0 1pt 3pt rgba(26, 58, 92, 0.3);
-    border: 1.5pt solid #c9a961;
+    width: auto;
+    height: auto;
+    line-height: inherit;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    margin-right: 6pt;
+}
+
+/* Reconstrói "CLÁUSULA Nª —" a partir do número isolado */
+h2.clause-heading .clause-num::before {
+    content: "Cláusula ";
+    color: #1a3a5c;
+}
+
+h2.clause-heading .clause-num::after {
+    content: " —";
+    color: #9ca3af;
+    font-weight: normal;
 }
 
 h2.clause-heading .clause-title {
-    vertical-align: middle;
-    border-bottom: 2pt solid #c9a961;
-    padding-bottom: 4pt;
-    display: inline-block;
+    display: inline;
+    border: none;
+    padding: 0;
+    vertical-align: baseline;
 }
 
 h2 {
-    font-size: 12pt;
+    font-size: 11.5pt;
     color: #1a3a5c;
     text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-top: 0.5cm;
+    letter-spacing: 0.8px;
+    margin-top: 0.55cm;
     margin-bottom: 0.2cm;
     page-break-after: avoid;
 }
 
+/* ============ "DAS PARTES" ============ */
 h2.parties-header {
-    text-align: center;
-    background: #1a3a5c;
-    color: #ffffff;
-    padding: 8pt 0;
-    margin: 0.4cm 0 0 0;
-    border-radius: 3pt 3pt 0 0;
-    font-size: 11pt;
-    letter-spacing: 3px;
-    border: none;
+    text-align: left;
+    background: none;
+    color: #1a3a5c;
+    padding: 0 0 5pt 0;
+    margin: 0.5cm 0 0 0;
+    border-radius: 0;
+    font-size: 11.5pt;
+    letter-spacing: 0.8px;
+    border-bottom: 0.75pt solid #e5e7eb;
+    position: relative;
 }
 
-/* ============ CARTÃO "DAS PARTES" ============ */
+h2.parties-header::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -0.75pt;
+    width: 2cm;
+    border-bottom: 1.5pt solid #c9a961;
+}
+
 .parties-card {
-    background: #f8f6f0;
-    border: 1pt solid #c9a961;
-    border-top: none;
-    padding: 14pt 16pt 8pt 16pt;
-    margin: 0 0 0.4cm 0;
-    border-radius: 0 0 3pt 3pt;
+    background: none;
+    border: none;
+    border-left: 2pt solid #1a3a5c;
+    padding: 4pt 0 4pt 14pt;
+    margin: 0.3cm 0 0.4cm 0;
+    border-radius: 0;
 }
 
 .parties-card p {
@@ -209,11 +225,13 @@ h2.parties-header {
 
 /* ============ H3 ============ */
 h3 {
-    font-size: 11pt;
+    font-size: 10.5pt;
     color: #1a3a5c;
-    margin: 0.4cm 0 0.15cm 0;
-    padding-left: 8pt;
-    border-left: 3pt solid #c9a961;
+    margin: 0.45cm 0 0.15cm 0;
+    padding: 0;
+    border: none;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
     page-break-after: avoid;
 }
 
@@ -230,48 +248,42 @@ strong {
 }
 
 p > strong:first-child {
-    color: #c9a961;
-    font-size: 10.5pt;
+    color: #1a3a5c;
 }
 
 /* ============ DIVISORES ============ */
 hr {
     border: none;
-    text-align: center;
-    margin: 0.4cm 0;
-    height: 10pt;
-    line-height: 10pt;
+    border-top: 0.5pt solid #d1d5db;
+    margin: 0.5cm auto;
+    width: 100%;
+    height: 0;
 }
 
-hr::after {
-    content: "◆ ◆ ◆";
-    color: #c9a961;
-    font-size: 8pt;
-    letter-spacing: 6pt;
-}
+hr::after { content: none; }
 
 /* ============ TABELAS ============ */
 table {
     width: 100%;
     border-collapse: collapse;
     margin: 0.3cm 0 0.4cm 0;
-    font-size: 10pt;
+    font-size: 9.5pt;
     page-break-inside: avoid;
-    box-shadow: 0 1pt 3pt rgba(0,0,0,0.08);
+    box-shadow: none;
 }
 
 thead {
-    background: linear-gradient(135deg, #1a3a5c 0%, #2d5a8a 100%);
+    background: #1a3a5c;
     color: #ffffff;
 }
 
 thead th {
-    padding: 9pt 10pt;
+    padding: 7pt 10pt;
     text-align: left;
     font-weight: bold;
     border: none;
-    font-size: 10pt;
-    letter-spacing: 0.5px;
+    font-size: 9pt;
+    letter-spacing: 0.8px;
     text-transform: uppercase;
 }
 
@@ -279,38 +291,21 @@ thead th:not(:first-child) {
     text-align: center;
 }
 
-thead th:first-child {
-    border-left: 3pt solid #c9a961;
-}
-
 tbody td {
-    padding: 8pt 10pt;
+    padding: 7pt 10pt;
     border: none;
-    border-bottom: 0.5pt solid #e3e8ee;
+    border-bottom: 0.5pt solid #e5e7eb;
     vertical-align: middle;
-}
-
-tbody tr:nth-child(even) {
-    background-color: #f8f6f0;
-}
-
-tbody tr:nth-child(odd) {
-    background-color: #ffffff;
+    background: #ffffff;
 }
 
 tbody tr:last-child td {
-    border-bottom: 2pt solid #1a3a5c;
-}
-
-tbody td:first-child {
-    border-left: 3pt solid #c9a961;
+    border-bottom: 1pt solid #1a3a5c;
 }
 
 tbody td:not(:first-child) {
     text-align: center;
-    font-weight: bold;
     color: #1a3a5c;
-    font-size: 11pt;
 }
 
 /* ============ LISTAS ============ */
@@ -328,7 +323,7 @@ ul li {
 }
 
 ul li::before {
-    content: "▸";
+    content: "–";
     color: #c9a961;
     position: absolute;
     left: -14pt;
@@ -342,14 +337,13 @@ ol li {
 
 /* ============ PLACEHOLDERS ============ */
 .placeholder {
-    background: linear-gradient(180deg, #fff7d6 0%, #ffeaa0 100%);
-    color: #6b5d00;
+    background: #fdf6e3;
+    color: #8a6914;
     padding: 1pt 4pt;
     border-radius: 2pt;
     font-family: 'Courier New', monospace;
     font-size: 9pt;
-    border: 0.5pt solid #d4b94f;
-    font-weight: bold;
+    border: 0.5pt solid #e0cd8a;
 }
 
 /* ============ QUEBRA DE PÁGINA ============ */
@@ -362,11 +356,12 @@ ol li {
 /* ============ CAIXAS DE DESTAQUE ============ */
 .alert-box {
     margin: 0.3cm 0 0.4cm 0;
-    padding: 10pt 14pt;
-    border-radius: 3pt;
+    padding: 9pt 14pt;
+    border-radius: 0;
     font-size: 10pt;
     line-height: 1.5;
     page-break-inside: avoid;
+    background: #fafaf8;
 }
 
 .alert-box strong {
@@ -375,9 +370,8 @@ ol li {
 }
 
 .alert-warning {
-    background: #fef5e7;
-    border-left: 4pt solid #c9a961;
-    color: #5c4a1a;
+    border-left: 2pt solid #c9a961;
+    color: #4b5563;
 }
 
 .alert-warning strong {
@@ -385,8 +379,7 @@ ol li {
 }
 
 .alert-info {
-    background: #eef4fa;
-    border-left: 4pt solid #1a3a5c;
+    border-left: 2pt solid #1a3a5c;
     color: #1a3a5c;
 }
 
@@ -398,23 +391,23 @@ ol li {
 .signature-block {
     margin-top: 0.6cm;
     page-break-inside: avoid;
-    background: #f8f6f0;
-    border-left: 4pt solid #c9a961;
-    padding: 8pt 14pt;
-    border-radius: 0 3pt 3pt 0;
+    background: none;
+    border: none;
+    border-top: 0.5pt solid #e5e7eb;
+    padding: 10pt 0 0 0;
 }
 
 .sig-line {
     border-bottom: 0.7pt solid #1a3a5c;
-    width: 70%;
-    height: 0.7cm;
+    width: 62%;
+    height: 0.8cm;
 }
 
 .sig-label {
     margin-top: 4pt;
     font-size: 10pt;
     line-height: 1.4;
-    color: #2c3e50;
+    color: #1f2937;
 }
 
 .sig-label strong {
@@ -431,23 +424,23 @@ h3 + .witness-block {
 .witness-block {
     margin-top: 0.3cm;
     page-break-inside: avoid;
-    padding: 8pt 14pt;
-    background: #fafafa;
-    border-left: 3pt solid #1a3a5c;
+    padding: 8pt 0;
+    background: none;
+    border: none;
 }
 
 .witness-block p {
     margin: 0 0 3pt 0;
-    font-size: 10.5pt;
-    color: #1a3a5c;
+    font-size: 10pt;
+    color: #1f2937;
 }
 
 .witness-line {
-    border-bottom: 0.5pt solid #6b7280;
-    width: 80%;
+    border-bottom: 0.5pt solid #9ca3af;
+    width: 70%;
     height: 0.55cm;
     padding-top: 0.3cm;
     font-size: 9pt;
-    color: #888;
+    color: #9ca3af;
     margin-bottom: 2pt;
 }

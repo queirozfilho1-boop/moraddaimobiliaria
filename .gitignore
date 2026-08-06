@@ -30,3 +30,9 @@ painel/scripts/apply-leads-tipo.py
 
 mapamental/node_modules
 mapamental/dist
+
+# Backups locais do Supabase (contêm dados sensíveis)
+backups/
+backup-supabase.cjs
+supabase/.temp/
+dist-*.zip

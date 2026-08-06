@@ -67,19 +67,26 @@ Deno.serve(async (req) => {
 
     const pRes = await sb(`/rest/v1/contratos_partes?contrato_id=eq.${contrato_id}&select=id,nome,email,telefone,papel,cpf_cnpj&order=ordem`)
     const partes = await pRes.json()
-    // Todos os papéis assinam, exceto testemunhas (que não assinam pela ZapSign por padrão)
+    // Todos os papéis assinam, exceto testemunhas (que não assinam pela ZapSign por padrão).
+    // Canal preferencial: WHATSAPP (telefone). E-mail é reforço opcional —
+    // basta a parte ter telefone OU e-mail pra entrar como signatária.
     const signersInput = partes
-      .filter((p: any) => p.papel !== 'testemunha' && p.email)
-      .map((p: any) => ({
-        parte_id: p.id,
-        name: p.nome,
-        email: p.email || undefined,
-        phone_country: '55',
-        phone_number: p.telefone ? p.telefone.replace(/\D/g, '').slice(-11) : undefined,
-        auth_mode: 'assinaturaTela',
-      }))
+      .filter((p: any) => p.papel !== 'testemunha' && (p.telefone || p.email))
+      .map((p: any) => {
+        const phone = p.telefone ? p.telefone.replace(/\D/g, '').slice(-11) : undefined
+        return {
+          parte_id: p.id,
+          name: p.nome,
+          email: p.email || undefined,
+          phone_country: '55',
+          phone_number: phone,
+          auth_mode: 'assinaturaTela',
+          // Link de assinatura chega pelo WhatsApp da parte (recurso nativo ZapSign)
+          send_automatic_whatsapp: Boolean(phone),
+        }
+      })
 
-    if (signersInput.length === 0) return json({ error: 'Nenhuma parte com email pra assinar' }, 400)
+    if (signersInput.length === 0) return json({ error: 'Nenhuma parte com telefone ou e-mail pra assinar' }, 400)
 
     // Criar documento no ZapSign — sandbox=true permite testar sem plano
     // de produção. Tire essa flag quando contratar plano API.
@@ -94,6 +101,7 @@ Deno.serve(async (req) => {
         phone_country: s.phone_country,
         phone_number: s.phone_number,
         auth_mode: 'assinaturaTela',
+        send_automatic_whatsapp: s.send_automatic_whatsapp === true,
       })),
       lang: 'pt-br',
       disable_signer_emails: false,
