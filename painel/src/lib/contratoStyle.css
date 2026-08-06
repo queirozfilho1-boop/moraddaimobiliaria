@@ -95,8 +95,10 @@ h1 + h2 {
 
 h1 + h2::before, h1 + h2::after { content: none; }
 
-/* Número do contrato: discreto, entre réguas finas douradas */
-h1 + h2 + p {
+/* Número do contrato: discreto, entre réguas finas douradas.
+   Classe aplicada pelo mdToHtml — seletor posicional pegava o preâmbulo
+   quando a linha do número não existia no documento */
+p.doc-num {
     text-align: center;
     margin: 0 auto 0.6cm auto;
     padding: 5pt 0;

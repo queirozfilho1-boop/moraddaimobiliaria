@@ -91,8 +91,20 @@ Deno.serve(async (req) => {
     // Criar documento no ZapSign — sandbox=true permite testar sem plano
     // de produção. Tire essa flag quando contratar plano API.
     const ZAPSIGN_SANDBOX = (Deno.env.get('ZAPSIGN_SANDBOX') ?? 'true') === 'true'
+    // Nome do documento por tipo — aparece na mensagem de WhatsApp/e-mail da ZapSign
+    const TIPO_DOC: Record<string, string> = {
+      locacao_residencial: 'Contrato de Locação Residencial',
+      locacao_comercial: 'Contrato de Locação Comercial',
+      temporada: 'Contrato de Locação por Temporada',
+      administracao: 'Contrato de Administração de Imóvel',
+      captacao_exclusiva: 'Contrato de Captação com Exclusividade',
+      autorizacao_venda: 'Autorização de Venda',
+      compra_venda: 'Contrato de Compra e Venda',
+      associacao_corretor: 'Contrato de Associação com Corretor',
+    }
+    const docLabel = TIPO_DOC[contrato.tipo] || 'Contrato'
     const zapPayload: Record<string, unknown> = {
-      name: `Contrato ${contrato.numero || ''}`.trim(),
+      name: `${docLabel} ${contrato.numero || ''}`.trim(),
       sandbox: ZAPSIGN_SANDBOX,
       base64_pdf: pdf_base64,
       signers: signersInput.map((s: any) => ({

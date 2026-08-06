@@ -186,6 +186,13 @@ function mdToHtml(md: string): string {
     '<h2 class="parties-header">DAS PARTES</h2><div class="parties-card">$1</div>$2'
   )
 
+  // Linha "Contrato nº ..." vira doc-num (réguas douradas via CSS). Classe
+  // explícita em vez de seletor posicional: sem ela, o preâmbulo herdava a moldura
+  html = html.replace(
+    /<p><strong>((?:Contrato|Autoriza[çc][ãa]o|Proposta)[^<]*n[ºo°][^<]*)<\/strong><\/p>/i,
+    '<p class="doc-num"><strong>$1</strong></p>'
+  )
+
   // Cláusulas: h2 com texto começando com "CLÁUSULA N — ..." vira clause-heading com badge
   html = html.replace(
     /<h2>(CL[ÁA]USULA\s+(\d+)[ªa]?\s*[—–-]\s*([^<]+))<\/h2>/g,
