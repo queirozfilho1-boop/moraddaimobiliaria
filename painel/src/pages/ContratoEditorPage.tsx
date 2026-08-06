@@ -227,6 +227,22 @@ const ContratoEditorPage = () => {
     })
   }, [contrato.tipo])
 
+  // Política comercial Moradda — defaults ao criar contrato novo:
+  //   Autorização/captação: comissão de VENDA 5% (locação = 1º aluguel, já fixado no modelo);
+  //   Administração de imóvel: taxa de administração 10%.
+  useEffect(() => {
+    if (!isNew || !contrato.tipo) return
+    setContrato((c) => {
+      if (c.tipo === 'captacao_exclusiva' && (c.comissao_venda_pct == null || c.comissao_venda_pct === 0)) {
+        return { ...c, comissao_venda_pct: 5 }
+      }
+      if (c.tipo === 'administracao' && (c.taxa_admin_pct == null || c.taxa_admin_pct === 0)) {
+        return { ...c, taxa_admin_pct: 10 }
+      }
+      return c
+    })
+  }, [contrato.tipo, isNew])
+
   // Auto-importar proprietários do imóvel quando o imóvel muda (apenas em contratos novos)
   useEffect(() => {
     if (!contrato.imovel_id || !contrato.tipo || !isNew) return
