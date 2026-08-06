@@ -3,6 +3,7 @@ import { TEMPLATE_COMERCIAL } from './comercial'
 import { TEMPLATE_TEMPORADA } from './temporada'
 import { TEMPLATE_ADMINISTRACAO } from './administracao'
 import { TEMPLATE_CAPTACAO_EXCLUSIVA } from './captacao_exclusiva'
+import { TEMPLATE_AUTORIZACAO_VENDA } from './autorizacao_venda'
 import { TEMPLATE_COMPRA_VENDA } from './compra_venda'
 import { TEMPLATE_ASSOCIACAO_CORRETOR } from './associacao_corretor'
 
@@ -12,6 +13,7 @@ export const TEMPLATE_MAP: Record<string, string> = {
   temporada:           TEMPLATE_TEMPORADA,
   administracao:       TEMPLATE_ADMINISTRACAO,
   captacao_exclusiva:  TEMPLATE_CAPTACAO_EXCLUSIVA,
+  autorizacao_venda:   TEMPLATE_AUTORIZACAO_VENDA,
   compra_venda:        TEMPLATE_COMPRA_VENDA,
   associacao_corretor: TEMPLATE_ASSOCIACAO_CORRETOR,
 }
@@ -45,6 +47,12 @@ export const TEMPLATES_PADRAO = [
     nome: 'Captação com Exclusividade — Padrão Moradda',
     tipo: 'captacao_exclusiva' as const,
     conteudo: TEMPLATE_CAPTACAO_EXCLUSIVA,
+    padrao: true,
+  },
+  {
+    nome: 'Autorização de Venda (sem exclusividade) — Padrão Moradda',
+    tipo: 'autorizacao_venda' as any,
+    conteudo: TEMPLATE_AUTORIZACAO_VENDA,
     padrao: true,
   },
   {

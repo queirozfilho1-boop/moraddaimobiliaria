@@ -6,6 +6,7 @@ export type ContratoTipo =
   | 'temporada'
   | 'administracao'
   | 'captacao_exclusiva'
+  | 'autorizacao_venda'
   | 'compra_venda'
   | 'associacao_corretor'
 
@@ -52,6 +53,7 @@ export const TIPO_LABEL: Record<ContratoTipo, string> = {
   temporada:           'Temporada',
   administracao:       'Administração',
   captacao_exclusiva:  'Captação Exclusiva',
+  autorizacao_venda:   'Autorização de Venda',
   compra_venda:        'Compra e Venda',
   associacao_corretor: 'Associação com Corretor',
 }
@@ -118,6 +120,7 @@ export function papeisPorTipo(tipo: ContratoTipo): PartePapel[] {
     case 'compra_venda':
       return ['vendedor', 'comprador', 'corretor', 'testemunha']
     case 'captacao_exclusiva':
+    case 'autorizacao_venda':
       return ['proprietario', 'imobiliaria', 'corretor', 'testemunha']
     case 'administracao':
       return ['proprietario', 'imobiliaria', 'testemunha']
@@ -139,6 +142,7 @@ export function papeisIniciaisPorTipo(tipo: ContratoTipo): PartePapel[] {
     case 'compra_venda':
       return ['vendedor', 'comprador']
     case 'captacao_exclusiva':
+    case 'autorizacao_venda':
       return ['proprietario', 'imobiliaria']
     case 'administracao':
       return ['proprietario', 'imobiliaria']

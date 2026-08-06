@@ -233,7 +233,7 @@ const ContratoEditorPage = () => {
   useEffect(() => {
     if (!isNew || !contrato.tipo) return
     setContrato((c) => {
-      if (c.tipo === 'captacao_exclusiva' && (c.comissao_venda_pct == null || c.comissao_venda_pct === 0)) {
+      if ((c.tipo === 'captacao_exclusiva' || c.tipo === 'autorizacao_venda') && (c.comissao_venda_pct == null || c.comissao_venda_pct === 0)) {
         return { ...c, comissao_venda_pct: 5 }
       }
       if (c.tipo === 'administracao' && (c.taxa_admin_pct == null || c.taxa_admin_pct === 0)) {
@@ -257,7 +257,7 @@ const ContratoEditorPage = () => {
       const papelProprietario: PartePapel | null =
         contrato.tipo === 'locacao_residencial' || contrato.tipo === 'locacao_comercial' || contrato.tipo === 'temporada' ? 'locador' :
         contrato.tipo === 'compra_venda' ? 'vendedor' :
-        contrato.tipo === 'captacao_exclusiva' || contrato.tipo === 'administracao' ? 'proprietario' :
+        contrato.tipo === 'captacao_exclusiva' || contrato.tipo === 'autorizacao_venda' || contrato.tipo === 'administracao' ? 'proprietario' :
         null
       if (!papelProprietario) return
 
@@ -401,6 +401,7 @@ const ContratoEditorPage = () => {
       temporada:           ['locador', 'hospede'],
       compra_venda:        ['vendedor', 'comprador'],
       captacao_exclusiva:  ['proprietario', 'imobiliaria'],
+      autorizacao_venda:   ['proprietario', 'imobiliaria'],
       administracao:       ['proprietario', 'imobiliaria'],
       associacao_corretor: ['imobiliaria', 'corretor_parceiro'],
     }
@@ -667,6 +668,7 @@ const ContratoEditorPage = () => {
         <Section icon={<Calendar size={16} />} title={
           contrato.tipo === 'temporada' ? 'Período da Estadia' :
           contrato.tipo === 'captacao_exclusiva' ? 'Vigência da Exclusividade' :
+          contrato.tipo === 'autorizacao_venda' ? 'Vigência da Autorização' :
           'Vigência'
         }>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
