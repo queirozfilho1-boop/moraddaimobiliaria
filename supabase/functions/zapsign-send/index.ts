@@ -68,10 +68,12 @@ Deno.serve(async (req) => {
     const pRes = await sb(`/rest/v1/contratos_partes?contrato_id=eq.${contrato_id}&select=id,nome,email,telefone,papel,cpf_cnpj&order=ordem`)
     const partes = await pRes.json()
     // Todos os papéis assinam, exceto testemunhas (que não assinam pela ZapSign por padrão).
+    // Autorizações (venda/locação/padrão): assinatura única — só o proprietário autorizante.
     // Canal preferencial: WHATSAPP (telefone). E-mail é reforço opcional —
     // basta a parte ter telefone OU e-mail pra entrar como signatária.
+    const isAutorizacao = String(contrato.tipo || '').startsWith('autorizacao')
     const signersInput = partes
-      .filter((p: any) => p.papel !== 'testemunha' && (p.telefone || p.email))
+      .filter((p: any) => (isAutorizacao ? p.papel === 'proprietario' : p.papel !== 'testemunha') && (p.telefone || p.email))
       .map((p: any) => {
         const phone = p.telefone ? p.telefone.replace(/\D/g, '').slice(-11) : undefined
         return {
@@ -99,6 +101,8 @@ Deno.serve(async (req) => {
       administracao: 'Contrato de Administração de Imóvel',
       captacao_exclusiva: 'Contrato de Captação com Exclusividade',
       autorizacao_venda: 'Autorização de Venda',
+      autorizacao_locacao: 'Autorização de Locação',
+      autorizacao_padrao: 'Autorização de Venda e Locação',
       compra_venda: 'Contrato de Compra e Venda',
       associacao_corretor: 'Contrato de Associação com Corretor',
     }

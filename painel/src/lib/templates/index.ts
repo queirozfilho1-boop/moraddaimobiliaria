@@ -4,6 +4,8 @@ import { TEMPLATE_TEMPORADA } from './temporada'
 import { TEMPLATE_ADMINISTRACAO } from './administracao'
 import { TEMPLATE_CAPTACAO_EXCLUSIVA } from './captacao_exclusiva'
 import { TEMPLATE_AUTORIZACAO_VENDA } from './autorizacao_venda'
+import { TEMPLATE_AUTORIZACAO_LOCACAO } from './autorizacao_locacao'
+import { TEMPLATE_AUTORIZACAO_PADRAO } from './autorizacao_padrao'
 import { TEMPLATE_COMPRA_VENDA } from './compra_venda'
 import { TEMPLATE_ASSOCIACAO_CORRETOR } from './associacao_corretor'
 
@@ -14,6 +16,8 @@ export const TEMPLATE_MAP: Record<string, string> = {
   administracao:       TEMPLATE_ADMINISTRACAO,
   captacao_exclusiva:  TEMPLATE_CAPTACAO_EXCLUSIVA,
   autorizacao_venda:   TEMPLATE_AUTORIZACAO_VENDA,
+  autorizacao_locacao: TEMPLATE_AUTORIZACAO_LOCACAO,
+  autorizacao_padrao:  TEMPLATE_AUTORIZACAO_PADRAO,
   compra_venda:        TEMPLATE_COMPRA_VENDA,
   associacao_corretor: TEMPLATE_ASSOCIACAO_CORRETOR,
 }
@@ -53,6 +57,18 @@ export const TEMPLATES_PADRAO = [
     nome: 'Autorização de Venda (sem exclusividade) — Padrão Moradda',
     tipo: 'autorizacao_venda' as any,
     conteudo: TEMPLATE_AUTORIZACAO_VENDA,
+    padrao: true,
+  },
+  {
+    nome: 'Autorização de Locação (sem exclusividade) — Padrão Moradda',
+    tipo: 'autorizacao_locacao' as any,
+    conteudo: TEMPLATE_AUTORIZACAO_LOCACAO,
+    padrao: true,
+  },
+  {
+    nome: 'Autorização Padrão — Venda e Locação (sem exclusividade) — Padrão Moradda',
+    tipo: 'autorizacao_padrao' as any,
+    conteudo: TEMPLATE_AUTORIZACAO_PADRAO,
     padrao: true,
   },
   {

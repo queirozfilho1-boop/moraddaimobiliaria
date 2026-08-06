@@ -1,4 +1,4 @@
-export const TEMPLATE_AUTORIZACAO_VENDA = `# AUTORIZAÇÃO DE VENDA DE IMÓVEL
+export const TEMPLATE_AUTORIZACAO_PADRAO = `# AUTORIZAÇÃO DE VENDA E LOCAÇÃO DE IMÓVEL
 
 ## CORRETAGEM IMOBILIÁRIA SEM EXCLUSIVIDADE — PADRÃO MORADDA
 
@@ -6,13 +6,13 @@ export const TEMPLATE_AUTORIZACAO_VENDA = `# AUTORIZAÇÃO DE VENDA DE IMÓVEL
 
 ---
 
-Pelo presente instrumento particular, e na melhor forma de direito, as partes a seguir qualificadas têm entre si, justo e contratado, a presente **Autorização de VENDA com Prestação de Serviços de Corretagem Imobiliária, em caráter NÃO EXCLUSIVO**, regida pelos **arts. 722 a 729 do Código Civil**, pela **Lei nº 6.530/1978** e **Decreto nº 81.871/1978** (profissão de Corretor de Imóveis), pela **Resolução COFECI nº 1.504/2023**, pela **Lei nº 9.610/1998** (Direitos Autorais), pela **Lei nº 13.709/2018** (LGPD), pela **Lei Complementar nº 214/2025** (Reforma Tributária — IBS/CBS), pela **MP nº 2.200-2/2001** e pela **Lei nº 14.063/2020** (assinatura eletrônica), sob as cláusulas e condições seguintes.
+Pelo presente instrumento particular, e na melhor forma de direito, as partes a seguir qualificadas têm entre si, justo e contratado, a presente **Autorização de VENDA E LOCAÇÃO com Prestação de Serviços de Corretagem Imobiliária, em caráter NÃO EXCLUSIVO**, regida pelos **arts. 722 a 729 do Código Civil**, pela **Lei nº 8.245/1991** (Lei do Inquilinato), pela **Lei nº 6.530/1978** e **Decreto nº 81.871/1978** (profissão de Corretor de Imóveis), pela **Resolução COFECI nº 1.504/2023**, pela **Lei nº 9.610/1998** (Direitos Autorais), pela **Lei nº 13.709/2018** (LGPD), pela **Lei Complementar nº 214/2025** (Reforma Tributária — IBS/CBS), pela **MP nº 2.200-2/2001** e pela **Lei nº 14.063/2020** (assinatura eletrônica), sob as cláusulas e condições seguintes.
 
 ---
 
 ## DAS PARTES
 
-**PROPRIETÁRIO(A) / CONTRATANTE:** {{proprietario.nome}}, {{proprietario.nacionalidade}}, {{proprietario.estado_civil}}, {{proprietario.profissao}}, portador(a) do RG nº {{proprietario.rg}}, inscrito(a) no CPF/CNPJ sob o nº {{proprietario.cpf_cnpj}}, residente e domiciliado(a) em {{proprietario.endereco_completo}}, e-mail {{proprietario.email}}, telefone {{proprietario.telefone}}{{#if proprietario.conjuge_nome}}; e cônjuge **{{proprietario.conjuge_nome}}**, CPF nº {{proprietario.conjuge_cpf}}, na forma da outorga conjugal exigida pelo art. 1.647 do Código Civil{{/if}}.
+**PROPRIETÁRIO(A) / CONTRATANTE:** {{proprietario.nome}}, {{proprietario.nacionalidade}}, {{proprietario.estado_civil}}, {{proprietario.profissao}}, portador(a) do RG nº {{proprietario.rg}}, inscrito(a) no CPF/CNPJ sob o nº {{proprietario.cpf_cnpj}}, residente e domiciliado(a) em {{proprietario.endereco_completo}}, e-mail {{proprietario.email}}, telefone {{proprietario.telefone}}{{#if proprietario.conjuge_nome}}; e cônjuge **{{proprietario.conjuge_nome}}**, CPF nº {{proprietario.conjuge_cpf}}{{/if}}.
 
 **IMOBILIÁRIA / CONTRATADA:** **{{imobiliaria.nome}}**, pessoa jurídica de direito privado, CNPJ nº {{imobiliaria.cnpj}}, **CRECI-PJ nº {{imobiliaria.creci}}**, sediada em {{imobiliaria.endereco_completo}}, e-mail {{imobiliaria.email}}, telefone {{imobiliaria.telefone}}, neste ato representada por **{{imobiliaria.responsavel_tecnico}}**, **CRECI-F nº {{imobiliaria.responsavel_creci}}**.
 
@@ -20,23 +20,25 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 ## CLÁUSULA 1ª — DAS FONTES NORMATIVAS APLICÁVEIS
 
-**1.1.** A presente autorização rege-se, no que couber, pelas seguintes normas: **Código Civil**, em especial arts. 722 a 729 (corretagem) e 1.647 (outorga conjugal); **Lei nº 6.530/1978** e **Decreto nº 81.871/1978** (profissão de Corretor); **Lei nº 9.610/1998** (direitos autorais sobre material de divulgação); **Lei nº 13.709/2018** (LGPD); **Lei Complementar nº 214/2025** (IBS/CBS); e **Resolução COFECI nº 1.504/2023**.
+**1.1.** A presente autorização rege-se, no que couber, pelas seguintes normas: **Código Civil**, em especial arts. 722 a 729 (corretagem) e 1.647 (outorga conjugal); **Lei nº 8.245/1991** (Lei do Inquilinato); **Lei nº 6.530/1978** e **Decreto nº 81.871/1978** (profissão de Corretor); **Lei nº 9.610/1998** (direitos autorais sobre material de divulgação); **Lei nº 13.709/2018** (LGPD); **Lei Complementar nº 214/2025** (IBS/CBS); e **Resolução COFECI nº 1.504/2023**.
 
 ---
 
 ## CLÁUSULA 2ª — DO OBJETO E DA AUTORIZAÇÃO (SEM EXCLUSIVIDADE)
 
-**2.1.** O(A) PROPRIETÁRIO(A), por sua livre vontade, **autoriza a IMOBILIÁRIA**, em caráter **NÃO EXCLUSIVO**, a promover a **VENDA** do imóvel adiante descrito, conferindo-lhe os poderes necessários à divulgação, intermediação e negociação:
+**2.1.** O(A) PROPRIETÁRIO(A), por sua livre vontade, **autoriza a IMOBILIÁRIA**, em caráter **NÃO EXCLUSIVO**, a promover a **VENDA E/OU LOCAÇÃO** do imóvel adiante descrito, conferindo-lhe os poderes necessários à divulgação, intermediação e negociação:
 
 **2.1.1.** Código interno: **{{imovel.codigo}}**; tipo: **{{imovel.tipo}}**; endereço completo: **{{imovel.endereco_completo}}**{{#if imovel.matricula}}; matrícula nº **{{imovel.matricula}}** do Cartório de Registro de Imóveis de **{{imovel.cartorio}}**{{/if}}{{#if imovel.inscricao_iptu}}; inscrição imobiliária (IPTU) nº **{{imovel.inscricao_iptu}}**{{/if}}{{#if imovel.area_privativa}}; área privativa **{{imovel.area_privativa}}**{{/if}}{{#if imovel.vagas_garagem}}; vagas de garagem **{{imovel.vagas_garagem}}**{{/if}}.
 
 **2.2. Valores autorizados de oferta:**
 
-**2.2.1.** Valor de venda: **R$ {{captacao.valor_venda}} ({{captacao.valor_venda_extenso}})**;
-
-**2.2.2.** Margem de negociação autorizada: até **{{captacao.margem_negociacao_percentual}}%** sobre o valor de oferta.
+{{#if captacao.valor_venda}}**2.2.1.** Valor de venda: **R$ {{captacao.valor_venda}} ({{captacao.valor_venda_extenso}})**;
+{{/if}}{{#if contrato.valor_aluguel}}**2.2.2.** Valor de locação mensal: **{{contrato.valor_aluguel_fmt}}**;
+{{/if}}**2.2.3.** Margem de negociação autorizada: até **{{captacao.margem_negociacao_percentual}}%** sobre os valores de oferta.
 
 **2.3. Ausência de exclusividade.** Esta autorização **não impede** o(a) PROPRIETÁRIO(A) de negociar o imóvel diretamente ou por meio de outros corretores/imobiliárias, observado, porém, o disposto nas Cláusulas 4ª (comissão por resultado da intermediação da IMOBILIÁRIA) e 8ª (comunicação e clientes apresentados).
+
+**2.4.** Concretizada a **venda** do imóvel, fica automaticamente encerrada a autorização de locação, e vice-versa, quanto ao mesmo período de disponibilidade.
 
 ---
 
@@ -54,9 +56,15 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 **4.1.1.** **Em caso de VENDA:** **{{contrato.comissao_venda_pct}}% ({{contrato.comissao_venda_pct_extenso}})** sobre o valor efetivo da transação, observado o piso da tabela CRECI da respectiva região;
 
-**4.1.2.** **Em caso de PERMUTA:** **{{contrato.comissao_venda_pct}}% ({{contrato.comissao_venda_pct_extenso}})** sobre o valor de cada bem permutado, devida por cada parte à respectiva imobiliária intermediadora.
+**4.1.2.** **Em caso de LOCAÇÃO:** o equivalente a **1 (um) aluguel mensal**, sem prejuízo da taxa de administração se contratada em separado a gestão da locação;
 
-**4.2.** A comissão será paga pelo(a) PROPRIETÁRIO(A) à IMOBILIÁRIA no ato do recebimento do **sinal/arras** (ou na assinatura da escritura pública, caso não haja sinal), conforme art. 725 do Código Civil.
+**4.1.3.** **Em caso de PERMUTA:** **{{contrato.comissao_venda_pct}}% ({{contrato.comissao_venda_pct_extenso}})** sobre o valor de cada bem permutado, devida por cada parte à respectiva imobiliária intermediadora.
+
+**4.2.** A comissão será paga pelo(a) PROPRIETÁRIO(A) à IMOBILIÁRIA da seguinte forma:
+
+**4.2.1.** **Venda:** no ato do recebimento do **sinal/arras** (ou na assinatura da escritura pública, caso não haja sinal), conforme art. 725 do Código Civil;
+
+**4.2.2.** **Locação:** retida do **primeiro aluguel** efetivamente pago pelo locatário.
 
 **4.3. Devida a comissão** (arts. 725 e 726, primeira parte, do Código Civil) sempre que:
 
@@ -106,7 +114,7 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 **6.1.4.** comunicar previamente qualquer alteração no preço, condições ou disponibilidade;
 
-**6.1.5.** **comunicar imediatamente** à IMOBILIÁRIA a venda do imóvel realizada por conta própria ou por terceiros, para a retirada dos anúncios;
+**6.1.5.** **comunicar imediatamente** à IMOBILIÁRIA a venda ou locação do imóvel realizada por conta própria ou por terceiros, para a retirada dos anúncios;
 
 **6.1.6.** pagar a comissão nos termos da Cláusula 4ª, quando devida.
 
@@ -134,7 +142,7 @@ Pelo presente instrumento particular, e na melhor forma de direito, as partes a 
 
 ## CLÁUSULA 9ª — DA PROTEÇÃO PÓS-CONTRATUAL (CLIENTES APRESENTADOS)
 
-**9.1.** Caso, no prazo de **{{captacao.prazo_protecao_dias}} ({{captacao.prazo_protecao_extenso}}) dias** subsequentes ao término ou revogação desta autorização, o(a) PROPRIETÁRIO(A) celebre a venda com **interessado anteriormente apresentado pela IMOBILIÁRIA** — comprovado por registro de visita, troca de e-mails, propostas escritas, mensagens ou cadastro —, será integralmente devida a comissão prevista na Cláusula 4ª, à luz do art. 725 do Código Civil.
+**9.1.** Caso, no prazo de **{{captacao.prazo_protecao_dias}} ({{captacao.prazo_protecao_extenso}}) dias** subsequentes ao término ou revogação desta autorização, o(a) PROPRIETÁRIO(A) celebre venda ou locação com **interessado anteriormente apresentado pela IMOBILIÁRIA** — comprovado por registro de visita, troca de e-mails, propostas escritas, mensagens ou cadastro —, será integralmente devida a comissão prevista na Cláusula 4ª, à luz do art. 725 do Código Civil.
 
 **9.2.** A IMOBILIÁRIA fornecerá, ao término desta autorização, **lista escrita** dos interessados apresentados durante a vigência, para ciência do(a) PROPRIETÁRIO(A).
 
