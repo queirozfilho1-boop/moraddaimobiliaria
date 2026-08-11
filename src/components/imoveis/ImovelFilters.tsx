@@ -6,7 +6,7 @@ import { useState } from 'react'
 interface ImovelFiltersProps {
   filtros: FiltrosBusca
   onFiltrosChange: (filtros: FiltrosBusca) => void
-  bairros?: { id: string; nome: string }[]
+  bairros?: { id: string; nome: string; cidade?: string | null }[]
   totalResultados?: number
 }
 
@@ -89,9 +89,25 @@ export default function ImovelFilters({ filtros, onFiltrosChange, bairros = [], 
             className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 font-body text-sm text-gray-700 outline-none transition-all focus:border-moradda-blue-300 focus:bg-white focus:ring-2 focus:ring-moradda-blue-100"
           >
             <option value="">Todos os bairros</option>
-            {bairros.map(b => (
-              <option key={b.id} value={b.id}>{b.nome}</option>
-            ))}
+            {(() => {
+              // Agrupa por cidade. Com mais de uma cidade, usa optgroup
+              // (ex.: Resende / Itatiaia); com só uma, mostra lista simples.
+              const porCidade = new Map<string, typeof bairros>()
+              for (const b of bairros) {
+                const c = b.cidade || 'Resende'
+                if (!porCidade.has(c)) porCidade.set(c, [])
+                porCidade.get(c)!.push(b)
+              }
+              const cidades = [...porCidade.keys()].sort()
+              if (cidades.length <= 1) {
+                return bairros.map(b => <option key={b.id} value={b.id}>{b.nome}</option>)
+              }
+              return cidades.map(c => (
+                <optgroup key={c} label={c}>
+                  {porCidade.get(c)!.map(b => <option key={b.id} value={b.id}>{b.nome}</option>)}
+                </optgroup>
+              ))
+            })()}
           </select>
         </div>
 

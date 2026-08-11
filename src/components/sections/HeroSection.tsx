@@ -14,8 +14,9 @@ const stats = [
 export default function HeroSection() {
   const [tipo, setTipo] = useState('')
   const [bairro, setBairro] = useState('')
+  const [cidade, setCidade] = useState('')
   const [finalidade, setFinalidade] = useState('')
-  const [bairrosDisponiveis, setBairrosDisponiveis] = useState<{ id: string; nome: string }[]>([])
+  const [bairrosDisponiveis, setBairrosDisponiveis] = useState<{ id: string; nome: string; cidade: string }[]>([])
   const [tiposDisponiveis, setTiposDisponiveis] = useState<{ value: string; label: string }[]>([])
   const [finalidadesDisponiveis, setFinalidadesDisponiveis] = useState<{ value: string; label: string }[]>([])
 
@@ -24,10 +25,10 @@ export default function HeroSection() {
       // Buscar apenas dados de imóveis publicados
       const { data } = await supabase
         .from('imoveis')
-        .select('tipo, finalidade, bairro_id, bairros(id, nome)')
+        .select('tipo, finalidade, bairro_id, bairros(id, nome, cidade)')
         .eq('status', 'publicado')
 
-      const bairroMap = new Map<string, string>()
+      const bairroMap = new Map<string, { nome: string; cidade: string }>()
       const tipoSet = new Set<string>()
       const finalidadeSet = new Set<string>()
 
@@ -35,11 +36,11 @@ export default function HeroSection() {
         data.forEach((d: any) => {
           if (d.tipo) tipoSet.add(d.tipo)
           if (d.finalidade) finalidadeSet.add(d.finalidade)
-          if (d.bairros && !bairroMap.has(d.bairros.id)) bairroMap.set(d.bairros.id, d.bairros.nome)
+          if (d.bairros && !bairroMap.has(d.bairros.id)) bairroMap.set(d.bairros.id, { nome: d.bairros.nome, cidade: d.bairros.cidade || 'Resende' })
         })
       }
 
-      setBairrosDisponiveis(Array.from(bairroMap, ([id, nome]) => ({ id, nome })).sort((a, b) => a.nome.localeCompare(b.nome)))
+      setBairrosDisponiveis(Array.from(bairroMap, ([id, v]) => ({ id, nome: v.nome, cidade: v.cidade })).sort((a, b) => a.nome.localeCompare(b.nome)))
 
       const tipoLabels: Record<string, string> = { casa:'Casa', apartamento:'Apartamento', terreno:'Terreno', comercial:'Comercial', rural:'Rural', cobertura:'Cobertura', kitnet:'Kitnet', sobrado:'Sobrado' }
       setTiposDisponiveis(Array.from(tipoSet).map(t => ({ value: t, label: tipoLabels[t] || t })).sort((a, b) => a.label.localeCompare(b.label)))
@@ -133,18 +134,35 @@ export default function HeroSection() {
                 <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50 pointer-events-none" />
               </div>
 
-              {/* Cidade */}
-              <div className="relative flex-1">
-                <select
-                  disabled
-                  className="w-full appearance-none bg-white/10 text-white rounded-xl px-5 py-4 pr-10 font-body text-sm border border-white/5 cursor-default opacity-80"
-                >
-                  <option>Resende - RJ</option>
-                </select>
-                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50 pointer-events-none" />
-              </div>
+              {/* Cidade — habilita quando há mais de uma cidade com imóveis */}
+              {(() => {
+                const cidadesDisponiveis = Array.from(new Set(bairrosDisponiveis.map((b) => b.cidade))).sort()
+                const unica = cidadesDisponiveis.length <= 1
+                return (
+                  <div className="relative flex-1">
+                    <select
+                      value={cidade}
+                      disabled={unica}
+                      onChange={(e) => { setCidade(e.target.value); setBairro('') }}
+                      className={`w-full appearance-none bg-white/10 text-white rounded-xl px-5 py-4 pr-10 font-body text-sm border border-white/5 transition-colors ${unica ? 'cursor-default opacity-80' : 'cursor-pointer focus:outline-none focus:border-moradda-gold-400/50'}`}
+                    >
+                      {unica ? (
+                        <option>{(cidadesDisponiveis[0] || 'Resende')} - RJ</option>
+                      ) : (
+                        <>
+                          <option value="" className="text-gray-900">Todas as cidades</option>
+                          {cidadesDisponiveis.map((c) => (
+                            <option key={c} value={c} className="text-gray-900">{c} - RJ</option>
+                          ))}
+                        </>
+                      )}
+                    </select>
+                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50 pointer-events-none" />
+                  </div>
+                )
+              })()}
 
-              {/* Bairro - só aparece se tem imóveis publicados */}
+              {/* Bairro - só aparece se tem imóveis publicados (filtra pela cidade escolhida) */}
               {bairrosDisponiveis.length > 0 && (
                 <div className="relative flex-1">
                   <select
@@ -153,11 +171,13 @@ export default function HeroSection() {
                     className="w-full appearance-none bg-white/10 text-white rounded-xl px-5 py-4 pr-10 font-body text-sm border border-white/5 focus:outline-none focus:border-moradda-gold-400/50 transition-colors cursor-pointer"
                   >
                     <option value="" className="text-gray-900">Bairro</option>
-                    {bairrosDisponiveis.map((b) => (
-                      <option key={b.id} value={b.id} className="text-gray-900">
-                        {b.nome}
-                      </option>
-                    ))}
+                    {bairrosDisponiveis
+                      .filter((b) => !cidade || b.cidade === cidade)
+                      .map((b) => (
+                        <option key={b.id} value={b.id} className="text-gray-900">
+                          {b.nome}
+                        </option>
+                      ))}
                   </select>
                   <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50 pointer-events-none" />
                 </div>

@@ -210,11 +210,9 @@ export default function ImoveisPage() {
     fetchImoveis()
   }, [fetchImoveis])
 
-  // For corretor role, filter to only their own properties
-  const baseList = useMemo(() => {
-    if (isAdmin) return imoveis
-    return imoveis.filter((i) => i.corretor_id === profile?.id)
-  }, [isAdmin, profile?.id, imoveis])
+  // Corretores enxergam a carteira inteira (Carla vê os do Alex e vice-versa) —
+  // trabalham em equipe e cobrem uns aos outros. Admin também vê tudo.
+  const baseList = imoveis
 
   // Count pending reviews (for admins)
   const pendentesRevisao = useMemo(() => {

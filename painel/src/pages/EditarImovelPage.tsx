@@ -22,6 +22,7 @@ import {
   FileText,
   UserCircle,
   Download,
+  Save,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import JSZip from 'jszip'
@@ -918,7 +919,7 @@ export default function EditarImovelPage() {
           tour_virtual_url: data.tour_virtual_url || null,
           video_url: data.video_url || null,
           destaque: data.destaque,
-          corretor_id: data.corretor_id || profile?.id,
+          corretor_id: data.corretor_id || corretorId || profile?.id,
         })
         .eq('id', id)
       if (updateError) throw updateError
@@ -991,7 +992,7 @@ export default function EditarImovelPage() {
           tour_virtual_url: data.tour_virtual_url || null,
           video_url: data.video_url || null,
           destaque: data.destaque,
-          corretor_id: data.corretor_id || profile?.id,
+          corretor_id: data.corretor_id || corretorId || profile?.id,
         })
         .eq('id', id!)
 
@@ -1057,7 +1058,7 @@ export default function EditarImovelPage() {
           tour_virtual_url: data.tour_virtual_url || null,
           video_url: data.video_url || null,
           destaque: data.destaque,
-          corretor_id: data.corretor_id || profile?.id,
+          corretor_id: data.corretor_id || corretorId || profile?.id,
         })
         .eq('id', id!)
 
@@ -1067,7 +1068,7 @@ export default function EditarImovelPage() {
         await uploadNovasFotos()
       }
 
-      toast.success('Rascunho salvo!')
+      toast.success('Alterações salvas!')
       navigate('/painel/imoveis')
     } catch (err: any) {
       toast.error('Erro ao salvar rascunho: ' + (err.message || 'Erro desconhecido'))
@@ -2119,6 +2120,20 @@ export default function EditarImovelPage() {
                   Enviar para Revisão
                 </button>
               </>
+            )}
+
+            {/* Corretor: imóvel já enviado/aprovado/publicado/pausado — permite salvar
+                alterações (ex.: adicionar fotos) mantendo o status atual */}
+            {isCorretor && (currentStatus === 'enviado_revisao' || currentStatus === 'aprovado' || currentStatus === 'publicado' || currentStatus === 'pausado') && (
+              <button
+                type="button"
+                onClick={handleSaveDraft}
+                disabled={savingDraft}
+                className="inline-flex items-center gap-2 rounded-lg bg-moradda-gold-500 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-moradda-gold-600 disabled:opacity-50"
+              >
+                {savingDraft ? <Loader2 size={14} className="animate-spin" /> : <Save size={16} />}
+                Salvar alterações
+              </button>
             )}
 
             {/* Admin: full save + draft */}

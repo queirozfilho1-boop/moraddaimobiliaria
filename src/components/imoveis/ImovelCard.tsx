@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Bed, Bath, Car, Maximize2, MapPin, Heart } from 'lucide-react'
+import { Bed, Bath, Car, Maximize2, MapPin, Heart, ChevronLeft, ChevronRight } from 'lucide-react'
 import { formatCurrency, formatArea, getTipoLabel, getFinalidadeLabel } from '@/lib/utils'
 import type { Imovel } from '@/types'
 import { useState } from 'react'
@@ -12,10 +12,25 @@ interface ImovelCardProps {
 
 export default function ImovelCard({ imovel, onFavorite, isFavorito = false }: ImovelCardProps) {
   const [imgLoaded, setImgLoaded] = useState(false)
+  const [fotoIdx, setFotoIdx] = useState(0)
 
-  const fotoPrincipal = imovel.fotos?.find(f => f.principal)?.url_watermark
-    || imovel.fotos?.[0]?.url_watermark
-    || imovel.foto_principal
+  // Galeria ordenada: principal primeiro, depois por ordem
+  const fotos = ((imovel.fotos ?? [])
+    .slice()
+    .sort((a, b) => (b.principal ? 1 : 0) - (a.principal ? 1 : 0) || (a.ordem ?? 0) - (b.ordem ?? 0))
+    .map(f => f.url_watermark)
+    .filter(Boolean) as string[])
+  if (fotos.length === 0 && imovel.foto_principal) fotos.push(imovel.foto_principal)
+
+  const total = fotos.length
+  const idx = total > 0 ? ((fotoIdx % total) + total) % total : 0
+  const fotoAtual = fotos[idx]
+
+  const navegarFoto = (e: React.MouseEvent, delta: number) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setFotoIdx((i) => i + delta)
+  }
 
   return (
     <Link
@@ -24,9 +39,10 @@ export default function ImovelCard({ imovel, onFavorite, isFavorito = false }: I
     >
       {/* Image */}
       <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-moradda-blue-100 to-moradda-blue-50">
-        {fotoPrincipal && (
+        {fotoAtual && (
           <img
-            src={fotoPrincipal}
+            key={idx}
+            src={fotoAtual}
             alt={imovel.titulo}
             loading="lazy"
             onLoad={() => setImgLoaded(true)}
@@ -35,10 +51,41 @@ export default function ImovelCard({ imovel, onFavorite, isFavorito = false }: I
             }`}
           />
         )}
-        {!fotoPrincipal && (
+        {!fotoAtual && (
           <div className="flex h-full w-full items-center justify-center">
             <MapPin className="h-12 w-12 text-moradda-blue-200" />
           </div>
+        )}
+
+        {/* Navegação de fotos (avançar/voltar) sem abrir o imóvel */}
+        {total > 1 && (
+          <>
+            <button
+              type="button"
+              onClick={(e) => navegarFoto(e, -1)}
+              aria-label="Foto anterior"
+              className="absolute left-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/85 text-moradda-blue-700 opacity-0 shadow-md backdrop-blur-sm transition-all hover:bg-white group-hover:opacity-100"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <button
+              type="button"
+              onClick={(e) => navegarFoto(e, 1)}
+              aria-label="Próxima foto"
+              className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/85 text-moradda-blue-700 opacity-0 shadow-md backdrop-blur-sm transition-all hover:bg-white group-hover:opacity-100"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+            {/* Indicadores (dots) */}
+            <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5">
+              {fotos.map((_, i) => (
+                <span
+                  key={i}
+                  className={`h-1.5 rounded-full transition-all ${i === idx ? 'w-4 bg-white' : 'w-1.5 bg-white/60'}`}
+                />
+              ))}
+            </div>
+          </>
         )}
 
         {/* Overlay gradient */}

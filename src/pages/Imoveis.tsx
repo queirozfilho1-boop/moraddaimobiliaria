@@ -15,7 +15,7 @@ export default function ImoveisPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [imoveis, setImoveis] = useState<Imovel[]>([])
   const [totalCount, setTotalCount] = useState(0)
-  const [bairros, setBairros] = useState<{ id: string; nome: string }[]>([])
+  const [bairros, setBairros] = useState<{ id: string; nome: string; cidade?: string | null }[]>([])
   const [loading, setLoading] = useState(true)
   const [favoritos, setFavoritos] = useState<string[]>(() => {
     try {
@@ -39,7 +39,7 @@ export default function ImoveisPage() {
     async function fetchBairros() {
       const { data } = await supabase
         .from('bairros')
-        .select('id, nome')
+        .select('id, nome, cidade')
         .order('nome')
       if (data) setBairros(data)
     }
