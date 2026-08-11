@@ -33,10 +33,14 @@ export default function ImovelCard({ imovel, onFavorite, isFavorito = false }: I
   }
 
   return (
-    <Link
-      to={`/imoveis/${imovel.slug}`}
-      className="card-premium group relative flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm"
-    >
+    <div className="card-premium group relative flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+      {/* Link "esticado" cobre o card para navegação; setas/favorito ficam
+          acima (z maior) e por isso não disparam a abertura do imóvel */}
+      <Link
+        to={`/imoveis/${imovel.slug}`}
+        aria-label={imovel.titulo}
+        className="absolute inset-0 z-[1]"
+      />
       {/* Image */}
       <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-moradda-blue-100 to-moradda-blue-50">
         {fotoAtual && (
@@ -64,7 +68,7 @@ export default function ImovelCard({ imovel, onFavorite, isFavorito = false }: I
               type="button"
               onClick={(e) => navegarFoto(e, -1)}
               aria-label="Foto anterior"
-              className="absolute left-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/85 text-moradda-blue-700 opacity-0 shadow-md backdrop-blur-sm transition-all hover:bg-white group-hover:opacity-100"
+              className="absolute left-2 top-1/2 z-[2] flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/85 text-moradda-blue-700 opacity-0 shadow-md backdrop-blur-sm transition-all hover:bg-white group-hover:opacity-100"
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
@@ -72,12 +76,12 @@ export default function ImovelCard({ imovel, onFavorite, isFavorito = false }: I
               type="button"
               onClick={(e) => navegarFoto(e, 1)}
               aria-label="Próxima foto"
-              className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/85 text-moradda-blue-700 opacity-0 shadow-md backdrop-blur-sm transition-all hover:bg-white group-hover:opacity-100"
+              className="absolute right-2 top-1/2 z-[2] flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/85 text-moradda-blue-700 opacity-0 shadow-md backdrop-blur-sm transition-all hover:bg-white group-hover:opacity-100"
             >
               <ChevronRight className="h-5 w-5" />
             </button>
             {/* Indicadores (dots) */}
-            <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5">
+            <div className="absolute bottom-3 left-1/2 z-[2] flex -translate-x-1/2 items-center gap-1.5">
               {fotos.map((_, i) => (
                 <span
                   key={i}
@@ -114,7 +118,7 @@ export default function ImovelCard({ imovel, onFavorite, isFavorito = false }: I
               e.stopPropagation()
               onFavorite(imovel.id)
             }}
-            className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 shadow-md backdrop-blur-sm transition-all hover:scale-110"
+            className="absolute right-3 top-3 z-[2] flex h-9 w-9 items-center justify-center rounded-full bg-white/90 shadow-md backdrop-blur-sm transition-all hover:scale-110"
             aria-label={isFavorito ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
           >
             <Heart
@@ -173,26 +177,7 @@ export default function ImovelCard({ imovel, onFavorite, isFavorito = false }: I
             </div>
           )}
         </div>
-
-        {/* Broker */}
-        {imovel.corretor && (
-          <div className="mt-4 flex items-center gap-2 border-t border-gray-100 pt-3">
-            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-moradda-blue-100 text-xs font-semibold text-moradda-blue-600 overflow-hidden">
-              {imovel.corretor.avatar_url ? (
-                <img src={imovel.corretor.avatar_url} alt="" className="h-7 w-7 rounded-full object-cover" />
-              ) : (
-                imovel.corretor.nome.charAt(0)
-              )}
-            </div>
-            <div>
-              <span className="font-body text-xs font-medium text-gray-700">{imovel.corretor.nome}</span>
-              {imovel.corretor.creci && (
-                <span className="ml-1 font-body text-xs text-gray-400">CRECI {imovel.corretor.creci}</span>
-              )}
-            </div>
-          </div>
-        )}
       </div>
-    </Link>
+    </div>
   )
 }
