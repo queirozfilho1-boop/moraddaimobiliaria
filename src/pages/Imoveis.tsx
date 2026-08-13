@@ -37,11 +37,20 @@ export default function ImoveisPage() {
   // Fetch bairros on mount
   useEffect(() => {
     async function fetchBairros() {
+      // Só bairros (e, por consequência, cidades) que têm imóvel publicado —
+      // filtro não deve oferecer opção que devolve resultado vazio
       const { data } = await supabase
-        .from('bairros')
-        .select('id, nome, cidade')
-        .order('nome')
-      if (data) setBairros(data)
+        .from('imoveis')
+        .select('bairro_id, bairros(id, nome, cidade)')
+        .eq('status', 'publicado')
+      if (data) {
+        const map = new Map<string, { id: string; nome: string; cidade?: string | null }>()
+        for (const row of data as any[]) {
+          const b = row.bairros
+          if (b && !map.has(b.id)) map.set(b.id, { id: b.id, nome: b.nome, cidade: b.cidade })
+        }
+        setBairros([...map.values()].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')))
+      }
     }
     fetchBairros()
   }, [])

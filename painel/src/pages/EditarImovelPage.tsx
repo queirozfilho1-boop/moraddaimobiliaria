@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useForm, type SubmitHandler } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -249,7 +249,7 @@ export default function EditarImovelPage() {
   const [codigo, setCodigo] = useState('')
   const [corretorId, setCorretorId] = useState('')
   const [currentStatus, setCurrentStatus] = useState<ImovelStatus>('rascunho')
-  const [bairros, setBairros] = useState<{ id: string; nome: string }[]>([])
+  const [bairros, setBairros] = useState<{ id: string; nome: string; cidade?: string | null }[]>([])
   const [corretores, setCorretores] = useState<{ id: string; nome: string }[]>([])
   const [savingDraft, setSavingDraft] = useState(false)
   const [fotosExistentes, setFotosExistentes] = useState<{ id: string; url: string; url_watermark: string; principal: boolean; ordem: number }[]>([])
@@ -320,12 +320,12 @@ export default function EditarImovelPage() {
   const caracteristicasWatch = watch('caracteristicas')
   const destaqueWatch = watch('destaque')
 
-  // Fetch bairros from Supabase
+  // Fetch bairros from Supabase (com cidade — o select de bairro segue a cidade)
   useEffect(() => {
     async function fetchBairros() {
       const { data, error } = await supabase
         .from('bairros')
-        .select('id, nome')
+        .select('id, nome, cidade')
         .order('nome')
       if (error) {
         toast.error('Erro ao carregar bairros: ' + error.message)
@@ -335,6 +335,19 @@ export default function EditarImovelPage() {
     }
     fetchBairros()
   }, [])
+
+  // Cidade selecionada define o grupo de bairros disponível
+  const cidadeWatch = watch('cidade')
+  const cidadesDisponiveis = useMemo(
+    () => [...new Set(bairros.map((b) => b.cidade || 'Resende'))].sort(),
+    [bairros])
+  const bairrosDaCidade = useMemo(
+    () => bairros.filter((b) => (b.cidade || 'Resende') === (cidadeWatch || 'Resende')),
+    [bairros, cidadeWatch])
+  useEffect(() => {
+    const atual = watch('bairro')
+    if (atual && bairros.length > 0 && !bairrosDaCidade.some((b) => b.id === atual)) setValue('bairro', '')
+  }, [cidadeWatch, bairrosDaCidade])
 
   // Fetch corretores for admin
   useEffect(() => {
@@ -1501,7 +1514,7 @@ export default function EditarImovelPage() {
                 </label>
                 <select className={inputClass} {...register('bairro')}>
                   <option value="">Selecione...</option>
-                  {bairros.map((b) => (
+                  {bairrosDaCidade.map((b) => (
                     <option key={b.id} value={b.id}>
                       {b.nome}
                     </option>
@@ -1511,11 +1524,11 @@ export default function EditarImovelPage() {
               </div>
               <div>
                 <label className={labelClass}>Cidade</label>
-                <input
-                  type="text"
-                  className={inputClass}
-                  {...register('cidade')}
-                />
+                <select className={inputClass} {...register('cidade')}>
+                  {cidadesDisponiveis.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className={labelClass}>Estado</label>
