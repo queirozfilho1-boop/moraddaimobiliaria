@@ -101,10 +101,18 @@ const ShareImovelModal = ({ open, onClose, imovelId }: Props) => {
             return
           }
           try {
+            // Converte o WebP do storage para PNG (formato universal p/ posts)
             const res = await fetch(url)
-            const blob = await res.blob()
-            const ext = (url.split("?")[0].match(/\.([a-zA-Z0-9]+)$/)?.[1] || "jpg").toLowerCase()
-            zip.file(`${codigo}-foto-${String(idx + 1).padStart(2, "0")}.${ext}`, blob)
+            const srcBlob = await res.blob()
+            const bmp = await createImageBitmap(srcBlob)
+            const canvas = document.createElement("canvas")
+            canvas.width = bmp.width
+            canvas.height = bmp.height
+            canvas.getContext("2d")!.drawImage(bmp, 0, 0)
+            bmp.close()
+            const blob = await new Promise<Blob>((resolve, reject) =>
+              canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("png"))), "image/png"))
+            zip.file(`${codigo}-foto-${String(idx + 1).padStart(2, "0")}.png`, blob)
             ok++
           } catch {
             fail++

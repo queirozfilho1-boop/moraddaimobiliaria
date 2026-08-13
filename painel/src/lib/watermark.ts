@@ -1,7 +1,8 @@
 import { supabase } from './supabase'
 import logoWatermarkUrl from '@/assets/logo-watermark.png'
 
-const WATERMARK_OPACITY = 0.22
+// Opacidade reforçada (era 0.22 — marca ficava transparente demais nas fotos claras)
+const WATERMARK_OPACITY = 0.45
 const WATERMARK_RATIO = 0.30
 
 function loadImage(src: string): Promise<HTMLImageElement> {

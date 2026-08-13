@@ -36,3 +36,4 @@ backups/
 backup-supabase.cjs
 supabase/.temp/
 dist-*.zip
+painel/scripts/*.done

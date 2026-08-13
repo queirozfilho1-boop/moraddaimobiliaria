@@ -536,10 +536,25 @@ export default function EditarImovelPage() {
     }
   }
 
-  function nomeArquivoFoto(idx: number, url: string) {
-    const ext = (url.split('?')[0].match(/\.([a-zA-Z0-9]+)$/)?.[1] || 'jpg').toLowerCase()
+  function nomeArquivoFoto(idx: number) {
+    // Download sempre em PNG (o storage serve WebP pro site, mas o corretor
+    // precisa de um formato que abre em qualquer lugar)
     const base = (codigo || 'imovel').replace(/[^a-zA-Z0-9-_]/g, '')
-    return `${base}-foto-${String(idx + 1).padStart(2, '0')}.${ext}`
+    return `${base}-foto-${String(idx + 1).padStart(2, '0')}.png`
+  }
+
+  // Busca a imagem (WebP do storage) e converte para PNG via canvas
+  async function fetchComoPng(url: string): Promise<Blob> {
+    const res = await fetch(url)
+    const blob = await res.blob()
+    const bmp = await createImageBitmap(blob)
+    const canvas = document.createElement('canvas')
+    canvas.width = bmp.width
+    canvas.height = bmp.height
+    canvas.getContext('2d')!.drawImage(bmp, 0, 0)
+    bmp.close()
+    return await new Promise<Blob>((resolve, reject) =>
+      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Falha ao converter para PNG'))), 'image/png'))
   }
 
   async function baixarFotoIndividual(idx: number) {
@@ -548,12 +563,11 @@ export default function EditarImovelPage() {
     const url = foto.url_watermark || foto.url
     if (!url) { toast.error('Foto sem URL'); return }
     try {
-      const res = await fetch(url)
-      const blob = await res.blob()
+      const blob = await fetchComoPng(url)
       const blobUrl = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = blobUrl
-      a.download = nomeArquivoFoto(idx, url)
+      a.download = nomeArquivoFoto(idx)
       document.body.appendChild(a)
       a.click()
       a.remove()
@@ -575,9 +589,8 @@ export default function EditarImovelPage() {
           const url = foto.url_watermark || foto.url
           if (!url) { fail++; return }
           try {
-            const res = await fetch(url)
-            const blob = await res.blob()
-            zip.file(nomeArquivoFoto(idx, url), blob)
+            const blob = await fetchComoPng(url)
+            zip.file(nomeArquivoFoto(idx), blob)
             ok++
           } catch {
             fail++
