@@ -288,10 +288,19 @@ export default function ImovelDetalhePage() {
           >
             {fotos.length > 0 ? (
               <>
+                {/* Fundo: a própria foto ampliada e desfocada preenche as laterais
+                    (substitui a faixa azul nas fotos verticais) */}
+                <img
+                  src={fotos[fotoAtual]?.url_thumb || fotos[fotoAtual]?.url_watermark || fotos[fotoAtual]?.url}
+                  alt=""
+                  aria-hidden
+                  className="absolute inset-0 h-full w-full scale-110 object-cover blur-xl brightness-[0.55] pointer-events-none"
+                  draggable={false}
+                />
                 <img
                   src={fotos[fotoAtual]?.url_watermark || fotos[fotoAtual]?.url}
                   alt={fotos[fotoAtual]?.legenda || imovel.titulo}
-                  className="h-full w-full object-contain transition-transform duration-100 ease-out pointer-events-none"
+                  className="relative h-full w-full object-contain transition-transform duration-100 ease-out pointer-events-none"
                   style={{
                     transform: touchStartX !== null ? `translateX(${dragOffset * 0.6}px)` : undefined,
                     cursor: fotos.length > 1 ? (touchStartX !== null ? 'grabbing' : 'grab') : 'default',
