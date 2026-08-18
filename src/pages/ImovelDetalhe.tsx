@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import {
   ChevronLeft, ChevronRight, Home, Bed, Bath, Car, Maximize2, MapPin, Heart, Share2,
-  Phone, MessageCircle, ChevronDown, Check, Eye, Calendar
+  Phone, MessageCircle, ChevronDown, Check, Eye, Calendar, X
 } from 'lucide-react'
 import SEO from '@/components/common/SEO'
 import { getRealEstateListingSchema } from '@/data/seo'
@@ -21,6 +21,9 @@ export default function ImovelDetalhePage() {
   const [showAllCaracteristicas, setShowAllCaracteristicas] = useState(false)
   const [isFavorito, setIsFavorito] = useState(false)
   const [fotoAtual, setFotoAtual] = useState(0)
+  // Lightbox (foto ampliada em tela cheia com fundo desfocado)
+  const [lightboxAberto, setLightboxAberto] = useState(false)
+  const arrastouRef = useRef(false)
   // Swipe / drag state
   const [touchStartX, setTouchStartX] = useState<number | null>(null)
   const [dragOffset, setDragOffset] = useState(0)
@@ -36,11 +39,13 @@ export default function ImovelDetalhePage() {
     const x = 'touches' in e ? e.touches[0].clientX : e.clientX
     setTouchStartX(x)
     setDragOffset(0)
+    arrastouRef.current = false
   }
   function handleTouchMove(e: React.TouchEvent | React.MouseEvent) {
     if (touchStartX === null) return
     const x = 'touches' in e ? e.touches[0].clientX : e.clientX
     setDragOffset(x - touchStartX)
+    if (Math.abs(x - touchStartX) > 8) arrastouRef.current = true
   }
   function handleTouchEnd() {
     if (touchStartX === null) return
@@ -50,9 +55,10 @@ export default function ImovelDetalhePage() {
     setDragOffset(0)
   }
 
-  // Setas do teclado
+  // Setas do teclado + ESC fecha o lightbox
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') { setLightboxAberto(false); return }
       if (fotos.length <= 1) return
       if (e.key === 'ArrowRight') nextFoto()
       else if (e.key === 'ArrowLeft') prevFoto()
@@ -60,6 +66,12 @@ export default function ImovelDetalhePage() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [fotos.length])
+
+  // Trava o scroll da página enquanto o lightbox está aberto
+  useEffect(() => {
+    document.body.style.overflow = lightboxAberto ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [lightboxAberto])
 
   useEffect(() => {
     async function fetchImovel() {
@@ -265,6 +277,7 @@ export default function ImovelDetalhePage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-8">
           <div
             className="relative aspect-[16/9] max-h-[500px] overflow-hidden rounded-2xl bg-gradient-to-br from-moradda-blue-700 to-moradda-blue-800 select-none"
+            onClick={() => { if (!arrastouRef.current && fotos.length > 0) setLightboxAberto(true) }}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
@@ -290,7 +303,7 @@ export default function ImovelDetalhePage() {
                     {/* Setas de navegação */}
                     <button
                       type="button"
-                      onClick={prevFoto}
+                      onClick={(e) => { e.stopPropagation(); prevFoto() }}
                       aria-label="Foto anterior"
                       className="absolute left-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm transition hover:bg-black/60 sm:h-12 sm:w-12"
                     >
@@ -298,7 +311,7 @@ export default function ImovelDetalhePage() {
                     </button>
                     <button
                       type="button"
-                      onClick={nextFoto}
+                      onClick={(e) => { e.stopPropagation(); nextFoto() }}
                       aria-label="Próxima foto"
                       className="absolute right-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm transition hover:bg-black/60 sm:h-12 sm:w-12"
                     >
@@ -313,7 +326,7 @@ export default function ImovelDetalhePage() {
                       {fotos.map((_, i) => (
                         <button
                           key={i}
-                          onClick={() => setFotoAtual(i)}
+                          onClick={(e) => { e.stopPropagation(); setFotoAtual(i) }}
                           aria-label={`Foto ${i + 1}`}
                           className={`h-2.5 w-2.5 rounded-full transition-all ${i === fotoAtual ? 'bg-white scale-125' : 'bg-white/50 hover:bg-white/75'}`}
                         />
@@ -346,13 +359,13 @@ export default function ImovelDetalhePage() {
             {/* Actions */}
             <div className="absolute right-4 top-4 flex gap-2">
               <button
-                onClick={() => setIsFavorito(!isFavorito)}
+                onClick={(e) => { e.stopPropagation(); setIsFavorito(!isFavorito) }}
                 className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-lg backdrop-blur-sm transition-all hover:scale-110"
               >
                 <Heart className={`h-5 w-5 ${isFavorito ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
               </button>
               <button
-                onClick={handleShare}
+                onClick={(e) => { e.stopPropagation(); handleShare() }}
                 className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-lg backdrop-blur-sm transition-all hover:scale-110"
               >
                 <Share2 className="h-5 w-5 text-gray-600" />
@@ -380,6 +393,57 @@ export default function ImovelDetalhePage() {
           )}
         </div>
       </section>
+
+      {/* Lightbox — foto ampliada, centrada, com o site desfocado atrás */}
+      {lightboxAberto && fotos.length > 0 && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 backdrop-blur-md p-4 animate-fade-in"
+          onClick={() => setLightboxAberto(false)}
+        >
+          {/* Fechar */}
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setLightboxAberto(false) }}
+            aria-label="Fechar"
+            className="absolute right-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/25"
+          >
+            <X className="h-6 w-6" />
+          </button>
+
+          {/* Foto */}
+          <img
+            src={fotos[fotoAtual]?.url_watermark || fotos[fotoAtual]?.url}
+            alt={fotos[fotoAtual]?.legenda || imovel.titulo}
+            className="max-h-[92vh] max-w-[95vw] rounded-xl object-contain shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+            draggable={false}
+          />
+
+          {fotos.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); prevFoto() }}
+                aria-label="Foto anterior"
+                className="absolute left-3 top-1/2 -translate-y-1/2 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/25 sm:left-6"
+              >
+                <ChevronLeft className="h-7 w-7" />
+              </button>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); nextFoto() }}
+                aria-label="Próxima foto"
+                className="absolute right-3 top-1/2 -translate-y-1/2 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/25 sm:right-6"
+              >
+                <ChevronRight className="h-7 w-7" />
+              </button>
+              <div className="absolute bottom-5 left-1/2 -translate-x-1/2 rounded-full bg-white/10 px-4 py-1.5 text-sm font-medium text-white backdrop-blur-sm">
+                {fotoAtual + 1} / {fotos.length}
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Content */}
       <section className="bg-gray-50 py-10">
