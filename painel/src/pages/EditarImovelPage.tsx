@@ -1509,6 +1509,14 @@ export default function EditarImovelPage() {
             </div>
             <div className="grid gap-4 sm:grid-cols-3">
               <div>
+                <label className={labelClass}>Cidade</label>
+                <select className={inputClass} {...register('cidade')}>
+                  {cidadesDisponiveis.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
                 <label className={labelClass}>
                   Bairro <span className="text-red-500">*</span>
                 </label>
@@ -1521,14 +1529,6 @@ export default function EditarImovelPage() {
                   ))}
                 </select>
                 <FieldError message={errors.bairro?.message} />
-              </div>
-              <div>
-                <label className={labelClass}>Cidade</label>
-                <select className={inputClass} {...register('cidade')}>
-                  {cidadesDisponiveis.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
               </div>
               <div>
                 <label className={labelClass}>Estado</label>

@@ -13,6 +13,8 @@ interface BairroItem {
   slug: string
   descricao?: string
   foto_url?: string
+  cidade?: string
+  imoveis: number
 }
 
 export default function BairrosPage() {
@@ -22,11 +24,12 @@ export default function BairrosPage() {
   useEffect(() => {
     async function fetchBairros() {
       try {
+        // Só bairros com imóvel PUBLICADO. Imagem: foto do cadastro do bairro
+        // ou, na falta, a foto principal de um imóvel do próprio bairro.
         const { data, error } = await supabase
-          .from('bairros')
-          .select('id, nome, slug, descricao, foto_url')
-          .eq('publicado', true)
-          .order('nome')
+          .from('imoveis')
+          .select('bairro_id, bairros(id, nome, slug, descricao, foto_url, cidade), imoveis_fotos(url_watermark, principal, ordem)')
+          .eq('status', 'publicado')
 
         if (error) {
           console.error('Erro ao buscar bairros:', error)
@@ -34,7 +37,25 @@ export default function BairrosPage() {
           return
         }
 
-        setBairros(data || [])
+        const map = new Map<string, BairroItem>()
+        for (const row of (data || []) as any[]) {
+          const b = row.bairros
+          if (!b) continue
+          const fotos = (row.imoveis_fotos || []) as any[]
+          const fotoImovel = fotos
+            .sort((x, y) => (y.principal ? 1 : 0) - (x.principal ? 1 : 0) || (x.ordem ?? 0) - (y.ordem ?? 0))[0]?.url_watermark
+          const atual = map.get(b.id)
+          if (atual) {
+            atual.imoveis++
+            if (!atual.foto_url && fotoImovel) atual.foto_url = fotoImovel
+          } else {
+            map.set(b.id, {
+              id: b.id, nome: b.nome, slug: b.slug, descricao: b.descricao || undefined,
+              foto_url: b.foto_url || fotoImovel || undefined, cidade: b.cidade || 'Resende', imoveis: 1,
+            })
+          }
+        }
+        setBairros([...map.values()].sort((a, b2) => b2.imoveis - a.imoveis || a.nome.localeCompare(b2.nome, 'pt-BR')))
       } catch (err) {
         console.error('Erro ao buscar bairros:', err)
         setBairros([])
@@ -49,8 +70,8 @@ export default function BairrosPage() {
   return (
     <>
       <SEO
-        title="Bairros de Resende"
-        description="Explore os melhores bairros de Resende-RJ. Conheça cada região e encontre o local ideal para morar."
+        title="Bairros de Resende e Itatiaia"
+        description="Explore os bairros com imóveis disponíveis em Resende e Itatiaia/RJ. Conheça cada região e encontre o local ideal para morar."
       />
 
       {/* Hero Banner */}
@@ -142,8 +163,11 @@ export default function BairrosPage() {
 
                     {/* Content */}
                     <div className="flex flex-1 flex-col p-5">
+                      <p className="font-body text-xs uppercase tracking-wider text-gray-400">
+                        {bairro.cidade} · {bairro.imoveis} {bairro.imoveis === 1 ? 'imóvel disponível' : 'imóveis disponíveis'}
+                      </p>
                       {bairro.descricao && (
-                        <p className="font-body text-sm leading-relaxed text-gray-500">
+                        <p className="mt-2 font-body text-sm leading-relaxed text-gray-500">
                           {truncate(bairro.descricao, 140)}
                         </p>
                       )}

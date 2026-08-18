@@ -160,15 +160,17 @@ export default function ContatoPage() {
                 </div>
               </ScrollReveal>
 
-              {/* Map placeholder */}
+              {/* Mapa — Google Maps embed (sem chave de API) */}
               <ScrollReveal delay={100}>
-                <div className="aspect-square overflow-hidden rounded-2xl border border-gray-100 bg-gradient-to-br from-moradda-blue-50 to-moradda-blue-100 shadow-sm">
-                  <div className="flex h-full items-center justify-center">
-                    <div className="text-center">
-                      <MapPin className="mx-auto h-10 w-10 text-moradda-blue-300" />
-                      <p className="mt-2 font-body text-sm text-moradda-blue-400">Mapa será integrado aqui</p>
-                    </div>
-                  </div>
+                <div className="aspect-square overflow-hidden rounded-2xl border border-gray-100 shadow-sm">
+                  <iframe
+                    title="Mapa — Moradda Imobiliária, R. Dom Bosco 163, Paraíso, Resende/RJ"
+                    src="https://www.google.com/maps?q=R.+Dom+Bosco,+163+-+Para%C3%ADso,+Resende+-+RJ,+27535-070&z=16&output=embed"
+                    className="h-full w-full border-0"
+                    loading="lazy"
+                    allowFullScreen
+                    referrerPolicy="no-referrer-when-downgrade"
+                  />
                 </div>
               </ScrollReveal>
             </div>

@@ -21,7 +21,7 @@ export default function ImovelFilters({ filtros, onFiltrosChange, bairros = [], 
     onFiltrosChange({ pagina: 1, por_pagina: 12 })
   }
 
-  const temFiltrosAtivos = filtros.tipo || filtros.finalidade || filtros.bairro_id || filtros.preco_min || filtros.quartos_min || filtros.busca
+  const temFiltrosAtivos = filtros.tipo || filtros.finalidade || filtros.cidade || filtros.bairro_id || filtros.preco_min || filtros.quartos_min || filtros.busca
 
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
@@ -78,7 +78,28 @@ export default function ImovelFilters({ filtros, onFiltrosChange, bairros = [], 
           </select>
         </div>
 
-        {/* Bairro */}
+        {/* Cidade — aparece quando há mais de uma cidade com imóvel disponível */}
+        {(() => {
+          const cidades = [...new Set(bairros.map(b => b.cidade || 'Resende'))].sort()
+          if (cidades.length <= 1) return null
+          return (
+            <div className="w-full lg:w-40">
+              <label className="mb-1.5 block font-body text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Cidade
+              </label>
+              <select
+                value={filtros.cidade || ''}
+                onChange={(e) => onFiltrosChange({ ...filtros, cidade: e.target.value || undefined, bairro_id: undefined, pagina: 1 })}
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 font-body text-sm text-gray-700 outline-none transition-all focus:border-moradda-blue-300 focus:bg-white focus:ring-2 focus:ring-moradda-blue-100"
+              >
+                <option value="">Todas as cidades</option>
+                {cidades.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          )
+        })()}
+
+        {/* Bairro — segue a cidade escolhida */}
         <div className="w-full lg:w-44">
           <label className="mb-1.5 block font-body text-xs font-medium text-gray-500 uppercase tracking-wider">
             Bairro
@@ -90,17 +111,19 @@ export default function ImovelFilters({ filtros, onFiltrosChange, bairros = [], 
           >
             <option value="">Todos os bairros</option>
             {(() => {
-              // Agrupa por cidade. Com mais de uma cidade, usa optgroup
-              // (ex.: Resende / Itatiaia); com só uma, mostra lista simples.
+              const visiveis = filtros.cidade
+                ? bairros.filter(b => (b.cidade || 'Resende') === filtros.cidade)
+                : bairros
+              // Sem cidade escolhida e com várias cidades → agrupa por optgroup
               const porCidade = new Map<string, typeof bairros>()
-              for (const b of bairros) {
+              for (const b of visiveis) {
                 const c = b.cidade || 'Resende'
                 if (!porCidade.has(c)) porCidade.set(c, [])
                 porCidade.get(c)!.push(b)
               }
               const cidades = [...porCidade.keys()].sort()
               if (cidades.length <= 1) {
-                return bairros.map(b => <option key={b.id} value={b.id}>{b.nome}</option>)
+                return visiveis.map(b => <option key={b.id} value={b.id}>{b.nome}</option>)
               }
               return cidades.map(c => (
                 <optgroup key={c} label={c}>

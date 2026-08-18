@@ -201,6 +201,7 @@ export interface AlertaImovel {
 export interface FiltrosBusca {
   tipo?: TipoImovel
   finalidade?: Finalidade
+  cidade?: string
   bairro_id?: string
   preco_min?: number
   preco_max?: number

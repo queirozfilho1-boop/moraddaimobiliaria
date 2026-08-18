@@ -26,6 +26,7 @@ export default function ImoveisPage() {
   const filtros: FiltrosBusca = {
     tipo: searchParams.get('tipo') as FiltrosBusca['tipo'] || undefined,
     finalidade: searchParams.get('finalidade') as FiltrosBusca['finalidade'] || undefined,
+    cidade: searchParams.get('cidade') || undefined,
     bairro_id: searchParams.get('bairro') || undefined,
     busca: searchParams.get('q') || undefined,
     quartos_min: searchParams.get('quartos') ? Number(searchParams.get('quartos')) : undefined,
@@ -62,14 +63,21 @@ export default function ImoveisPage() {
       const page = filtros.pagina || 1
       let query = supabase
         .from('imoveis')
-        .select('id, codigo, slug, titulo, descricao, tipo, finalidade, status, preco, quartos, suites, banheiros, vagas_garagem, area_construida, area_total, destaque, corretor_id, bairro_id, bairros(id, nome), users_profiles!corretor_id(id, nome, creci, slug, avatar_url), imoveis_fotos(id, url_watermark, url_thumb, principal, ordem)', { count: 'exact' })
+        .select('id, codigo, slug, titulo, descricao, tipo, finalidade, status, preco, cidade, quartos, suites, banheiros, vagas_garagem, area_construida, area_total, destaque, corretor_id, bairro_id, bairros(id, nome), users_profiles!corretor_id(id, nome, creci, slug, avatar_url), imoveis_fotos(id, url_watermark, url_thumb, principal, ordem)', { count: 'exact' })
         .eq('status', 'publicado')
 
       if (filtros.tipo) query = query.eq('tipo', filtros.tipo)
       if (filtros.finalidade) query = query.eq('finalidade', filtros.finalidade)
+      if (filtros.cidade) query = query.eq('cidade', filtros.cidade)
       if (filtros.bairro_id) query = query.eq('bairro_id', filtros.bairro_id)
       if (filtros.quartos_min) query = query.gte('quartos', filtros.quartos_min)
-      if (filtros.busca) query = query.or(`titulo.ilike.%${filtros.busca}%,codigo.ilike.%${filtros.busca}%`)
+      if (filtros.busca) {
+        const b = filtros.busca.trim()
+        // Busca numérica acha pelo final do código: "125" → MRD-00125
+        const conds = [`titulo.ilike.%${b}%`, `codigo.ilike.%${b}%`]
+        if (/^\d+$/.test(b)) conds.push(`codigo.ilike.%${b.padStart(5, '0')}`)
+        query = query.or(conds.join(','))
+      }
       if (filtros.ordenar === 'preco_asc') query = query.order('preco', { ascending: true })
       else if (filtros.ordenar === 'preco_desc') query = query.order('preco', { ascending: false })
       else query = query.order('created_at', { ascending: false })
@@ -100,7 +108,7 @@ export default function ImoveisPage() {
         cep: '',
         endereco: '',
         numero: '',
-        cidade: 'Resende',
+        cidade: row.cidade || 'Resende',
         estado: 'RJ',
         preco: row.preco,
         quartos: row.quartos,
@@ -164,6 +172,7 @@ export default function ImoveisPage() {
     const params = new URLSearchParams()
     if (novosFiltros.tipo) params.set('tipo', novosFiltros.tipo)
     if (novosFiltros.finalidade) params.set('finalidade', novosFiltros.finalidade)
+    if (novosFiltros.cidade) params.set('cidade', novosFiltros.cidade)
     if (novosFiltros.bairro_id) params.set('bairro', novosFiltros.bairro_id)
     if (novosFiltros.busca) params.set('q', novosFiltros.busca)
     if (novosFiltros.quartos_min) params.set('quartos', String(novosFiltros.quartos_min))

@@ -9,12 +9,36 @@ export const WHATSAPP_NUMBER = '5524998571528'
 
 // ── SEO Defaults ────────────────────────────────────────────────────────────
 export const SEO_DEFAULTS = {
-  title: 'Moradda Imobiliária — Imóveis de Alto Padrão',
+  title: 'Moradda Imobiliária | Imóveis em Resende e Itatiaia - RJ',
   description:
-    'Encontre imóveis de alto padrão com a Moradda Imobiliária. Casas, apartamentos, coberturas e terrenos nas melhores localizações.',
+    'Casas, apartamentos, coberturas, terrenos e pontos comerciais à venda e para alugar em Resende e Itatiaia/RJ. Atendimento especializado, captação e administração de imóveis. CRECI-PJ RJ 10404.',
   image: `${SITE_URL}/og-image.jpg`,
   locale: 'pt_BR',
   twitterHandle: '@moraddaimob',
+}
+
+// JSON-LD da imobiliária (dados estruturados p/ Google)
+export const JSONLD_IMOBILIARIA = {
+  '@context': 'https://schema.org',
+  '@type': 'RealEstateAgent',
+  name: SITE_NAME,
+  legalName: 'Moradda Empreendimentos Imobiliários LTDA',
+  url: SITE_URL,
+  logo: `${SITE_URL}/og-image.jpg`,
+  telephone: '+55-24-99857-1528',
+  email: 'contato@moraddaimobiliaria.com.br',
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: 'R. Dom Bosco, 163',
+    addressLocality: 'Resende',
+    addressRegion: 'RJ',
+    postalCode: '27535-070',
+    addressCountry: 'BR',
+  },
+  areaServed: [
+    { '@type': 'City', name: 'Resende' },
+    { '@type': 'City', name: 'Itatiaia' },
+  ],
 }
 
 // ── Property Types ──────────────────────────────────────────────────────────

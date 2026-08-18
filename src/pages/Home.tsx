@@ -1,4 +1,5 @@
 import SEO from '@/components/common/SEO'
+import { JSONLD_IMOBILIARIA } from '@/lib/constants'
 import HeroSection from '@/components/sections/HeroSection'
 import BannersSection from '@/components/sections/BannersSection'
 import ImoveisDestaqueSection from '@/components/sections/ImoveisDestaqueSection'
@@ -13,8 +14,9 @@ export default function HomePage() {
   return (
     <>
       <SEO
-        title="Imóveis Premium em Resende e Região"
-        description="Encontre imóveis de alto padrão em Resende e região com a Moradda Imobiliária. Casas, apartamentos e terrenos com atendimento exclusivo e personalizado."
+        title="Imóveis à venda e para alugar em Resende e Itatiaia - RJ"
+        description="Casas, apartamentos, terrenos e pontos comerciais em Resende e Itatiaia/RJ. Compra, venda, locação e administração de imóveis com atendimento especializado. Moradda Imobiliária, CRECI-PJ RJ 10404."
+        jsonLd={JSONLD_IMOBILIARIA}
       />
       <HeroSection />
       <BannersSection />

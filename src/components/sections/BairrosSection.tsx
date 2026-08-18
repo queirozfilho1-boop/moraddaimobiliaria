@@ -1,27 +1,58 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { MapPin, ArrowRight } from 'lucide-react'
 import ScrollReveal from '@/components/common/ScrollReveal'
+import { supabase } from '@/lib/supabase'
 
-const bairros = [
-  { nome: 'Centro', imoveis: 32 },
-  { nome: 'Jardim Jalisco', imoveis: 18 },
-  { nome: 'Paraíso', imoveis: 24 },
-  { nome: 'Campos Elíseos', imoveis: 15 },
-  { nome: 'Itapuca', imoveis: 12 },
-  { nome: 'Manejo', imoveis: 9 },
-]
+interface BairroCard {
+  id: string
+  nome: string
+  cidade: string
+  foto: string | null
+  imoveis: number
+}
 
-// Distinct gradient pairs for each card
-const gradients = [
-  'from-moradda-blue-700 to-moradda-blue-900',
-  'from-moradda-blue-600 to-moradda-blue-800',
-  'from-moradda-blue-800 to-moradda-blue-950',
-  'from-moradda-blue-500 to-moradda-blue-700',
-  'from-moradda-blue-700 to-moradda-blue-950',
-  'from-moradda-blue-600 to-moradda-blue-900',
-]
-
+/**
+ * "Explore os Melhores Bairros" — 100% guiado pelos dados: só aparecem bairros
+ * com imóvel PUBLICADO, com contagem real e imagem real (foto cadastrada do
+ * bairro ou a foto principal de um imóvel dele). Sem dados, a seção some.
+ */
 export default function BairrosSection() {
+  const [bairros, setBairros] = useState<BairroCard[]>([])
+
+  useEffect(() => {
+    async function fetch() {
+      const { data } = await supabase
+        .from('imoveis')
+        .select('bairro_id, bairros(id, nome, cidade, foto_url), imoveis_fotos(url_watermark, principal, ordem)')
+        .eq('status', 'publicado')
+      if (!data) return
+      const map = new Map<string, BairroCard>()
+      for (const row of data as any[]) {
+        const b = row.bairros
+        if (!b) continue
+        const fotos = (row.imoveis_fotos || []) as any[]
+        const fotoImovel = fotos
+          .sort((x, y) => (y.principal ? 1 : 0) - (x.principal ? 1 : 0) || (x.ordem ?? 0) - (y.ordem ?? 0))[0]?.url_watermark
+        const atual = map.get(b.id)
+        if (atual) {
+          atual.imoveis++
+          if (!atual.foto && fotoImovel) atual.foto = fotoImovel
+        } else {
+          map.set(b.id, { id: b.id, nome: b.nome, cidade: b.cidade || 'Resende', foto: b.foto_url || fotoImovel || null, imoveis: 1 })
+        }
+      }
+      // Top 6 por quantidade de imóveis, apenas com foto disponível
+      setBairros([...map.values()]
+        .filter((b) => b.foto)
+        .sort((a, b) => b.imoveis - a.imoveis || a.nome.localeCompare(b.nome, 'pt-BR'))
+        .slice(0, 6))
+    }
+    fetch()
+  }, [])
+
+  if (bairros.length === 0) return null
+
   return (
     <section className="py-24 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -32,7 +63,7 @@ export default function BairrosSection() {
               Explore os Melhores Bairros
             </h2>
             <p className="text-gray-500 font-body mt-6 text-lg">
-              Conheça as regiões mais valorizadas
+              Regiões com imóveis disponíveis agora
             </p>
           </div>
         </ScrollReveal>
@@ -40,18 +71,21 @@ export default function BairrosSection() {
         {/* Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {bairros.map((bairro, index) => (
-            <ScrollReveal key={bairro.nome} delay={index * 100}>
+            <ScrollReveal key={bairro.id} delay={index * 100}>
               <Link
-                to="/bairros"
+                to={`/imoveis?bairro=${bairro.id}`}
                 className="group block relative h-52 rounded-2xl overflow-hidden"
               >
-                {/* Gradient placeholder for image */}
-                <div
-                  className={`absolute inset-0 bg-gradient-to-br ${gradients[index]} transition-transform duration-500 group-hover:scale-110`}
+                {/* Foto real do bairro/imóvel */}
+                <img
+                  src={bairro.foto!}
+                  alt={`Imóveis em ${bairro.nome}, ${bairro.cidade}`}
+                  loading="lazy"
+                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                 />
 
-                {/* Dark overlay */}
-                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors duration-300" />
+                {/* Overlay para legibilidade */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/10 group-hover:from-black/80 transition-colors duration-300" />
 
                 {/* Content */}
                 <div className="relative z-10 h-full flex flex-col justify-end p-6">
@@ -61,8 +95,8 @@ export default function BairrosSection() {
                       {bairro.nome}
                     </h3>
                   </div>
-                  <p className="text-white/70 text-sm font-body">
-                    {bairro.imoveis} imóveis disponíveis
+                  <p className="text-white/80 text-sm font-body">
+                    {bairro.cidade} · {bairro.imoveis} {bairro.imoveis === 1 ? 'imóvel disponível' : 'imóveis disponíveis'}
                   </p>
                 </div>
               </Link>
