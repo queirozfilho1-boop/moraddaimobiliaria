@@ -9,6 +9,7 @@ import {
   MousePointerClick,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { useAutoRefresh } from '@/hooks/useAutoRefresh'
 
 /* ------------------------------------------------------------------ */
 /*  Rastreamento de campanhas (UTM) — leads e cliques por campanha     */
@@ -50,6 +51,8 @@ export default function CampanhasPage() {
   const [periodo, setPeriodo] = useState<Periodo>(30)
   const [leads, setLeads] = useState<LeadRow[]>([])
   const [eventos, setEventos] = useState<EventoRow[]>([])
+  const [tick, setTick] = useState(0)
+  useAutoRefresh(() => setTick((t) => t + 1))
 
   useEffect(() => {
     let cancelado = false
@@ -75,7 +78,7 @@ export default function CampanhasPage() {
     return () => {
       cancelado = true
     }
-  }, [periodo])
+  }, [periodo, tick])
 
   const resumo = useMemo(() => {
     const deCampanha = leads.filter((l) => l.utm_source || l.utm_campaign)

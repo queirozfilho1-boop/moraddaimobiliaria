@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, Outlet, useLocation } from 'react-router-dom'
 import { Menu, Moon, Sun, Bell, Check, CheckCheck } from 'lucide-react'
-import { Toaster } from 'sonner'
+import { Toaster, toast } from 'sonner'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useNotificacoes } from '@/hooks/useNotificacoes'
+import { supabase } from '@/lib/supabase'
 import Sidebar from '@/components/Sidebar'
 
 const pageTitles: Record<string, string> = {
@@ -87,6 +88,37 @@ export default function PainelLayout() {
   useEffect(() => {
     setNotifOpen(false)
   }, [location.pathname])
+
+  // Tempo real: novo lead -> toast na tela + refresh das listas abertas
+  useEffect(() => {
+    if (!user) return
+    const ch = supabase
+      .channel('leads-novos')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'leads' },
+        (payload) => {
+          const l = payload.new as {
+            nome?: string
+            origem?: string
+            utm_campaign?: string | null
+          }
+          toast.info(`Novo lead: ${l.nome || 'sem nome'}`, {
+            description: l.utm_campaign
+              ? `Campanha: ${l.utm_campaign}`
+              : l.origem === 'facebook'
+                ? 'Facebook Lead Ads'
+                : `Origem: ${(l.origem || 'site').replace(/_/g, ' ')}`,
+            duration: 10000,
+          })
+          window.dispatchEvent(new Event('moradda:refresh'))
+        },
+      )
+      .subscribe()
+    return () => {
+      supabase.removeChannel(ch)
+    }
+  }, [user])
 
   if (loading) {
     return (

@@ -32,6 +32,7 @@ import {
 import { toast } from 'sonner'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
+import { useAutoRefresh } from '@/hooks/useAutoRefresh'
 import LeadImoveisVinculados from '@/components/LeadImoveisVinculados'
 import { useNavigate, Link } from 'react-router-dom'
 import { NovoClienteModal, type Cliente } from '@/components/BuscarCliente'
@@ -374,6 +375,7 @@ export default function LeadsPage() {
   }, [])
 
   useEffect(() => { fetchLeads() }, [fetchLeads])
+  useAutoRefresh(fetchLeads)
 
   /* ---- Criar novo lead manualmente ---- */
   const handleCreateLead = useCallback(async () => {

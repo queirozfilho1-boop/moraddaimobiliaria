@@ -51,13 +51,15 @@ export function useNotificacoes(): UseNotificacoesReturn {
   useEffect(() => {
     fetchNotificacoes()
 
-    // Poll every 30 seconds
-    intervalRef.current = setInterval(fetchNotificacoes, 30000)
+    // Poll curto (15s) + refresh imediato quando chega lead em tempo real
+    intervalRef.current = setInterval(fetchNotificacoes, 15000)
+    window.addEventListener('moradda:refresh', fetchNotificacoes)
 
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current)
       }
+      window.removeEventListener('moradda:refresh', fetchNotificacoes)
     }
   }, [fetchNotificacoes])
 

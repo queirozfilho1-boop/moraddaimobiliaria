@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Loader2, ArrowLeft, Phone, Mail, MessageCircle, ExternalLink, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
+import { useAutoRefresh } from '@/hooks/useAutoRefresh'
 
 type LeadStatus =
   | 'novo' | 'em_triagem' | 'qualificado' | 'em_atendimento' | 'aguardando_retorno'
@@ -52,6 +53,7 @@ const LeadsPipelinePage = () => {
     setRows((data || []) as Lead[]); setLoading(false)
   }
   useEffect(() => { load() }, [])
+  useAutoRefresh(load)
 
   async function moveTo(id: string, novo: LeadStatus) {
     const atual = rows.find((r) => r.id === id)

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useAutoRefresh } from '@/hooks/useAutoRefresh'
 import {
   Building2,
   UserPlus,
@@ -125,6 +126,11 @@ export default function Dashboard() {
     loadDashboard()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile])
+
+  // Refresh curto: recarrega a cada 60s e na hora quando chega lead novo
+  useAutoRefresh(() => {
+    if (profile) loadDashboard()
+  })
 
   async function loadDashboard() {
     try {
