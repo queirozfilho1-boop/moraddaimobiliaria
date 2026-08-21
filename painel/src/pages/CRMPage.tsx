@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import {
   Search,
   Kanban,
@@ -22,6 +22,7 @@ import {
 import { toast } from 'sonner'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
+import { useAutoRefresh } from '@/hooks/useAutoRefresh'
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -57,6 +58,7 @@ interface Lead {
   notas?: string | null
   proxima_acao?: string | null
   proxima_acao_data?: string | null
+  primeiro_atendimento_at?: string | null
   created_at: string
   updated_at: string
   imoveis?: { id: string; titulo: string; codigo: string } | null
@@ -173,12 +175,13 @@ export default function CRMPage() {
   const [newNote, setNewNote] = useState('')
   const [savingNote, setSavingNote] = useState(false)
 
-  /* Fetch leads */
+  /* Fetch leads (spinner só na primeira carga; refreshs são silenciosos) */
+  const carregouRef = useRef(false)
   const fetchLeads = useCallback(async () => {
-    setLoading(true)
+    if (!carregouRef.current) setLoading(true)
     const { data, error } = await supabase
       .from('leads')
-      .select('id, nome, telefone, email, mensagem, origem, tipo, status, notas, proxima_acao, proxima_acao_data, corretor_id, imovel_id, created_at, updated_at, imoveis(id, titulo, codigo), users_profiles!corretor_id(id, nome)')
+      .select('id, nome, telefone, email, mensagem, origem, tipo, status, notas, proxima_acao, proxima_acao_data, primeiro_atendimento_at, corretor_id, imovel_id, created_at, updated_at, imoveis(id, titulo, codigo), users_profiles!corretor_id(id, nome)')
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -187,6 +190,7 @@ export default function CRMPage() {
     } else {
       setLeads((data as unknown as Lead[]) || [])
     }
+    carregouRef.current = true
     setLoading(false)
   }, [])
 
@@ -203,6 +207,7 @@ export default function CRMPage() {
     fetchLeads()
     fetchCorretores()
   }, [fetchLeads, fetchCorretores])
+  useAutoRefresh(fetchLeads)
 
   /* Fetch historico for selected lead */
   const fetchHistorico = useCallback(async (leadId: string) => {
@@ -324,6 +329,39 @@ export default function CRMPage() {
     return `https://wa.me/55${digits}?text=${msg}`
   }
 
+  /* Drag & drop: mover lead de coluna */
+  const moverLead = useCallback(async (leadId: string, novoStatus: LeadStatus) => {
+    const lead = leads.find(l => l.id === leadId)
+    if (!lead || lead.status === novoStatus) return
+    const statusAnterior = lead.status
+
+    // otimista: move o cartao na hora
+    setLeads(prev => prev.map(l => (l.id === leadId ? { ...l, status: novoStatus, updated_at: new Date().toISOString() } : l)))
+
+    const updates: Record<string, unknown> = { status: novoStatus, updated_at: new Date().toISOString() }
+    if (novoStatus === 'convertido') updates.convertido_at = new Date().toISOString()
+    if (novoStatus === 'perdido' || novoStatus === 'sem_resposta') updates.perdido_at = new Date().toISOString()
+    if (novoStatus === 'em_atendimento' && !lead.primeiro_atendimento_at) updates.primeiro_atendimento_at = new Date().toISOString()
+
+    const { error } = await supabase.from('leads').update(updates).eq('id', leadId)
+    if (error) {
+      // desfaz em caso de falha
+      setLeads(prev => prev.map(l => (l.id === leadId ? { ...l, status: statusAnterior } : l)))
+      toast.error('Erro ao mover o lead: ' + error.message)
+      return
+    }
+    if (profile) {
+      await supabase.from('leads_historico').insert({
+        lead_id: leadId,
+        usuario_id: profile.id,
+        usuario_nome: profile.nome,
+        tipo: 'status',
+        descricao: `Status alterado de ${statusConfig[statusAnterior].label} para ${statusConfig[novoStatus].label} (arrastado no CRM)`,
+      })
+    }
+    toast.success(`${lead.nome} movido para ${statusConfig[novoStatus].label}`)
+  }, [leads, profile])
+
   /* ---------------------------------------------------------------- */
   /*  Render                                                           */
   /* ---------------------------------------------------------------- */
@@ -427,6 +465,7 @@ export default function CRMPage() {
               leads={leadsByStatus[status]}
               onCardClick={openDetail}
               getActionDot={getActionDot}
+              onDropLead={moverLead}
             />
           ))}
 
@@ -438,6 +477,7 @@ export default function CRMPage() {
               leads={leadsByStatus[status]}
               onCardClick={openDetail}
               getActionDot={getActionDot}
+              onDropLead={moverLead}
             />
           ))}
         </div>
@@ -470,16 +510,40 @@ function KanbanColumn({
   leads,
   onCardClick,
   getActionDot,
+  onDropLead,
 }: {
   status: LeadStatus
   leads: Lead[]
   onCardClick: (lead: Lead) => void
   getActionDot: (lead: Lead) => string
+  onDropLead: (leadId: string, novoStatus: LeadStatus) => void
 }) {
   const cfg = statusConfig[status]
+  const [dragOver, setDragOver] = useState(false)
 
   return (
-    <div className="flex w-[280px] min-w-[280px] flex-col rounded-xl border border-gray-200 bg-gray-50/50 dark:border-gray-700 dark:bg-gray-800/50">
+    <div
+      onDragOver={e => {
+        e.preventDefault()
+        e.dataTransfer.dropEffect = 'move'
+        setDragOver(true)
+      }}
+      onDragLeave={e => {
+        // só limpa quando sai da coluna de fato (não ao passar entre cartões)
+        if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOver(false)
+      }}
+      onDrop={e => {
+        e.preventDefault()
+        setDragOver(false)
+        const leadId = e.dataTransfer.getData('text/lead-id')
+        if (leadId) onDropLead(leadId, status)
+      }}
+      className={`flex w-[280px] min-w-[280px] flex-col rounded-xl border bg-gray-50/50 transition-colors dark:bg-gray-800/50 ${
+        dragOver
+          ? 'border-[#1B4F8A] ring-2 ring-[#1B4F8A]/30 dark:border-blue-500 dark:ring-blue-500/30'
+          : 'border-gray-200 dark:border-gray-700'
+      }`}
+    >
       {/* Column header */}
       <div className={`flex items-center justify-between rounded-t-xl border-b px-3 py-2.5 ${cfg.bg} ${cfg.border}`}>
         <div className="flex items-center gap-2">
@@ -494,13 +558,20 @@ function KanbanColumn({
       {/* Cards container - scrollable */}
       <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-2" style={{ maxHeight: 'calc(100vh - 260px)' }}>
         {leads.length === 0 && (
-          <p className="py-6 text-center text-xs text-gray-400 dark:text-gray-500">Nenhum lead</p>
+          <p className="py-6 text-center text-xs text-gray-400 dark:text-gray-500">
+            {dragOver ? 'Solte aqui' : 'Nenhum lead'}
+          </p>
         )}
         {leads.map(lead => (
           <button
             key={lead.id}
             onClick={() => onCardClick(lead)}
-            className="group w-full rounded-lg border border-gray-200 bg-white p-3 text-left shadow-sm transition-all hover:border-[#1B4F8A]/30 hover:shadow-md dark:border-gray-600 dark:bg-gray-800 dark:hover:border-blue-500/30"
+            draggable
+            onDragStart={e => {
+              e.dataTransfer.setData('text/lead-id', lead.id)
+              e.dataTransfer.effectAllowed = 'move'
+            }}
+            className="group w-full cursor-grab rounded-lg border border-gray-200 bg-white p-3 text-left shadow-sm transition-all hover:border-[#1B4F8A]/30 hover:shadow-md active:cursor-grabbing dark:border-gray-600 dark:bg-gray-800 dark:hover:border-blue-500/30"
           >
             <div className="flex items-start justify-between gap-2">
               <span className="text-sm font-medium text-gray-900 dark:text-white leading-tight line-clamp-1">
@@ -639,8 +710,8 @@ function DetailPanel({
             </div>
 
             {/* Status change message */}
-            <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-400">
-              Para alterar o status, acesse o modulo de Leads
+            <p className="mt-3 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-700 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-400">
+              Arraste o cartão entre as colunas para mudar o status — ou use o módulo de Leads
             </p>
 
             {/* WhatsApp button */}

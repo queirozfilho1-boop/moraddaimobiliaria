@@ -45,7 +45,7 @@ const LeadsPipelinePage = () => {
   const [tipoFilter, setTipoFilter] = useState('')
 
   async function load() {
-    setLoading(true)
+    setLoading(prev => prev && rows.length === 0)
     const { data } = await supabase
       .from('leads')
       .select('id, nome, email, telefone, status, tipo, origem, interesse, mensagem, imovel_id, corretor_id, proxima_acao, proxima_acao_data, created_at, imoveis(codigo, titulo)')
