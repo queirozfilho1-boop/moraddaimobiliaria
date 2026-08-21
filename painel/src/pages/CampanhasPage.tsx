@@ -125,10 +125,7 @@ export default function CampanhasPage() {
     return [...mapa.values()].sort((a, b) => b.leads - a.leads || b.cliquesWA - a.cliquesWA)
   }, [leads, eventos])
 
-  const leadsDeCampanha = useMemo(
-    () => leads.filter((l) => l.utm_source || l.utm_campaign).slice(0, 30),
-    [leads]
-  )
+  const leadsRecentes = useMemo(() => leads.slice(0, 30), [leads])
 
   return (
     <div className="space-y-6">
@@ -236,11 +233,11 @@ export default function CampanhasPage() {
           <div className="rounded-xl bg-white p-6 shadow-sm dark:bg-gray-800">
             <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
               <Globe size={16} className="text-moradda-blue-500" />
-              Últimos leads vindos de campanha
+              Últimos leads do período
             </h2>
-            {leadsDeCampanha.length === 0 ? (
+            {leadsRecentes.length === 0 ? (
               <p className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
-                Nenhum lead com origem de campanha no período ainda.
+                Nenhum lead no período.
               </p>
             ) : (
               <div className="overflow-x-auto">
@@ -249,18 +246,22 @@ export default function CampanhasPage() {
                     <tr className="border-b border-gray-200 text-left text-xs uppercase tracking-wide text-gray-500 dark:border-gray-700 dark:text-gray-400">
                       <th className="px-3 py-2">Data</th>
                       <th className="px-3 py-2">Nome</th>
+                      <th className="px-3 py-2">Origem</th>
                       <th className="px-3 py-2">Campanha</th>
                       <th className="px-3 py-2">Anúncio</th>
                       <th className="px-3 py-2">Status</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {leadsDeCampanha.map((l) => (
+                    {leadsRecentes.map((l) => (
                       <tr key={l.id} className="border-b border-gray-100 dark:border-gray-700/50">
                         <td className="px-3 py-2.5 text-gray-500 dark:text-gray-400">
                           {new Date(l.created_at).toLocaleDateString('pt-BR')}
                         </td>
                         <td className="px-3 py-2.5 font-medium text-gray-800 dark:text-gray-100">{l.nome}</td>
+                        <td className="px-3 py-2.5 text-gray-500 dark:text-gray-400">
+                          {l.origem?.replace(/_/g, ' ') || '—'}
+                        </td>
                         <td className="px-3 py-2.5 text-gray-600 dark:text-gray-300">
                           {chaveCampanha(l.utm_campaign, l.utm_source)}
                         </td>
