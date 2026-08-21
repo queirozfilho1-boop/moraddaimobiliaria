@@ -6,6 +6,7 @@ import SEO from '@/components/common/SEO'
 import ScrollReveal from '@/components/common/ScrollReveal'
 import { TIPOS_IMOVEL } from '@/lib/constants'
 import { supabase } from '@/lib/supabase'
+import { getUTM, registrarEvento } from '@/lib/utm'
 
 interface AvaliacaoForm {
   nome: string
@@ -60,8 +61,10 @@ export default function AvaliacaoPage() {
         mensagem: `Tipo: ${form.tipo}, Bairro: ${form.bairro}, Área: ${form.area}m², Quartos: ${form.quartos}, Vagas: ${form.vagas}. ${form.descricao}`,
         origem: 'avaliacao',
         status: 'novo',
+        ...getUTM(),
       })
       if (error) throw error
+      registrarEvento('form_lead')
       toast.success('Solicitação enviada! Nossa equipe entrará em contato para a avaliação.')
       setForm({ nome: '', telefone: '', email: '', tipo: '', bairro: '', area: '', quartos: '', vagas: '', descricao: '' })
     } catch (err) {

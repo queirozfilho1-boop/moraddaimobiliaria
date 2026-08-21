@@ -8,6 +8,7 @@ import SEO from '@/components/common/SEO'
 import { getRealEstateListingSchema } from '@/data/seo'
 import { formatCurrency, formatArea, getTipoLabel, getFinalidadeLabel, generateWhatsAppLink } from '@/lib/utils'
 import { WHATSAPP_NUMBER } from '@/lib/constants'
+import { registrarEvento } from '@/lib/utm'
 import { supabase } from '@/lib/supabase'
 import Tour360Viewer from '@/components/imoveis/Tour360Viewer'
 import type { Imovel, ImovelFoto } from '@/types'
@@ -599,6 +600,7 @@ export default function ImovelDetalhePage() {
                       href={whatsappLink}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={() => registrarEvento('whatsapp_click', imovel.id)}
                       className="flex w-full items-center justify-center gap-2 rounded-xl bg-green-500 px-6 py-3.5 font-body text-sm font-semibold text-white shadow-md transition-all hover:bg-green-600 hover:shadow-lg"
                     >
                       <MessageCircle className="h-5 w-5" />

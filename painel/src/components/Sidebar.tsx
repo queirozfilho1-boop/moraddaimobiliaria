@@ -86,6 +86,7 @@ const groups: NavGroup[] = [
     label: 'Marketing',
     items: [
       { label: 'Marketing',  path: '/painel/marketing',   icon: <Megaphone size={18} /> },
+      { label: 'Campanhas',  path: '/painel/campanhas',   icon: <TrendingUp size={18} /> },
       { label: 'Banners',    path: '/painel/banners',     icon: <Palette size={18} /> },
       { label: 'Blog',       path: '/painel/blog',        icon: <Megaphone size={18} /> },
       { label: 'Depoimentos',path: '/painel/depoimentos', icon: <Users size={18} /> },

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { WHATSAPP_NUMBER, SITE_NAME } from '@/lib/constants'
+import { registrarEvento } from '@/lib/utm'
 
 /**
  * Floating WhatsApp button — fixed bottom-right, appears after scrolling.
@@ -28,6 +29,7 @@ export default function WhatsAppButton() {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
+      onClick={() => registrarEvento('whatsapp_click')}
       aria-label="Fale conosco pelo WhatsApp"
       className={cn(
         'fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full',

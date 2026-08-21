@@ -19,6 +19,7 @@ import VendasPipelinePage from '@/pages/VendasPipelinePage'
 import LeadsPipelinePage from '@/pages/LeadsPipelinePage'
 import VisitasPage from '@/pages/VisitasPage'
 import MarketingPage from '@/pages/MarketingPage'
+import CampanhasPage from '@/pages/CampanhasPage'
 import { VistoriaListPage, VistoriaEditorPage } from '@/pages/VistoriaPage'
 import { PropostasListPage, PropostaEditorPage } from '@/pages/PropostasPage'
 import LeadsPage from '@/pages/LeadsPage'
@@ -74,6 +75,7 @@ export default function App() {
               <Route path="leads/pipeline" element={<LeadsPipelinePage />} />
               <Route path="visitas" element={<VisitasPage />} />
               <Route path="marketing" element={<MarketingPage />} />
+              <Route path="campanhas" element={<CampanhasPage />} />
               <Route path="vistorias" element={<VistoriaListPage />} />
               <Route path="vistorias/novo" element={<VistoriaEditorPage />} />
               <Route path="vistorias/:id" element={<VistoriaEditorPage />} />

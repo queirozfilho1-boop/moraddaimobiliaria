@@ -6,6 +6,7 @@ import SEO from '@/components/common/SEO'
 import ScrollReveal from '@/components/common/ScrollReveal'
 import { WHATSAPP_NUMBER } from '@/lib/constants'
 import { supabase } from '@/lib/supabase'
+import { getUTM, registrarEvento } from '@/lib/utm'
 
 interface FormData {
   nome: string
@@ -53,7 +54,9 @@ export default function ContatoPage() {
         mensagem: form.assunto ? `[${form.assunto}] ${form.mensagem}` : form.mensagem || null,
         origem: 'site_contato',
         status: 'novo',
+        ...getUTM(),
       })
+      registrarEvento('form_lead')
       if (error) throw error
       toast.success('Mensagem enviada com sucesso! Entraremos em contato em breve.')
       setForm({ nome: '', email: '', telefone: '', assunto: '', mensagem: '' })
