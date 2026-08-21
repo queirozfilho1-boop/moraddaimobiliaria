@@ -18,11 +18,16 @@ import {
   Building2,
   User,
   StickyNote,
+  UserPlus,
+  Save,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { useAutoRefresh } from '@/hooks/useAutoRefresh'
+import LeadImoveisVinculados from '@/components/LeadImoveisVinculados'
+import { NovoClienteModal, type Cliente } from '@/components/BuscarCliente'
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -59,6 +64,7 @@ interface Lead {
   proxima_acao?: string | null
   proxima_acao_data?: string | null
   primeiro_atendimento_at?: string | null
+  cliente_id?: string | null
   created_at: string
   updated_at: string
   imoveis?: { id: string; titulo: string; codigo: string } | null
@@ -160,6 +166,7 @@ function isOverdue(date: string | null | undefined): boolean {
 
 export default function CRMPage() {
   const { profile } = useAuth()
+  const navigate = useNavigate()
 
   /* State */
   const [leads, setLeads] = useState<Lead[]>([])
@@ -170,6 +177,7 @@ export default function CRMPage() {
   const [filterTipo, setFilterTipo] = useState<LeadTipo | ''>('')
   const [showClosed, setShowClosed] = useState(false)
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
+  const [convertModal, setConvertModal] = useState<Lead | null>(null)
   const [historico, setHistorico] = useState<HistoricoEntry[]>([])
   const [loadingHistorico, setLoadingHistorico] = useState(false)
   const [newNote, setNewNote] = useState('')
@@ -181,7 +189,7 @@ export default function CRMPage() {
     if (!carregouRef.current) setLoading(true)
     const { data, error } = await supabase
       .from('leads')
-      .select('id, nome, telefone, email, mensagem, origem, tipo, status, notas, proxima_acao, proxima_acao_data, primeiro_atendimento_at, corretor_id, imovel_id, created_at, updated_at, imoveis(id, titulo, codigo), users_profiles!corretor_id(id, nome)')
+      .select('id, nome, telefone, email, mensagem, origem, tipo, status, notas, proxima_acao, proxima_acao_data, primeiro_atendimento_at, cliente_id, corretor_id, imovel_id, created_at, updated_at, imoveis(id, titulo, codigo), users_profiles!corretor_id(id, nome)')
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -362,6 +370,61 @@ export default function CRMPage() {
     toast.success(`${lead.nome} movido para ${statusConfig[novoStatus].label}`)
   }, [leads, profile])
 
+  /* Mantém o painel de detalhes em sincronia com a lista */
+  useEffect(() => {
+    if (!selectedLead) return
+    const atual = leads.find(l => l.id === selectedLead.id)
+    if (atual && atual !== selectedLead) setSelectedLead(atual)
+  }, [leads, selectedLead])
+
+  /* Trocar corretor responsável */
+  const alterarCorretor = useCallback(async (leadId: string, corretorId: string) => {
+    const lead = leads.find(l => l.id === leadId)
+    if (!lead || lead.corretor_id === corretorId) return
+    const novoCorretor = corretores.find(c => c.id === corretorId)
+    const { error } = await supabase
+      .from('leads')
+      .update({ corretor_id: corretorId, updated_at: new Date().toISOString() })
+      .eq('id', leadId)
+    if (error) {
+      toast.error('Erro ao trocar corretor: ' + error.message)
+      return
+    }
+    setLeads(prev => prev.map(l => (l.id === leadId
+      ? { ...l, corretor_id: corretorId, users_profiles: novoCorretor ? { id: novoCorretor.id, nome: novoCorretor.nome } : l.users_profiles }
+      : l)))
+    if (profile) {
+      await supabase.from('leads_historico').insert({
+        lead_id: leadId,
+        usuario_id: profile.id,
+        usuario_nome: profile.nome,
+        tipo: 'encaminhamento',
+        descricao: `Lead encaminhado para ${novoCorretor?.nome || 'outro corretor'} (pelo CRM)`,
+      })
+    }
+    toast.success(`Lead encaminhado para ${novoCorretor?.nome || 'corretor'}`)
+  }, [leads, corretores, profile])
+
+  /* Salvar próxima ação */
+  const salvarProximaAcao = useCallback(async (leadId: string, acao: string, data: string) => {
+    const { error } = await supabase
+      .from('leads')
+      .update({
+        proxima_acao: acao.trim() || null,
+        proxima_acao_data: data ? new Date(data + 'T12:00:00').toISOString() : null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', leadId)
+    if (error) {
+      toast.error('Erro ao salvar próxima ação: ' + error.message)
+      return
+    }
+    setLeads(prev => prev.map(l => (l.id === leadId
+      ? { ...l, proxima_acao: acao.trim() || null, proxima_acao_data: data ? new Date(data + 'T12:00:00').toISOString() : null }
+      : l)))
+    toast.success('Próxima ação salva')
+  }, [])
+
   /* ---------------------------------------------------------------- */
   /*  Render                                                           */
   /* ---------------------------------------------------------------- */
@@ -487,6 +550,7 @@ export default function CRMPage() {
       {selectedLead && (
         <DetailPanel
           lead={selectedLead}
+          corretores={corretores}
           historico={historico}
           loadingHistorico={loadingHistorico}
           newNote={newNote}
@@ -495,6 +559,38 @@ export default function CRMPage() {
           onAddNote={addNote}
           onClose={closeDetail}
           whatsappLink={whatsappLink}
+          onChangeStatus={moverLead}
+          onChangeCorretor={alterarCorretor}
+          onSaveProximaAcao={salvarProximaAcao}
+          onConvert={() => setConvertModal(selectedLead)}
+          onCaptarNovo={() => navigate(`/painel/imoveis/novo?from_lead=${selectedLead.id}`)}
+        />
+      )}
+
+      {/* Modal: Converter Lead em Cliente (mesmo fluxo do módulo de Leads) */}
+      {convertModal && (
+        <NovoClienteModal
+          tipoInicial="pf"
+          nomeInicial={convertModal.nome}
+          dadosIniciais={{
+            nome: convertModal.nome,
+            email: convertModal.email || null,
+            telefone: convertModal.telefone || null,
+            whatsapp: convertModal.telefone || null,
+            observacoes: convertModal.mensagem || null,
+            lead_origem_id: convertModal.id,
+          }}
+          onClose={() => setConvertModal(null)}
+          onCreated={async (c: Cliente) => {
+            const lead = convertModal
+            setConvertModal(null)
+            await Promise.all([
+              supabase.from('leads').update({ cliente_id: c.id }).eq('id', lead.id),
+              supabase.from('clientes').update({ lead_origem_id: lead.id }).eq('id', c.id),
+            ])
+            setLeads(prev => prev.map(l => (l.id === lead.id ? { ...l, cliente_id: c.id } : l)))
+            toast.success(`Cliente "${c.nome}" criado e vinculado ao lead`)
+          }}
         />
       )}
     </div>
@@ -624,6 +720,7 @@ function KanbanColumn({
 
 function DetailPanel({
   lead,
+  corretores,
   historico,
   loadingHistorico,
   newNote,
@@ -632,8 +729,14 @@ function DetailPanel({
   onAddNote,
   onClose,
   whatsappLink,
+  onChangeStatus,
+  onChangeCorretor,
+  onSaveProximaAcao,
+  onConvert,
+  onCaptarNovo,
 }: {
   lead: Lead
+  corretores: Corretor[]
   historico: HistoricoEntry[]
   loadingHistorico: boolean
   newNote: string
@@ -642,8 +745,22 @@ function DetailPanel({
   onAddNote: () => void
   onClose: () => void
   whatsappLink: (phone: string, nome: string) => string
+  onChangeStatus: (leadId: string, status: LeadStatus) => void
+  onChangeCorretor: (leadId: string, corretorId: string) => void
+  onSaveProximaAcao: (leadId: string, acao: string, data: string) => void
+  onConvert: () => void
+  onCaptarNovo: () => void
 }) {
   const cfg = statusConfig[lead.status]
+  const [acao, setAcao] = useState(lead.proxima_acao || '')
+  const [acaoData, setAcaoData] = useState(lead.proxima_acao_data ? lead.proxima_acao_data.slice(0, 10) : '')
+
+  // re-inicializa os campos ao trocar de lead
+  useEffect(() => {
+    setAcao(lead.proxima_acao || '')
+    setAcaoData(lead.proxima_acao_data ? lead.proxima_acao_data.slice(0, 10) : '')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lead.id])
 
   return (
     <>
@@ -709,22 +826,102 @@ function DetailPanel({
               </span>
             </div>
 
-            {/* Status change message */}
-            <p className="mt-3 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-700 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-400">
-              Arraste o cartão entre as colunas para mudar o status — ou use o módulo de Leads
-            </p>
+            {/* WhatsApp + Converter em cliente */}
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              {lead.telefone && (
+                <a
+                  href={whatsappLink(lead.telefone, lead.nome)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-green-700"
+                >
+                  <MessageSquare className="h-4 w-4" />
+                  WhatsApp
+                </a>
+              )}
+              {lead.cliente_id ? (
+                <Link
+                  to={`/painel/clientes/${lead.cliente_id}`}
+                  className="inline-flex items-center gap-2 rounded-lg border border-[#1B4F8A] px-4 py-2 text-sm font-medium text-[#1B4F8A] transition-colors hover:bg-[#1B4F8A]/10 dark:border-blue-500 dark:text-blue-400"
+                >
+                  <UserPlus className="h-4 w-4" />
+                  Ver cliente vinculado
+                </Link>
+              ) : (
+                <button
+                  onClick={onConvert}
+                  className="inline-flex items-center gap-2 rounded-lg bg-[#1B4F8A] px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#163f6e]"
+                >
+                  <UserPlus className="h-4 w-4" />
+                  Converter em cliente
+                </button>
+              )}
+            </div>
+          </div>
 
-            {/* WhatsApp button */}
-            {lead.telefone && (
-              <a
-                href={whatsappLink(lead.telefone, lead.nome)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-3 inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-green-700"
+          {/* Controles: status, corretor, próxima ação */}
+          <div className="space-y-4 border-b border-gray-100 px-5 py-4 dark:border-gray-800">
+            <div>
+              <label className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-gray-300">Alterar Status</label>
+              <select
+                value={lead.status}
+                onChange={e => onChangeStatus(lead.id, e.target.value as LeadStatus)}
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-[#1B4F8A] focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
               >
-                <MessageSquare className="h-4 w-4" />
-                WhatsApp
-              </a>
+                {[...activeStatuses, ...closedStatuses].map(s => (
+                  <option key={s} value={s}>{statusConfig[s].label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-gray-300">Corretor Responsável</label>
+              <select
+                value={lead.corretor_id || ''}
+                onChange={e => e.target.value && onChangeCorretor(lead.id, e.target.value)}
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-[#1B4F8A] focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+              >
+                <option value="">Sem corretor</option>
+                {corretores.map(c => (
+                  <option key={c.id} value={c.id}>{c.nome}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-gray-300">Próxima Ação</label>
+              <input
+                type="text"
+                value={acao}
+                onChange={e => setAcao(e.target.value)}
+                placeholder="Descreva a próxima ação..."
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 placeholder-gray-400 focus:border-[#1B4F8A] focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:placeholder-gray-500"
+              />
+              <div className="mt-2 flex items-center gap-2">
+                <input
+                  type="date"
+                  value={acaoData}
+                  onChange={e => setAcaoData(e.target.value)}
+                  className="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-[#1B4F8A] focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+                />
+                <button
+                  onClick={() => onSaveProximaAcao(lead.id, acao, acaoData)}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#1B4F8A] px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[#163f6e]"
+                >
+                  <Save className="h-4 w-4" />
+                  Salvar
+                </button>
+              </div>
+            </div>
+
+            {/* Imóveis vinculados (captação/interesse) */}
+            {lead.tipo && tipoConfig[lead.tipo] && (
+              <LeadImoveisVinculados
+                leadId={lead.id}
+                leadNome={lead.nome}
+                leadTipo={lead.tipo}
+                onCaptarNovo={onCaptarNovo}
+              />
             )}
           </div>
 
