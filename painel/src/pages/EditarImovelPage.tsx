@@ -986,6 +986,18 @@ export default function EditarImovelPage() {
     }
   }
 
+  // Recarrega as fotos do imóvel (usado após salvar, para as novas fotos
+  // aparecerem na lista de existentes e poderem ser reordenadas / viradas capa).
+  async function reloadFotos() {
+    if (!id) return
+    const { data } = await supabase
+      .from('imoveis_fotos')
+      .select('id, url, url_watermark, principal, ordem')
+      .eq('imovel_id', id)
+      .order('ordem')
+    setFotosExistentes((data || []).map((f: any, i) => ({ id: f.id, url: f.url || '', url_watermark: f.url_watermark || '', principal: f.principal, ordem: f.ordem ?? i })))
+  }
+
   const onSubmit: SubmitHandler<ImovelFormData> = async (data) => {
     try {
       const slug = generateSlug(data.titulo)
@@ -1041,10 +1053,12 @@ export default function EditarImovelPage() {
       // Upload novas fotos se houver
       if (novasFotos.length > 0) {
         await uploadNovasFotos()
+        await reloadFotos()
       }
 
-      toast.success('Imóvel atualizado com sucesso!')
-      navigate('/painel/imoveis')
+      toast.success('Alterações salvas! Continue organizando as fotos e a capa aqui.')
+      // Permanece na edição (antes voltava para a lista) para o usuário
+      // reorganizar as fotos, escolher a capa e enviar para revisão sem reabrir.
     } catch (err: any) {
       toast.error('Erro ao atualizar imóvel: ' + (err.message || 'Erro desconhecido'))
     }
@@ -1092,10 +1106,11 @@ export default function EditarImovelPage() {
 
       if (novasFotos.length > 0) {
         await uploadNovasFotos()
+        await reloadFotos()
       }
 
-      toast.success('Alterações salvas!')
-      navigate('/painel/imoveis')
+      toast.success('Rascunho salvo! Organize as fotos e a capa e, quando quiser, envie para revisão.')
+      // Permanece na edição em vez de voltar para a lista.
     } catch (err: any) {
       toast.error('Erro ao salvar rascunho: ' + (err.message || 'Erro desconhecido'))
     } finally {

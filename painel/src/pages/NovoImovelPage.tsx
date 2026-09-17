@@ -519,9 +519,12 @@ export default function NovoImovelPage() {
     const data = getValues()
     setSavingDraft(true)
     try {
-      await insertImovel(data, 'rascunho')
-      toast.success('Rascunho salvo!')
-      navigate('/painel/imoveis')
+      const inserted = await insertImovel(data, 'rascunho')
+      toast.success('Rascunho salvo! Organize as fotos, defina a capa e envie para revisão.')
+      // Vai direto para a edição do imóvel recém-criado (em vez da lista),
+      // para o corretor reorganizar fotos / escolher a capa e enviar para revisão.
+      if (inserted?.id) navigate(`/painel/imoveis/${inserted.id}`)
+      else navigate('/painel/imoveis')
     } catch (err: any) {
       toast.error('Erro ao salvar rascunho: ' + (err.message || 'Erro desconhecido'))
     } finally {
