@@ -288,7 +288,7 @@ export default function NovoImovelPage() {
 
   function handleFiles(files: FileList | File[]) {
     const newFotos = Array.from(files)
-      .filter(f => f.type.startsWith('image/'))
+      .filter(f => f.type.startsWith('image/') || /\.(heic|heif)$/i.test(f.name))
       .map((file, i) => ({
         file,
         preview: URL.createObjectURL(file),
@@ -906,13 +906,13 @@ export default function NovoImovelPage() {
               Arraste fotos aqui ou clique para selecionar
             </p>
             <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-              PNG, JPG ou WEBP (máx. 5MB cada)
+              PNG, JPG, WEBP ou HEIC (máx. 5MB cada)
             </p>
             <input
               id="foto-input"
               type="file"
               multiple
-              accept="image/*"
+              accept="image/*,.heic,.heif"
               className="hidden"
               onChange={(e) => {
                 if (e.target.files) handleFiles(e.target.files)

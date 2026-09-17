@@ -483,7 +483,7 @@ export default function EditarImovelPage() {
 
   function handleFiles(files: FileList | File[]) {
     const newFotos = Array.from(files)
-      .filter(f => f.type.startsWith('image/'))
+      .filter(f => f.type.startsWith('image/') || /\.(heic|heif)$/i.test(f.name))
       .map(file => ({
         file,
         preview: URL.createObjectURL(file),
@@ -1840,12 +1840,12 @@ export default function EditarImovelPage() {
             <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
               Adicionar novas fotos
             </p>
-            <p className="mt-1 text-xs text-gray-400">PNG, JPG ou WEBP (máx. 5MB cada)</p>
+            <p className="mt-1 text-xs text-gray-400">PNG, JPG, WEBP ou HEIC (máx. 5MB cada)</p>
             <input
               id="foto-input-edit"
               type="file"
               multiple
-              accept="image/*"
+              accept="image/*,.heic,.heif"
               className="hidden"
               onChange={(e) => { if (e.target.files) handleFiles(e.target.files); e.target.value = '' }}
             />

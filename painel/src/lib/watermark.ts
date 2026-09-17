@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import heic2any from 'heic2any'
 import logoWatermarkUrl from '@/assets/logo-watermark.png'
 
 // Opacidade reforçada (era 0.22 — marca ficava transparente demais nas fotos claras)
@@ -8,11 +9,32 @@ const WATERMARK_RATIO = 0.30
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image()
-    img.crossOrigin = 'anonymous'
+    // crossOrigin só é necessário para URLs remotas. Em blob:/data: (arquivo local)
+    // forçar crossOrigin='anonymous' pode disparar onerror em alguns navegadores.
+    if (!/^(blob:|data:)/i.test(src)) img.crossOrigin = 'anonymous'
     img.onload = () => resolve(img)
     img.onerror = reject
     img.src = src
   })
+}
+
+function isHeic(file: File): boolean {
+  const t = (file.type || '').toLowerCase()
+  const n = (file.name || '').toLowerCase()
+  return t.includes('heic') || t.includes('heif') || /\.(heic|heif)$/.test(n)
+}
+
+/**
+ * Converte HEIC/HEIF (fotos de iPhone) para JPEG no navegador.
+ * Navegadores não decodificam HEIC em <img>/canvas nem exibem no site,
+ * então convertemos antes de qualquer processamento. Formatos já suportados passam direto.
+ */
+export async function toWebImage(file: File): Promise<File> {
+  if (!isHeic(file)) return file
+  const out = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.92 })
+  const blob = (Array.isArray(out) ? out[0] : out) as Blob
+  const name = file.name.replace(/\.(heic|heif)$/i, '.jpg') || `foto-${Date.now()}.jpg`
+  return new File([blob], name, { type: 'image/jpeg' })
 }
 
 /**
@@ -90,10 +112,11 @@ async function applyWatermarkLocal(file: File): Promise<{ watermarked: Blob; thu
 }
 
 /**
- * Upload foto com marca d'água aplicada localmente
+ * Upload foto (converte HEIC→JPEG, aplica marca d'água localmente).
+ * Resiliente: se a marca d'água falhar, a foto ainda é salva usando o original.
  */
 export async function uploadFotoComWatermark(
-  file: File,
+  fileInput: File,
   imovelId: string,
   index: number
 ): Promise<{
@@ -101,15 +124,23 @@ export async function uploadFotoComWatermark(
   url_watermark: string
   url_thumb: string
 } | null> {
+  // Converte HEIC/HEIF (iPhone) → JPEG antes de tudo
+  let file = fileInput
+  try {
+    file = await toWebImage(fileInput)
+  } catch (convErr) {
+    console.error(`Falha ao converter HEIC (foto ${index + 1}):`, convErr)
+  }
+
   const ts = Date.now()
-  const ext = file.name.split('.').pop() || 'jpg'
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
 
   try {
-    // 1. Upload original
+    // 1. Upload original (obrigatório — sem isso a foto não existe)
     const origPath = `${imovelId}/original/${ts}-${index}.${ext}`
     const { error: uploadError } = await supabase.storage
       .from('imoveis')
-      .upload(origPath, file, { contentType: file.type, upsert: true })
+      .upload(origPath, file, { contentType: file.type || 'image/jpeg', upsert: true })
     if (uploadError) {
       console.error('Erro upload original:', uploadError)
       throw uploadError
@@ -117,33 +148,31 @@ export async function uploadFotoComWatermark(
     const { data: origData } = supabase.storage.from('imoveis').getPublicUrl(origPath)
     const originalUrl = origData.publicUrl
 
-    // 2. Aplicar marca d'água localmente (Canvas, sem API externa)
-    const { watermarked, thumb } = await applyWatermarkLocal(file)
-
-    // 3. Upload marca d'água
-    const wmPath = `${imovelId}/watermark/${ts}-${index}.webp`
-    const { error: wmErr } = await supabase.storage
-      .from('imoveis')
-      .upload(wmPath, watermarked, { contentType: 'image/webp', upsert: true })
-
+    // 2. Marca d'água + thumbnail (best-effort — se falhar, salvamos o original mesmo assim)
     let wmPublicUrl = originalUrl
-    if (!wmErr) {
-      const { data: wmData } = supabase.storage.from('imoveis').getPublicUrl(wmPath)
-      wmPublicUrl = wmData.publicUrl
-    } else {
-      console.warn('Erro upload marca d\'água:', wmErr)
-    }
-
-    // 4. Upload thumbnail
-    const thumbPath = `${imovelId}/thumb/${ts}-${index}.webp`
-    const { error: thErr } = await supabase.storage
-      .from('imoveis')
-      .upload(thumbPath, thumb, { contentType: 'image/webp', upsert: true })
-
     let thumbPublicUrl = originalUrl
-    if (!thErr) {
-      const { data: thumbData } = supabase.storage.from('imoveis').getPublicUrl(thumbPath)
-      thumbPublicUrl = thumbData.publicUrl
+    try {
+      const { watermarked, thumb } = await applyWatermarkLocal(file)
+
+      const wmPath = `${imovelId}/watermark/${ts}-${index}.webp`
+      const { error: wmErr } = await supabase.storage
+        .from('imoveis')
+        .upload(wmPath, watermarked, { contentType: 'image/webp', upsert: true })
+      if (!wmErr) {
+        wmPublicUrl = supabase.storage.from('imoveis').getPublicUrl(wmPath).data.publicUrl
+      } else {
+        console.warn('Erro upload marca d\'água:', wmErr)
+      }
+
+      const thumbPath = `${imovelId}/thumb/${ts}-${index}.webp`
+      const { error: thErr } = await supabase.storage
+        .from('imoveis')
+        .upload(thumbPath, thumb, { contentType: 'image/webp', upsert: true })
+      if (!thErr) {
+        thumbPublicUrl = supabase.storage.from('imoveis').getPublicUrl(thumbPath).data.publicUrl
+      }
+    } catch (wmErr) {
+      console.warn(`Marca d'água falhou (foto ${index + 1}) — salvando o original:`, wmErr)
     }
 
     return {
