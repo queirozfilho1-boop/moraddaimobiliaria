@@ -19,7 +19,6 @@ interface ImovelDestaque {
   area_construida: number | null
   destaque: boolean
   bairros: { nome: string } | null
-  users_profiles: { nome: string; creci: string | null } | null
   imoveis_fotos: { url_watermark: string; principal: boolean; ordem: number }[] | null
 }
 
@@ -42,7 +41,7 @@ export default function ImoveisDestaqueSection() {
         // First fetch featured properties
         const { data: destaques, error: errDestaques } = await supabase
           .from('imoveis')
-          .select('id, codigo, slug, titulo, tipo, finalidade, preco, quartos, suites, banheiros, vagas_garagem, area_construida, destaque, bairros(nome), users_profiles!corretor_id(nome, creci, avatar_url), imoveis_fotos(url_watermark, principal, ordem)')
+          .select('id, codigo, slug, titulo, tipo, finalidade, preco, quartos, suites, banheiros, vagas_garagem, area_construida, destaque, bairros(nome), imoveis_fotos(url_watermark, principal, ordem)')
           .eq('status', 'publicado')
           .eq('destaque', true)
           .order('created_at', { ascending: false })
@@ -57,7 +56,7 @@ export default function ImoveisDestaqueSection() {
           const existingIds = result.map(i => i.id)
           let fillQuery = supabase
             .from('imoveis')
-            .select('id, codigo, slug, titulo, tipo, finalidade, preco, quartos, suites, banheiros, vagas_garagem, area_construida, destaque, bairros(nome), users_profiles!corretor_id(nome, creci, avatar_url), imoveis_fotos(url_watermark, principal, ordem)')
+            .select('id, codigo, slug, titulo, tipo, finalidade, preco, quartos, suites, banheiros, vagas_garagem, area_construida, destaque, bairros(nome), imoveis_fotos(url_watermark, principal, ordem)')
             .eq('status', 'publicado')
           if (existingIds.length > 0) {
             fillQuery = fillQuery.not('id', 'in', `(${existingIds.join(',')})`)
@@ -117,9 +116,9 @@ export default function ImoveisDestaqueSection() {
             {imoveis.map((imovel, index) => (
               <ScrollReveal key={imovel.id} delay={index * 100}>
                 <Link to={`/imoveis/${imovel.slug}`} className="block">
-                  <div className="card-premium bg-white rounded-2xl overflow-hidden shadow-md">
+                  <div className="card-premium group bg-white rounded-2xl overflow-hidden shadow-md ring-1 ring-black/5">
                     {/* Image */}
-                    <div className="relative h-56 bg-gradient-to-br from-moradda-blue-100 to-moradda-blue-200 overflow-hidden">
+                    <div className="relative h-60 bg-gradient-to-br from-moradda-blue-100 to-moradda-blue-200 overflow-hidden">
                       {(() => {
                         const fotos = imovel.imoveis_fotos || []
                         const principal = fotos.find(f => f.principal) || fotos.sort((a, b) => a.ordem - b.ordem)[0]
@@ -177,21 +176,6 @@ export default function ImoveisDestaqueSection() {
                           {imovel.area_construida || 0}m²
                         </span>
                       </div>
-
-                      {/* Broker */}
-                      {imovel.users_profiles?.nome && (
-                        <div className="flex items-center gap-2 mt-4 pt-4 border-t border-gray-100">
-                          <div className="w-7 h-7 rounded-full bg-moradda-blue-100 flex items-center justify-center text-moradda-blue-500 text-xs font-bold font-body">
-                            {imovel.users_profiles.nome
-                              .split(' ')
-                              .map((n) => n[0])
-                              .join('')}
-                          </div>
-                          <span className="text-xs text-gray-400 font-body">
-                            {imovel.users_profiles.nome}
-                          </span>
-                        </div>
-                      )}
                     </div>
                   </div>
                 </Link>

@@ -139,3 +139,23 @@ h1, h2, h3, h4, h5, h6 {
   background: linear-gradient(90deg, var(--color-moradda-gold-400), var(--color-moradda-gold-600));
   margin: 1rem auto 0;
 }
+
+/* Selects da busca do hero — limpos, sem borda, alinhados ao card branco */
+.hero-select {
+  width: 100%;
+  appearance: none;
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 0.15rem 1.5rem 0.15rem 0;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-moradda-blue-800);
+  cursor: pointer;
+  text-overflow: ellipsis;
+}
+.hero-select:disabled {
+  cursor: default;
+  color: var(--color-moradda-blue-700);
+}

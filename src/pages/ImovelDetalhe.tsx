@@ -74,6 +74,38 @@ export default function ImovelDetalhePage() {
     return () => { document.body.style.overflow = '' }
   }, [lightboxAberto])
 
+  // Pré-carrega as fotos vizinhas → navegação com as setas fica instantânea
+  useEffect(() => {
+    if (fotos.length === 0) return
+    const n = fotos.length
+    const preload = (src?: string) => { if (src) { const im = new Image(); im.decoding = 'async'; im.src = src } }
+    preload(fotos[(fotoAtual + 1) % n]?.url_watermark)
+    preload(fotos[(fotoAtual - 1 + n) % n]?.url_watermark)
+  }, [fotoAtual, fotos])
+
+  // Pré-carrega TODAS as fotos em segundo plano (ocioso) → saltos por miniatura/lightbox também ficam instantâneos
+  useEffect(() => {
+    if (fotos.length === 0) return
+    // Poupa dados: em conexões lentas ou modo economia, mantém só o pré-carregamento dos vizinhos
+    const conn = (navigator as any).connection
+    if (conn?.saveData || /(^|\b)(slow-)?2g$/.test(conn?.effectiveType || '')) return
+    let cancelado = false
+    const carregarTodas = () => {
+      fotos.forEach((f) => {
+        if (cancelado || !f.url_watermark) return
+        const im = new Image()
+        im.decoding = 'async'
+        im.src = f.url_watermark
+      })
+    }
+    const w = window as any
+    const id = w.requestIdleCallback ? w.requestIdleCallback(carregarTodas, { timeout: 2000 }) : window.setTimeout(carregarTodas, 300)
+    return () => {
+      cancelado = true
+      if (w.cancelIdleCallback) w.cancelIdleCallback(id); else clearTimeout(id)
+    }
+  }, [fotos])
+
   useEffect(() => {
     async function fetchImovel() {
       if (!slug) {
@@ -301,6 +333,8 @@ export default function ImovelDetalhePage() {
                 <img
                   src={fotos[fotoAtual]?.url_watermark || fotos[fotoAtual]?.url}
                   alt={fotos[fotoAtual]?.legenda || imovel.titulo}
+                  decoding="async"
+                  fetchPriority="high"
                   className="relative h-full w-full object-contain transition-transform duration-100 ease-out pointer-events-none"
                   style={{
                     transform: touchStartX !== null ? `translateX(${dragOffset * 0.6}px)` : undefined,
@@ -395,6 +429,8 @@ export default function ImovelDetalhePage() {
                   <img
                     src={foto.url_thumb || foto.url_watermark || foto.url}
                     alt={foto.legenda || `Foto ${i + 1}`}
+                    loading="lazy"
+                    decoding="async"
                     className="h-full w-full object-cover"
                   />
                 </button>
@@ -424,6 +460,7 @@ export default function ImovelDetalhePage() {
           <img
             src={fotos[fotoAtual]?.url_watermark || fotos[fotoAtual]?.url}
             alt={fotos[fotoAtual]?.legenda || imovel.titulo}
+            decoding="async"
             className="max-h-[92vh] max-w-[95vw] rounded-xl object-contain shadow-2xl"
             onClick={(e) => e.stopPropagation()}
             draggable={false}

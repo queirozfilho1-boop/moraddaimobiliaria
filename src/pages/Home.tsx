@@ -1,7 +1,6 @@
 import SEO from '@/components/common/SEO'
 import { JSONLD_IMOBILIARIA } from '@/lib/constants'
 import HeroSection from '@/components/sections/HeroSection'
-import BannersSection from '@/components/sections/BannersSection'
 import ImoveisDestaqueSection from '@/components/sections/ImoveisDestaqueSection'
 import DiferenciaisSection from '@/components/sections/DiferenciaisSection'
 import BairrosSection from '@/components/sections/BairrosSection'
@@ -19,7 +18,6 @@ export default function HomePage() {
         jsonLd={JSONLD_IMOBILIARIA}
       />
       <HeroSection />
-      <BannersSection />
       <ImoveisDestaqueSection />
       <DiferenciaisSection />
       <BairrosSection />
